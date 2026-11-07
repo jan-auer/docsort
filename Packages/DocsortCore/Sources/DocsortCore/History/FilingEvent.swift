@@ -72,6 +72,9 @@ public struct FilingEvent: Codable, Hashable, Sendable, Identifiable {
   public let action: FilingAction
   /// When the event was undone, or `nil` while it is active. Set through ``FilingHistory/recordUndo(of:restoredTo:at:)``.
   public internal(set) var undoneDate: Date?
+  /// The move whose Replace caused this event, or `nil`. Set on the trash event that records the replaced item; that
+  /// event is undone together with its move, never on its own.
+  public let causedBy: FilingEvent.ID?
 
   /// Where the item was before this event.
   public var sourceURL: URL { action.sourceURL }

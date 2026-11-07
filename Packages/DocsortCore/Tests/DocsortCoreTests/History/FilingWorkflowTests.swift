@@ -88,4 +88,44 @@ struct FilingWorkflowTests {
       restored.url, into: folder, named: "Rechnung.pdf", resolution: .refuse)
     #expect(history.recordMove(refiled, at: testDate(3)).documentID == filing.documentID)
   }
+
+  @Test("after a Replace both documents are where their files are, before and after undoing it")
+  func replaceAndUndo() throws {
+    let fixture = try FileOperationsFixture()
+    let fileA = try fixture.directory.createFile("Inbox/a.pdf", contents: "A")
+    let fileB = try fixture.directory.createFile("Inbox/b.pdf", contents: "B")
+    let target = fixture.archive.appending(path: "x.pdf")
+    var history = FilingHistory()
+    let movedA = try fixture.operations.move(
+      fileA, into: fixture.archive, named: "x.pdf", resolution: .refuse)
+    let filingA = history.recordMove(movedA, at: testDate(1))
+    let movedB = try fixture.operations.move(
+      fileB, into: fixture.archive, named: "x.pdf", resolution: .replace)
+    let filingB = history.recordMove(movedB, at: testDate(2))
+    let trashedA = try #require(movedB.replaced)
+
+    #expect(history.document(at: target) == filingB.documentID)
+    #expect(history.document(at: trashedA.trashedURL) == filingA.documentID)
+    #expect(history.currentLocation(ofDocument: filingA.documentID) == trashedA.trashedURL)
+    #expect(history.undoBlocker(for: filingA.id) != nil)
+    #expect(fixture.operations.undoBlocker(for: movedA) == .differentItem(at: target))
+
+    #expect(history.undoBlocker(for: filingB.id) == nil)
+    let restoredB = try fixture.operations.undo(movedB, resolution: .refuse)
+    try history.recordUndo(of: filingB.id, restoredTo: restoredB, at: testDate(3))
+
+    #expect(history.document(at: target) == filingA.documentID)
+    #expect(history.document(at: fileB) == filingB.documentID)
+    #expect(history.currentLocation(ofDocument: filingA.documentID) == target)
+    #expect(try fixture.contents(of: target) == "A")
+    #expect(try fixture.contents(of: fileB) == "B")
+
+    #expect(history.undoBlocker(for: filingA.id) == nil)
+    let restoredA = try fixture.operations.undo(movedA, resolution: .refuse)
+    try history.recordUndo(of: filingA.id, restoredTo: restoredA, at: testDate(4))
+
+    #expect(history.document(at: fileA) == filingA.documentID)
+    #expect(try fixture.contents(of: fileA) == "A")
+    #expect(try fixture.names(in: fixture.archive) == [])
+  }
 }

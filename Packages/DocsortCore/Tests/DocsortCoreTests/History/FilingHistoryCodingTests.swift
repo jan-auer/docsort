@@ -50,6 +50,23 @@ struct FilingHistoryCodingTests {
     #expect(decoded.document(at: location("/Archiv/b.pdf")) == first.documentID)
   }
 
+  @Test("a Replace's trash event keeps the link to its move through encoding")
+  func replaceRoundTrip() throws {
+    var history = FilingHistory()
+    history.recordMove(moveRecord(from: "/Inbox/a.pdf", to: "/Archiv/x.pdf"), at: testDate(1))
+    let replacing = history.recordMove(
+      MoveRecord(
+        originalURL: location("/Inbox/b.pdf"), destinationURL: location("/Archiv/x.pdf"),
+        createdFolders: [], replaced: trashRecord(of: "/Archiv/x.pdf"), movedItem: testIdentity),
+      at: testDate(2))
+
+    let decoded = try JSONDecoder().decode(
+      FilingHistory.self, from: try JSONEncoder().encode(history))
+
+    #expect(decoded == history)
+    #expect(decoded.events.contains { $0.causedBy == replacing.id })
+  }
+
   @Test("the encoded history carries format version 1 at the top level")
   func encodesVersion() throws {
     let data = try JSONEncoder().encode(FilingHistory())
