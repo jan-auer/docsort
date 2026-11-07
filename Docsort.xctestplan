@@ -1,0 +1,28 @@
+{
+  "configurations" : [
+    {
+      "id" : "5C1D2B0E-6A4F-4E0B-9C7A-0D0C50A10001",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "preferredScreenCaptureFormat" : "screenshots",
+    "systemAttachmentLifetime" : "keepNever",
+    "uiTestingScreenshotsLifetime" : "keepNever",
+    "userAttachmentLifetime" : "keepNever"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Docsort.xcodeproj",
+        "identifier" : "D0C50A010000000000000031",
+        "name" : "DocsortUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

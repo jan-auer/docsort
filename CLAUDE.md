@@ -44,6 +44,12 @@ xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=mac
 They need a logged-in GUI session. If a run asks for a password to allow UI automation, the user can run
 `sudo automationmodetool enable-automationmode-without-authentication` once to stop the prompt.
 
+The scheme runs them through `Docsort.xctestplan`, which turns off automatic screen capture
+(`uiTestingScreenshotsLifetime: keepNever`; since Xcode 15 UI tests record the screen by default) and keeps no
+attachments. Keep it that way: nothing may capture the screen (`agent-tooling`). Tests assert on elements and
+accessibility identifiers only. Send keystrokes to a window element (`mainWindow.typeKey(…)`), not to the
+`XCUIApplication`: on macOS 27 a key event on the application element aborts the test runner.
+
 ## Running the App
 
 ```

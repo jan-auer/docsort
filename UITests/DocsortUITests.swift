@@ -5,21 +5,30 @@ final class DocsortUITests: XCTestCase {
     continueAfterFailure = false
   }
 
+  /// Launches the app and waits for its main window.
+  ///
+  /// Keystrokes go to the returned window element, not to the `XCUIApplication`: on macOS 27, synthesizing a key
+  /// event on the application element makes the test runner abort while it looks up the display of the
+  /// application's frame (`SLSGetDisplaysWithRect` assertion).
   @MainActor
-  func testMainWindowAppearsOnLaunch() throws {
+  private func launchMainWindow() -> (app: XCUIApplication, mainWindow: XCUIElement) {
     let app = XCUIApplication()
     app.launch()
-
     let mainWindow = app.descendants(matching: .any)["main-window"]
     XCTAssertTrue(mainWindow.waitForExistence(timeout: 5))
+    return (app, mainWindow)
+  }
+
+  @MainActor
+  func testMainWindowAppearsOnLaunch() throws {
+    _ = launchMainWindow()
   }
 
   @MainActor
   func testCommandCommaOpensSettings() throws {
-    let app = XCUIApplication()
-    app.launch()
+    let (app, mainWindow) = launchMainWindow()
 
-    app.typeKey(",", modifierFlags: .command)
+    mainWindow.typeKey(",", modifierFlags: .command)
 
     let settingsWindow = app.descendants(matching: .any)["settings-window"]
     XCTAssertTrue(settingsWindow.waitForExistence(timeout: 5))
@@ -27,11 +36,9 @@ final class DocsortUITests: XCTestCase {
 
   @MainActor
   func testCommandYOpensHistory() throws {
-    let app = XCUIApplication()
-    app.launch()
-    XCTAssertTrue(app.descendants(matching: .any)["main-window"].waitForExistence(timeout: 5))
+    let (app, mainWindow) = launchMainWindow()
 
-    app.typeKey("y", modifierFlags: .command)
+    mainWindow.typeKey("y", modifierFlags: .command)
 
     let historyWindow = app.descendants(matching: .any)["history-window"]
     XCTAssertTrue(historyWindow.waitForExistence(timeout: 5))
@@ -39,8 +46,7 @@ final class DocsortUITests: XCTestCase {
 
   @MainActor
   func testSidebarHistoryRowOpensHistory() throws {
-    let app = XCUIApplication()
-    app.launch()
+    let (app, _) = launchMainWindow()
 
     let historyRow = app.descendants(matching: .any)["sidebar-history"]
     XCTAssertTrue(historyRow.waitForExistence(timeout: 5))
