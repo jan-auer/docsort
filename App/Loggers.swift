@@ -7,4 +7,7 @@ extension Logger {
 
   /// App launch and termination.
   nonisolated static let lifecycle = Logger(subsystem: subsystem, category: "lifecycle")
+
+  /// Loading and showing file previews.
+  nonisolated static let preview = Logger(subsystem: subsystem, category: "preview")
 }
