@@ -22,6 +22,16 @@ need to share configuration.
 Prefer a mature fuzzy-matching library over writing one; whoever implements destination search researches the
 options and proposes one. Reason: user's guidance; matching quality is the CLI's best-liked feature.
 
+## app-sandbox
+
+The app keeps the App Sandbox on. It has read-write access to user-selected files and stores a security-scoped
+bookmark for each folder picked in Settings (archive root, each inbox), resolved once at launch. Reason: the app
+can only touch folders the user granted, which guards an app that moves and trashes documents. This depends on one
+condition the user set: a bookmark to a folder must give read-write access to its whole subtree. Community and Apple
+forum reports say it does, but this is not yet verified here. If it turns out false, turn the sandbox off. Folders
+reached through symlinks outside a granted tree (for example `~/Inbox/Linked`, which points into Google
+Drive) are not covered and need their own grant.
+
 ## agent-tooling
 
 Agents use built-in tools wherever they work: `xcodebuild` and `swift test` stay the check commands, XCUITest
