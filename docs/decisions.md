@@ -22,6 +22,16 @@ need to share configuration.
 Prefer a mature fuzzy-matching library over writing one; whoever implements destination search researches the
 options and proposes one. Reason: user's guidance; matching quality is the CLI's best-liked feature.
 
+## inbox-and-history-behaviour
+
+Settled from the user's first mockup review:
+- Inbox files are listed oldest first, unlike the CLI.
+- Filed files stay where they are in the list, checked off, so the list never shuffles. There is no "Filed" section.
+- A filing history persists across restarts: every move records original path and name, destination, new name and
+  time. A History view lists all filed files in chronological order.
+- A filed file can still be renamed, and "revert name" restores the name it had before filing.
+Reason: user's choice; files moving around in the sidebar is disorienting, and the history makes filing auditable.
+
 ## app-sandbox
 
 The app keeps the App Sandbox on. It has read-write access to user-selected files and stores a security-scoped
