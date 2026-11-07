@@ -180,7 +180,7 @@ struct InboxScannerTests {
     let inbox = try TemporaryDirectory()
     let missing = inbox.url.appending(path: "gibt-es-nicht")
 
-    #expect(throws: InboxScanError.notFound(missing)) { try scanner.scan(missing) }
+    #expect(throws: FolderAccessError.notFound(missing)) { try scanner.scan(missing) }
   }
 
   @Test("throws notAFolder when the inbox is a file")
@@ -188,7 +188,7 @@ struct InboxScannerTests {
     let inbox = try TemporaryDirectory()
     let file = try inbox.createFile("datei.pdf")
 
-    #expect(throws: InboxScanError.notAFolder(file)) { try scanner.scan(file) }
+    #expect(throws: FolderAccessError.notAFolder(file)) { try scanner.scan(file) }
   }
 
   @Test("reports an unreadable subfolder and lists everything else")

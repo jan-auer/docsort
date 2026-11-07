@@ -1,23 +1,5 @@
 import Foundation
 
-/// Why an inbox folder could not be scanned at all.
-public enum InboxScanError: Error, Equatable, Sendable {
-  /// Nothing exists at the inbox URL.
-  case notFound(URL)
-  /// The inbox URL names something that is not a folder.
-  case notAFolder(URL)
-  /// The inbox folder exists but its contents could not be listed.
-  case unreadable(URL, reason: String)
-
-  init(_ accessError: FolderAccessError) {
-    switch accessError {
-    case .notFound(let url): self = .notFound(url)
-    case .notAFolder(let url): self = .notAFolder(url)
-    case .unreadable(let url, let reason): self = .unreadable(url, reason: reason)
-    }
-  }
-}
-
 /// Lists the documents waiting in an inbox folder.
 ///
 /// Guarantees: hidden entries are skipped, packages are single items, items in subfolders are grouped under their
@@ -35,14 +17,9 @@ public struct InboxScanner: Sendable {
 
   /// Scans `folder` and everything visible below it.
   ///
-  /// - Throws: ``InboxScanError`` when `folder` is missing, is not a folder, or cannot be listed.
-  public func scan(_ folder: URL) throws(InboxScanError) -> InboxListing {
-    let contents: VisibleContents
-    do {
-      contents = try walker.walk(folder)
-    } catch {
-      throw InboxScanError(error)
-    }
+  /// - Throws: ``FolderAccessError`` when `folder` is missing, is not a folder, or cannot be listed.
+  public func scan(_ folder: URL) throws(FolderAccessError) -> InboxListing {
+    let contents = try walker.walk(folder)
 
     var problems = contents.problems
     var topLevelItems: [InboxItem] = []
