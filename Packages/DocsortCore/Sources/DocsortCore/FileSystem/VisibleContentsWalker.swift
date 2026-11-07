@@ -13,7 +13,8 @@ public enum WalkDepth: Hashable, Sendable {
 /// Guarantees:
 /// - Hidden entries (names starting with `.` and entries with the hidden flag) are skipped and never descended into.
 /// - Packages are listed as single items and never descended into.
-/// - Symbolic links and special files are skipped; links to folders are never followed, so the walk cannot loop.
+/// - Symbolic links are never followed, so the walk cannot loop; each one is reported in ``VisibleContents/problems``.
+///   Special files (sockets, devices) are skipped.
 /// - A subfolder that cannot be listed is reported in ``VisibleContents/problems``; the rest is still walked.
 /// - Siblings are visited in Finder name order (`localizedStandardCompare`), so results are deterministic.
 public struct VisibleContentsWalker: Sendable {
@@ -106,8 +107,17 @@ private struct Walk {
             url: child, relativePath: childPath, kind: .file,
             modificationDate: values.contentModificationDate,
             creationDate: values.creationDate, byteCount: values.fileSize.map(Int64.init)))
+      case .symbolicLink?:
+        // Links are not followed, so the walk cannot loop or leave the granted folder; report them so a linked
+        // folder (for example one pointing into a cloud drive) does not vanish without a word.
+        problems.append(
+          ScanProblem(
+            url: child,
+            reason:
+              "It is a symbolic link; Docsort does not follow links. Add its target as its own folder."
+          ))
       default:
-        // Symbolic links, sockets, devices and unknown types are not documents to file; skipping them is intended.
+        // Sockets, devices and unknown types are not documents to file; skipping them is intended.
         continue
       }
     }

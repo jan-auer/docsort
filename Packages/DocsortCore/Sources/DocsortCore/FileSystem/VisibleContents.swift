@@ -53,7 +53,8 @@ public struct VisibleContents: Sendable {
   public let folders: [VisibleFolder]
   /// Every visible file and package below the root, in the same walk order as ``folders``.
   public let items: [VisibleItem]
-  /// Subfolders (and entries) that could not be read. Their readable siblings are still listed.
+  /// Subfolders and entries that could not be read, and symbolic links, which are not followed. Everything else is
+  /// still listed.
   public let problems: [ScanProblem]
 
   /// The root-relative paths of ``folders``, in the same order.

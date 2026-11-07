@@ -77,6 +77,23 @@ struct VisibleContentsWalkerTests {
     #expect(contents.problems.map(\.url.lastPathComponent) == ["Gesperrt"])
   }
 
+  @Test("reports a symbolic link instead of following it, and walks the rest")
+  func reportsSymbolicLink() throws {
+    let root = try TemporaryDirectory()
+    let elsewhere = try TemporaryDirectory()
+    try elsewhere.createFile("Ziel/innen.pdf")
+    try root.createFile("Offen/aussen.pdf")
+    try FileManager.default.createSymbolicLink(
+      at: root.url.appending(path: "Verknüpfung"),
+      withDestinationURL: elsewhere.url.appending(path: "Ziel"))
+
+    let contents = try walker.walk(root.url)
+
+    #expect(contents.items.map(\.relativePath) == ["Offen/aussen.pdf"])
+    #expect(contents.folderPaths == ["Offen"])
+    #expect(contents.problems.map(\.url.lastPathComponent) == ["Verknüpfung"])
+  }
+
   @Test("throws notFound for a missing root")
   func throwsNotFoundForMissingRoot() throws {
     let root = try TemporaryDirectory()
