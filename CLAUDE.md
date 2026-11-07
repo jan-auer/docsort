@@ -51,8 +51,8 @@ open .build/xcode/Build/Products/Debug/Docsort.app
 /usr/bin/log stream --predicate 'subsystem == "org.jauer.Docsort"'
 ```
 
-Use `/usr/bin/log`: in zsh, `log` is a builtin. `log show` hides `.info` and `.debug` messages unless given `--info`
-or `--debug`.
+Use `/usr/bin/log`: in zsh, `log` is a builtin. `log stream` shows `.info` and `.debug` messages only with
+`--level info` or `--level debug`; `log show` needs `--info` or `--debug` for them.
 
 ## Xcode MCP (previews only)
 
@@ -69,5 +69,7 @@ Steps that work:
 3. Give `RenderPreview` navigator-relative file paths (`App/MainWindowView.swift`), not absolute paths.
 
 Xcode asks the user to allow each agent and each folder (worktree) the first time, and the grant lasts 24 hours. The
-user, not an agent, can grant the whole repository once with
-`sudo xcrun mcp-server allow-folder --always /Users/jauer/Coding/docsort-ui` (or `--for-24-hours`).
+user, not an agent, can grant the whole repository with
+`sudo xcrun mcp-server allow-folder /Users/jauer/Coding/docsort-ui --always` (or `--for-24-hours`). Its help
+describes this as permitting headless Xcode to serve workspaces from that folder and its subfolders; whether it also
+removes the Allow dialog for a running Xcode is unverified.
