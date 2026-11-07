@@ -1,5 +1,6 @@
 # docsort-ui
 
-@~/.claude/workflows/coordinator.md
+@.claude/workflow.md
 
-Default branch: `master`.
+Default branch: `master`. Project memory lives in `docs/decisions.md` and `docs/landings.md`; the workflow above says
+how to use them.
