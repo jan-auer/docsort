@@ -1,5 +1,13 @@
 import Foundation
 
+/// How far below its root a walk goes.
+public enum WalkDepth: Hashable, Sendable {
+  /// Only the root's own folders, files and packages; subfolders are listed but never entered.
+  case immediateContents
+  /// Every visible folder, file and package below the root.
+  case entireTree
+}
+
 /// Walks the visible contents of a folder tree the way Finder shows them.
 ///
 /// Guarantees:
@@ -12,10 +20,15 @@ public struct VisibleContentsWalker: Sendable {
   /// Creates a walker.
   public init() {}
 
-  /// Walks every visible folder, file and package below `root`.
+  /// Walks the visible folders, files and packages below `root`, down to `depth`.
+  ///
+  /// With ``WalkDepth/immediateContents``, subfolders are listed but never entered, so nothing below them is read
+  /// and they cannot cause problems.
   ///
   /// - Throws: ``FolderAccessError`` when `root` is missing, is not a folder, or cannot be listed.
-  public func walk(_ root: URL) throws(FolderAccessError) -> VisibleContents {
+  public func walk(_ root: URL, depth: WalkDepth = .entireTree) throws(FolderAccessError)
+    -> VisibleContents
+  {
     var rootIsFolder: ObjCBool = false
     guard
       FileManager.default.fileExists(
@@ -23,7 +36,7 @@ public struct VisibleContentsWalker: Sendable {
     else { throw .notFound(root) }
     guard rootIsFolder.boolValue else { throw .notAFolder(root) }
 
-    var walk = Walk()
+    var walk = Walk(depth: depth)
     do {
       try walk.list(root, relativePath: nil)
     } catch {
@@ -41,11 +54,12 @@ private struct Walk {
     .fileSizeKey,
   ]
 
+  let depth: WalkDepth
   var folders: [VisibleFolder] = []
   var items: [VisibleItem] = []
   var problems: [ScanProblem] = []
 
-  /// Records the visible children of `folder` and descends into its subfolders.
+  /// Records the visible children of `folder` and, for ``WalkDepth/entireTree``, descends into its subfolders.
   ///
   /// - Throws: the file system's error when `folder` itself cannot be listed. Failures below it are recorded in
   ///   ``problems`` instead.
@@ -74,6 +88,7 @@ private struct Walk {
           VisibleFolder(
             url: child, relativePath: childPath, modificationDate: values.contentModificationDate,
             creationDate: values.creationDate))
+        guard depth == .entireTree else { continue }
         do {
           try list(child, relativePath: childPath)
         } catch {

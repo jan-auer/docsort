@@ -92,4 +92,37 @@ struct VisibleContentsWalkerTests {
 
     #expect(throws: FolderAccessError.notAFolder(file)) { try walker.walk(file) }
   }
+
+  @Test("lists only the root's own folders, files and packages when walking its immediate contents")
+  func walksImmediateContents() throws {
+    let root = try TemporaryDirectory()
+    try root.createFile("a.pdf")
+    try root.createFile("Brief.rtfd/TXT.rtf")
+    try root.createFile(".DS_Store")
+    try root.createFile("Ordner/b.pdf")
+    try root.createFolder("Ordner/Unter")
+    try root.createFolder("Gesperrt/Innen")
+    let locked = root.url.appending(path: "Gesperrt")
+    try setPermissions(0o000, of: locked)
+    // Restoring lets the temporary directory be removed; a failure there must not mask the result.
+    defer { try? setPermissions(0o755, of: locked) }
+
+    let contents = try walker.walk(root.url, depth: .immediateContents)
+
+    #expect(contents.folderPaths == ["Gesperrt", "Ordner"])
+    #expect(contents.items.map(\.relativePath) == ["a.pdf", "Brief.rtfd"])
+    #expect(contents.problems.isEmpty)
+  }
+
+  @Test("walks the entire tree by default")
+  func walksEntireTreeByDefault() throws {
+    let root = try TemporaryDirectory()
+    try root.createFile("Ordner/Unter/c.pdf")
+
+    let contents = try walker.walk(root.url)
+
+    #expect(contents.folderPaths == ["Ordner", "Ordner/Unter"])
+    #expect(contents.items.map(\.relativePath) == ["Ordner/Unter/c.pdf"])
+    #expect(try walker.walk(root.url, depth: .entireTree).folderPaths == contents.folderPaths)
+  }
 }
