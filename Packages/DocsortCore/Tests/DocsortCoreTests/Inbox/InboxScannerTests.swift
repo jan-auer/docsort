@@ -28,7 +28,7 @@ struct InboxScannerTests {
     try inbox.createFile("Ordner/innen.pdf", modified: testDate(10))
     try inbox.createFolder("Leer/Auch leer")
     try inbox.createFile("Nur versteckt/.DS_Store")
-    try inbox.setModificationDate(testDate(5), of: inbox.url.appending(path: "Ordner"))
+    try inbox.setCreationDate(testDate(5), of: inbox.url.appending(path: "Ordner"))
 
     let listing = try scanner.scan(inbox.url)
 
@@ -51,13 +51,14 @@ struct InboxScannerTests {
     #expect(outline(listing) == ["sichtbar.pdf"])
   }
 
-  @Test("groups a nested file under its top-level folder, dated by that folder")
+  @Test("groups a nested file under its top-level folder, dated by that folder's creation")
   func groupsNestedFileUnderTopLevelFolder() throws {
     let inbox = try TemporaryDirectory()
     try inbox.createFile("A/B/C/datei.pdf", modified: testDate(50))
-    try inbox.setModificationDate(testDate(40), of: inbox.url.appending(path: "A/B/C"))
-    try inbox.setModificationDate(testDate(30), of: inbox.url.appending(path: "A/B"))
-    try inbox.setModificationDate(testDate(20), of: inbox.url.appending(path: "A"))
+    try inbox.setCreationDate(testDate(40), of: inbox.url.appending(path: "A/B/C"))
+    try inbox.setCreationDate(testDate(30), of: inbox.url.appending(path: "A/B"))
+    try inbox.setCreationDate(testDate(20), of: inbox.url.appending(path: "A"))
+    try inbox.setModificationDate(testDate(60), of: inbox.url.appending(path: "A"))
 
     let listing = try scanner.scan(inbox.url)
 
@@ -69,14 +70,14 @@ struct InboxScannerTests {
     #expect(group.items.first?.modificationDate == testDate(50))
   }
 
-  @Test("interleaves groups with top-level files by the group folder's date")
+  @Test("interleaves groups with top-level files by the group folder's creation date")
   func interleavesGroupsWithTopLevelFiles() throws {
     let inbox = try TemporaryDirectory()
     try inbox.createFile("neu.pdf", modified: testDate(30))
     try inbox.createFile("alt.pdf", modified: testDate(10))
-    // The file inside is newer than everything, but the group sorts by the folder's own date.
+    // The file inside is newer than everything, but the group sorts by the folder's creation date.
     try inbox.createFile("Ordner/innen.pdf", modified: testDate(99))
-    try inbox.setModificationDate(testDate(20), of: inbox.url.appending(path: "Ordner"))
+    try inbox.setCreationDate(testDate(20), of: inbox.url.appending(path: "Ordner"))
 
     let listing = try scanner.scan(inbox.url)
 
@@ -89,7 +90,7 @@ struct InboxScannerTests {
     try inbox.createFile("Gruppe/erste.pdf", modified: testDate(10))
     try inbox.createFile("Gruppe/Tief/zweite.pdf", modified: testDate(30))
     try inbox.createFile("dazwischen.pdf", modified: testDate(20))
-    try inbox.setModificationDate(testDate(25), of: inbox.url.appending(path: "Gruppe"))
+    try inbox.setCreationDate(testDate(25), of: inbox.url.appending(path: "Gruppe"))
 
     let listing = try scanner.scan(inbox.url)
 
@@ -106,14 +107,47 @@ struct InboxScannerTests {
     try inbox.createFile("b 9.pdf", modified: testDate(10))
     try inbox.createFile("Gruppe/b.pdf", modified: testDate(5))
     try inbox.createFile("Gruppe/Tief/a.pdf", modified: testDate(5))
-    try inbox.setModificationDate(testDate(10), of: inbox.url.appending(path: "Gruppe"))
+    try inbox.setCreationDate(testDate(10), of: inbox.url.appending(path: "Gruppe"))
     try inbox.createFile("Aaa/x.pdf", modified: testDate(5))
-    try inbox.setModificationDate(testDate(10), of: inbox.url.appending(path: "Aaa"))
+    try inbox.setCreationDate(testDate(10), of: inbox.url.appending(path: "Aaa"))
 
     let listing = try scanner.scan(inbox.url)
 
     #expect(
       outline(listing) == ["Aaa/[x.pdf]", "b 9.pdf", "b 10.pdf", "Gruppe/[a.pdf, b.pdf]"])
+  }
+
+  @Test("keeps a group in place on rescan after a file was filed out of it")
+  func groupStaysInPlaceAfterFilingOut() throws {
+    let inbox = try TemporaryDirectory()
+    let archive = try TemporaryDirectory()
+    try inbox.createFile("alt.pdf", modified: testDate(10))
+    try inbox.createFile("neu.pdf", modified: testDate(30))
+    try inbox.createFile("Gruppe/erste.pdf", modified: testDate(15))
+    let filed = try inbox.createFile("Gruppe/zweite.pdf", modified: testDate(16))
+    let group = inbox.url.appending(path: "Gruppe")
+    try inbox.setCreationDate(testDate(20), of: group)
+    try inbox.setModificationDate(testDate(20), of: group)
+    #expect(
+      outline(try scanner.scan(inbox.url)) == [
+        "alt.pdf", "Gruppe/[erste.pdf, zweite.pdf]", "neu.pdf",
+      ])
+
+    // Filing a file out of the folder sets the folder's modification date to now.
+    try FileManager.default.moveItem(at: filed, to: archive.url.appending(path: "zweite.pdf"))
+
+    #expect(outline(try scanner.scan(inbox.url)) == ["alt.pdf", "Gruppe/[erste.pdf]", "neu.pdf"])
+  }
+
+  @Test("dates a group by its folder's creation date, or by its oldest file when there is none")
+  func groupDateFallsBackToOldestFile() {
+    #expect(
+      InboxScanner.groupDate(folderCreation: testDate(20), itemDates: [testDate(5)]) == testDate(20)
+    )
+    #expect(
+      InboxScanner.groupDate(
+        folderCreation: nil, itemDates: [testDate(9), testDate(5), testDate(7)])
+        == testDate(5))
   }
 
   @Test("treats a package as one item")

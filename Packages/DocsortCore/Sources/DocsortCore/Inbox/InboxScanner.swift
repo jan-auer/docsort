@@ -42,16 +42,8 @@ public struct InboxScanner: Sendable {
     var subfolders: [InboxSubfolder] = []
     for folder in contents.folders where !folder.relativePath.contains("/") {
       guard let items = itemsByTopLevelFolder[folder.relativePath] else { continue }
-      let date: Date
-      if let folderDate = folder.modificationDate ?? folder.creationDate {
-        date = folderDate
-      } else {
-        // The folder's items are still worth showing; without a date the group sorts last.
-        problems.append(
-          ScanProblem(
-            url: folder.url, reason: "The file system reports no modification or creation date."))
-        date = .distantPast
-      }
+      let date = Self.groupDate(
+        folderCreation: folder.creationDate, itemDates: items.map(\.modificationDate))
       subfolders.append(
         InboxSubfolder(
           url: folder.url, name: folder.url.lastPathComponent, date: date,
@@ -61,6 +53,16 @@ public struct InboxScanner: Sendable {
     let entries = (topLevelItems.map(InboxEntry.item) + subfolders.map(InboxEntry.subfolder))
       .sorted { DisplayOrder($0) < DisplayOrder($1) }
     return InboxListing(folder: folder, entries: entries, problems: problems)
+  }
+
+  /// The date that places a group among its siblings: the folder's creation date, or, when the file system reports
+  /// none, the oldest of its items' dates.
+  ///
+  /// Not the folder's modification date: that changes whenever a file is filed out of the folder, which would move
+  /// the whole group on the next scan (decision `inbox-and-history-behaviour`: the list never shuffles).
+  static func groupDate(folderCreation: Date?, itemDates: [Date]) -> Date {
+    // A group always holds at least one item; `distantPast` only guards the empty case.
+    folderCreation ?? itemDates.min() ?? .distantPast
   }
 
   /// The inbox item for `visibleItem`, or `nil` when it has no modification date to sort by.

@@ -32,7 +32,8 @@ public struct InboxSubfolder: Hashable, Sendable, Identifiable {
   public let url: URL
   /// The folder's name.
   public let name: String
-  /// The folder's own modification date, falling back to its creation date. Orders the folder among its siblings.
+  /// The date that orders the group among its siblings: the folder's creation date, falling back to its oldest
+  /// item's date. Filing files out of the folder does not change it.
   public let date: Date
   /// Every visible item below the folder, oldest first by modification date, ties by name. Never empty.
   public let items: [InboxItem]

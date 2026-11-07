@@ -51,6 +51,13 @@ final class TemporaryDirectory {
   }
 }
 
+extension TemporaryDirectory {
+  /// Sets the creation date of the item at `itemURL`.
+  func setCreationDate(_ date: Date, of itemURL: URL) throws {
+    try FileManager.default.setAttributes([.creationDate: date], ofItemAtPath: itemURL.path)
+  }
+}
+
 /// A fixed reference date plus `seconds`, for deterministic ordering in tests.
 func testDate(_ seconds: TimeInterval) -> Date {
   Date(timeIntervalSinceReferenceDate: 800_000_000 + seconds)
