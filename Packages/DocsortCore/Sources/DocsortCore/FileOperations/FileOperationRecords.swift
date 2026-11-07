@@ -6,7 +6,9 @@ public enum ConflictResolution: Sendable {
   case refuse
   /// Move under the first free name in the sequence `Name 2.pdf`, `Name 3.pdf`, …
   case keepBoth
-  /// Send the existing item to the Trash (undoable) and take its name.
+  /// Send the existing item to the Trash (undoable) and take its name. Only an item of the same kind is replaced (a
+  /// file by a file, a folder or package by a folder or package); otherwise the move fails with
+  /// ``FileOperationError/replaceKindMismatch(existing:)``.
   case replace
 }
 
@@ -83,6 +85,9 @@ public struct RestoredItem: Hashable, Sendable {
 public enum FileOperationError: Error, Equatable, Sendable {
   /// The target name is taken by `existing` (compared case- and normalisation-insensitively).
   case nameConflict(existing: URL)
+  /// ``ConflictResolution/replace`` refused because `existing` is a folder (or package) and the moved item a file, or
+  /// the reverse: a folder is never trashed to make room for a file, nor a file for a folder.
+  case replaceKindMismatch(existing: URL)
   /// The item to move, trash or put back is not there.
   case sourceMissing(URL)
   /// The name (a file name or one folder of a path) cannot be used.

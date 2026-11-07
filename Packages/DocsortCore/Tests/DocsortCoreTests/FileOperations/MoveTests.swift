@@ -148,6 +148,38 @@ struct MoveTests {
     #expect(FileManager.default.fileExists(atPath: source.path(percentEncoded: false)))
   }
 
+  @Test("Replace refuses to trash a folder to make room for a file, changing nothing")
+  func replaceRefusesFolderForFile() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "new")
+    try fixture.directory.createFile("Archiv/Rechnung.pdf/inside.txt", contents: "kept")
+    let existing = fixture.archive.appending(path: "Rechnung.pdf")
+
+    #expect(throws: FileOperationError.replaceKindMismatch(existing: existing)) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Rechnung.pdf", resolution: .replace)
+    }
+    #expect(try fixture.contents(of: source) == "new")
+    #expect(try fixture.contents(of: existing.appending(path: "inside.txt")) == "kept")
+    #expect(try fixture.names(in: fixture.trashFolder) == [])
+  }
+
+  @Test("Replace refuses to trash a file to make room for a folder or package, changing nothing")
+  func replaceRefusesFileForFolder() throws {
+    let fixture = try FileOperationsFixture()
+    try fixture.directory.createFile("Inbox/Brief.pages/Data/body.xml", contents: "body")
+    let source = fixture.inbox.appending(path: "Brief.pages", directoryHint: .isDirectory)
+    let existing = try fixture.directory.createFile("Archiv/Brief.pages", contents: "old")
+
+    #expect(throws: FileOperationError.replaceKindMismatch(existing: existing)) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Brief.pages", resolution: .replace)
+    }
+    #expect(try fixture.contents(of: source.appending(path: "Data/body.xml")) == "body")
+    #expect(try fixture.contents(of: existing) == "old")
+    #expect(try fixture.names(in: fixture.trashFolder) == [])
+  }
+
   @Test("reports a missing source")
   func sourceMissing() throws {
     let fixture = try FileOperationsFixture()

@@ -60,12 +60,16 @@ public struct FileOperations: Sendable {
     var targetName = name
     var conflictingItem: URL?
     if let existing = try existingItem(named: name, in: folder),
-      try FileSystemItem.item(at: existing) != sourceItem
+      let existingOnDisk = try FileSystemItem.item(at: existing), existingOnDisk != sourceItem
     {
       switch resolution {
       case .refuse: throw .nameConflict(existing: existing)
       case .keepBoth: targetName = try freeName(for: name, in: folder)
-      case .replace: conflictingItem = existing
+      case .replace:
+        guard existingOnDisk.isDirectory == sourceItem.isDirectory else {
+          throw .replaceKindMismatch(existing: existing)
+        }
+        conflictingItem = existing
       }
     }
 
