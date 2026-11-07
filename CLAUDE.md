@@ -53,3 +53,21 @@ open .build/xcode/Build/Products/Debug/Docsort.app
 
 Use `/usr/bin/log`: in zsh, `log` is a builtin. `log show` hides `.info` and `.debug` messages unless given `--info`
 or `--debug`.
+
+## Xcode MCP (previews only)
+
+The project's `.mcp.json` registers Xcode's MCP server (`xcrun mcpbridge`). Use it only for `RenderPreview`, to look
+at a SwiftUI `#Preview` as a PNG without launching the app. Never use its `BuildProject` or test tools to verify
+work: a build started within seconds of a file change on disk can miss the change and report success, so its results
+can be silently stale. The check commands above stay the only way to verify.
+
+Steps that work:
+
+1. Call `XcodeOpenWorkspace` with the absolute path of this worktree's `Docsort.xcodeproj`. It returns a
+   `workspaceIdentifier`. Other worktrees have their own path and identifier; never open another worktree's project.
+2. Pass that `workspaceIdentifier` to every tool. The tool list advertises `tabIdentifier`, but the tools reject it.
+3. Give `RenderPreview` navigator-relative file paths (`App/MainWindowView.swift`), not absolute paths.
+
+Xcode asks the user to allow each agent and each folder (worktree) the first time, and the grant lasts 24 hours. The
+user, not an agent, can grant the whole repository once with
+`sudo xcrun mcp-server allow-folder --always /Users/jauer/Coding/docsort-ui` (or `--for-24-hours`).
