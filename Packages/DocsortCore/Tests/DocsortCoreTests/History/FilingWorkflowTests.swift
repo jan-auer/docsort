@@ -17,7 +17,7 @@ struct FilingWorkflowTests {
       source, into: folder, named: "Rechnung.pdf", resolution: .refuse)
     let filing = history.recordMove(filed, at: testDate(1))
     let renamed = try fixture.operations.move(
-      filed.destinationURL, into: folder, named: "2026-11-07 Rechnung.pdf", resolution: .refuse)
+      filed.destinationURL, into: folder, named: "2019-03-14 Rechnung.pdf", resolution: .refuse)
     history.recordMove(renamed, at: testDate(2))
 
     let origin = try #require(history.origin(ofDocument: filing.documentID))
