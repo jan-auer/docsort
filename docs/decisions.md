@@ -22,6 +22,15 @@ need to share configuration.
 Prefer a mature fuzzy-matching library over writing one; whoever implements destination search researches the
 options and proposes one. Reason: user's guidance; matching quality is the CLI's best-liked feature.
 
+## agent-tooling
+
+Agents use built-in tools wherever they work: `xcodebuild` and `swift test` stay the check commands, XCUITest
+covers keyboard flows, `log stream` reads the app's `os.Logger` output, and the Claude app's computer use handles
+visual checks of the running app. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
+benefit (structured build issues, rendered SwiftUI previews), and only once it is verified to work with this
+project's one-worktree-per-session setup. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason: user's
+choice after a tooling survey in the first session.
+
 ## hub-delegates-research
 
 The hub does quick reads itself but hands research (stack, libraries, toolchain) to sessions or subagents.
