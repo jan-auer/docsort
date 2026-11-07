@@ -15,10 +15,11 @@ struct MoveTests {
       source, into: folder, named: "Rechnung.pdf", resolution: .refuse)
 
     let destination = folder.appending(path: "Rechnung.pdf")
-    #expect(
-      record
-        == MoveRecord(
-          originalURL: source, destinationURL: destination, createdFolders: [], replaced: nil))
+    #expect(record.originalURL == source)
+    #expect(record.destinationURL == destination)
+    #expect(record.createdFolders == [])
+    #expect(record.replaced == nil)
+    #expect(record.movedItem == (try fixture.identity(of: destination)))
     #expect(try fixture.contents(of: destination) == "invoice")
     #expect(!fixture.exists(source))
   }

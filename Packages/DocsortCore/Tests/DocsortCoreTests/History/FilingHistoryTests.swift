@@ -186,10 +186,8 @@ struct FilingHistoryTests {
       moveRecord(from: "/Inbox/old.pdf", to: "/Archiv/Rechnung.pdf"), at: testDate(1))
     let replacingRecord = MoveRecord(
       originalURL: location("/Inbox/new.pdf"), destinationURL: location("/Archiv/Rechnung.pdf"),
-      createdFolders: [],
-      replaced: TrashRecord(
-        originalURL: location("/Archiv/Rechnung.pdf"),
-        trashedURL: location("/Trash/Rechnung.pdf")))
+      createdFolders: [], replaced: trashRecord(of: "/Archiv/Rechnung.pdf"),
+      movedItem: testIdentity)
     let replacing = history.recordMove(replacingRecord, at: testDate(2))
 
     #expect(replacing.documentID != replacedDocument.documentID)
@@ -267,5 +265,71 @@ struct FilingHistoryTests {
     try history.markUndone(first.id, at: testDate(3))
 
     #expect(history.events[0].undoneDate == testDate(3))
+  }
+
+  // MARK: - Undo checks
+
+  @Test("the undo check passes the latest active event and reports why others cannot be undone")
+  func undoBlockerReportsRules() throws {
+    var history = FilingHistory()
+    let first = history.recordMove(
+      moveRecord(from: "/Inbox/scan.pdf", to: "/Archiv/a.pdf"), at: testDate(1))
+    let second = history.recordMove(
+      moveRecord(from: "/Archiv/a.pdf", to: "/Archiv/b.pdf"), at: testDate(2))
+    let other = history.recordMove(
+      moveRecord(from: "/Inbox/other.pdf", to: "/Archiv/c.pdf"), at: testDate(3))
+    try history.markUndone(other.id, at: testDate(4))
+    let before = history
+    let unknown = UUID()
+
+    #expect(history.undoBlocker(for: second.id) == nil)
+    #expect(history.undoBlocker(for: first.id) == .laterEventActive(first.id, later: second.id))
+    #expect(history.undoBlocker(for: other.id) == .alreadyUndone(other.id, undoneDate: testDate(4)))
+    #expect(history.undoBlocker(for: unknown) == .unknownEvent(unknown))
+    #expect(history == before)
+  }
+
+  @Test(
+    "an event cannot be undone while another document is at its result, and the history is kept")
+  func undoRefusesWhenOtherDocumentIsAtResult() throws {
+    var history = FilingHistory()
+    let filingA = history.recordMove(
+      moveRecord(from: "/Inbox/a.pdf", to: "/Archiv/x.pdf"), at: testDate(1))
+    // The file was removed outside the app, and another one filed under the same name.
+    let filingB = history.recordMove(
+      moveRecord(from: "/Inbox/b.pdf", to: "/Archiv/x.pdf"), at: testDate(2))
+    let before = history
+    let expected = FilingHistoryError.resultHeldByOtherDocument(
+      filingA.id, document: filingB.documentID)
+
+    #expect(history.undoBlocker(for: filingA.id) == expected)
+    #expect(throws: expected) {
+      try history.recordUndo(
+        of: filingA.id,
+        restoredTo: RestoredItem(url: location("/Inbox/a.pdf"), identity: testIdentity),
+        at: testDate(3))
+    }
+    #expect(history == before)
+    #expect(history.undoBlocker(for: filingB.id) == nil)
+  }
+
+  @Test("after a Replace took a filed document's place, undoing that filing is refused")
+  func undoRefusesFilingReplacedLater() throws {
+    var history = FilingHistory()
+    let filingA = history.recordMove(
+      moveRecord(from: "/Inbox/a.pdf", to: "/Archiv/x.pdf"), at: testDate(1))
+    let replacing = MoveRecord(
+      originalURL: location("/Inbox/b.pdf"), destinationURL: location("/Archiv/x.pdf"),
+      createdFolders: [], replaced: trashRecord(of: "/Archiv/x.pdf"), movedItem: testIdentity)
+    let filingB = history.recordMove(replacing, at: testDate(2))
+    let before = history
+
+    #expect(
+      history.undoBlocker(for: filingA.id)
+        == .resultHeldByOtherDocument(filingA.id, document: filingB.documentID))
+    #expect(throws: FilingHistoryError.self) {
+      try history.markUndone(filingA.id, at: testDate(3))
+    }
+    #expect(history == before)
   }
 }

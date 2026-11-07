@@ -57,7 +57,7 @@ struct FilingWorkflowTests {
     let restored = try fixture.operations.undo(record, resolution: .refuse)
     try reloaded.recordUndo(of: event.id, restoredTo: restored, at: testDate(2))
 
-    #expect(restored == source)
+    #expect(restored.url == source)
     #expect(try fixture.contents(of: source) == "invoice")
     #expect(try fixture.names(in: fixture.archive) == [])
     #expect(reloaded.document(at: source) == filing.documentID)
@@ -78,14 +78,14 @@ struct FilingWorkflowTests {
     let restored = try fixture.operations.undo(filed, resolution: .keepBoth)
     try history.recordUndo(of: filing.id, restoredTo: restored, at: testDate(2))
 
-    #expect(restored.lastPathComponent == "scan 2.pdf")
-    #expect(history.document(at: restored) == filing.documentID)
+    #expect(restored.url.lastPathComponent == "scan 2.pdf")
+    #expect(history.document(at: restored.url) == filing.documentID)
     #expect(history.document(at: source) == nil)
-    #expect(history.currentLocation(ofDocument: filing.documentID) == restored)
+    #expect(history.currentLocation(ofDocument: filing.documentID) == restored.url)
     #expect(history.origin(ofDocument: filing.documentID) == source)
 
     let refiled = try fixture.operations.move(
-      restored, into: folder, named: "Rechnung.pdf", resolution: .refuse)
+      restored.url, into: folder, named: "Rechnung.pdf", resolution: .refuse)
     #expect(history.recordMove(refiled, at: testDate(3)).documentID == filing.documentID)
   }
 }

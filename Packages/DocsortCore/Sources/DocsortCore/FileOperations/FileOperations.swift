@@ -8,6 +8,8 @@ import Foundation
 /// - Each operation either completes or leaves the file system as it was; when rolling back fails too, the thrown
 ///   ``FileOperationError/failed(operation:url:reason:)`` says what is where.
 /// - A move to another volume copies first and removes the original only after the copy is complete.
+/// - Every record carries the identity (``FileIdentity``) of the item where the operation left it, and undo moves only
+///   that item: when another item has taken its place, undo refuses with ``FileOperationError/differentItem(at:)``.
 public struct FileOperations: Sendable {
   let trash: any FileTrash
   let renaming: any ExclusiveRenaming
@@ -82,9 +84,17 @@ public struct FileOperations: Sendable {
     } catch {
       throw rollBack(after: error, of: source, replaced: replaced, createdFolders: createdFolders)
     }
+    let movedItem: FileIdentity
+    do {
+      movedItem = try FileIdentity.ofPlacedItem(at: destination)
+    } catch {
+      throw rollBack(
+        after: error, of: source, movedTo: destination, replaced: replaced,
+        createdFolders: createdFolders)
+    }
     return MoveRecord(
       originalURL: source, destinationURL: destination, createdFolders: createdFolders,
-      replaced: replaced)
+      replaced: replaced, movedItem: movedItem)
   }
 
   /// Creates the folders of `relativePath` (components separated by `/`) inside `parent` that do not exist yet and
@@ -115,30 +125,73 @@ public struct FileOperations: Sendable {
   /// Moves the item at `url` to the Trash. Undo it with ``undo(_:)-(TrashRecord)``.
   public func moveToTrash(_ url: URL) throws(FileOperationError) -> TrashRecord {
     guard try FileSystemItem.item(at: url) != nil else { throw .sourceMissing(url) }
+    let trashedURL: URL
     do {
-      return TrashRecord(originalURL: url, trashedURL: try trash.moveToTrash(url))
+      trashedURL = try trash.moveToTrash(url)
     } catch {
       throw .failed(operation: "move to Trash", url: url, reason: error.localizedDescription)
+    }
+    let trashedItem: FileIdentity
+    do {
+      trashedItem = try FileIdentity.ofPlacedItem(at: trashedURL)
+    } catch {
+      throw rollBack(after: error, of: url, movedTo: trashedURL, createdFolders: [])
+    }
+    return TrashRecord(originalURL: url, trashedURL: trashedURL, trashedItem: trashedItem)
+  }
+
+  /// Why `record` can no longer be undone, or `nil` when ``undo(_:resolution:)`` may proceed. Changes nothing, so the
+  /// UI can call it before offering Undo.
+  ///
+  /// It checks the items the undo would move: ``FileOperationError/sourceMissing(_:)`` when nothing is at the move's
+  /// destination, ``FileOperationError/notInTrash(_:)`` when the replaced item left the Trash,
+  /// ``FileOperationError/differentItem(at:)`` when another item lies at either place, and
+  /// ``FileOperationError/failed(operation:url:reason:)`` when an item cannot be inspected. It does not check the
+  /// place the file goes back to; `undo` reports a taken name according to its resolution.
+  public func undoBlocker(for record: MoveRecord) -> FileOperationError? {
+    do {
+      try check(
+        record.destinationURL, holds: record.movedItem, missing: FileOperationError.sourceMissing)
+      if let replaced = record.replaced {
+        try check(
+          replaced.trashedURL, holds: replaced.trashedItem, missing: FileOperationError.notInTrash)
+      }
+      return nil
+    } catch {
+      return error
+    }
+  }
+
+  /// Why `record` can no longer be undone, or `nil` when ``undo(_:)-(TrashRecord)`` may proceed. Changes nothing.
+  ///
+  /// ``FileOperationError/notInTrash(_:)`` when the item left the Trash, ``FileOperationError/differentItem(at:)``
+  /// when another item lies at its place there, and ``FileOperationError/failed(operation:url:reason:)`` when it
+  /// cannot be inspected. It does not check the place the item goes back to; `undo` reports a taken name.
+  public func undoBlocker(for record: TrashRecord) -> FileOperationError? {
+    do {
+      try check(
+        record.trashedURL, holds: record.trashedItem, missing: FileOperationError.notInTrash)
+      return nil
+    } catch {
+      return error
     }
   }
 
   /// Undoes a move: puts the file back at its original path and name (recreating the original folder if needed),
   /// puts back the item a Replace sent to the Trash, then removes the folders the move created if they are empty
-  /// (a folder holding only `.DS_Store` counts as empty). Returns where the file ended up.
+  /// (a folder holding only `.DS_Store` counts as empty). Returns where the file ended up and its identity there.
   ///
-  /// Fails with ``FileOperationError/sourceMissing(_:)`` when the file is no longer at its destination,
-  /// ``FileOperationError/originalLocationTaken(_:)`` when the original name is taken and `resolution` is
-  /// ``UndoConflictResolution/refuse``, and ``FileOperationError/notInTrash(_:)`` when the replaced item left the
-  /// Trash; in these cases nothing is changed. If only removing an empty folder fails, the file is already back and
-  /// the error's reason says so.
+  /// Fails, changing nothing, with the error ``undoBlocker(for:)-(MoveRecord)`` reports (notably
+  /// ``FileOperationError/differentItem(at:)`` when the item at the destination or in the Trash is not the recorded
+  /// one), and with ``FileOperationError/originalLocationTaken(_:)`` when the original name is taken and `resolution`
+  /// is ``UndoConflictResolution/refuse``. If only removing an empty folder fails, the file is already back and the
+  /// error's reason says so.
   public func undo(
     _ record: MoveRecord, resolution: UndoConflictResolution
-  ) throws(FileOperationError) -> URL {
+  ) throws(FileOperationError) -> RestoredItem {
+    if let blocker = undoBlocker(for: record) { throw blocker }
     guard let movedItem = try FileSystemItem.item(at: record.destinationURL) else {
       throw .sourceMissing(record.destinationURL)
-    }
-    if let replaced = record.replaced, try FileSystemItem.item(at: replaced.trashedURL) == nil {
-      throw .notInTrash(replaced.trashedURL)
     }
 
     let restoration = try putBack(
@@ -161,28 +214,45 @@ public struct FileOperations: Sendable {
           "\(error); the file was already put back at \(restoration.url.path(percentEncoded: false))"
       )
     }
-    return restoration.url
+    return restoration.restoredItem
   }
 
-  /// Puts an item from the Trash back where it was, recreating its folder if needed. Returns where it ended up.
+  /// Puts an item from the Trash back where it was, recreating its folder if needed. Returns where it ended up and
+  /// its identity there.
   ///
-  /// Fails with ``FileOperationError/notInTrash(_:)`` when the item left the Trash and
-  /// ``FileOperationError/originalLocationTaken(_:)`` when its original name is taken; nothing is changed then.
-  public func undo(_ record: TrashRecord) throws(FileOperationError) -> URL {
+  /// Fails, changing nothing, with the error ``undoBlocker(for:)-(TrashRecord)`` reports (for example
+  /// ``FileOperationError/differentItem(at:)`` when another item lies at the recorded place in the Trash), and with
+  /// ``FileOperationError/originalLocationTaken(_:)`` when its original name is taken.
+  public func undo(_ record: TrashRecord) throws(FileOperationError) -> RestoredItem {
+    if let blocker = undoBlocker(for: record) { throw blocker }
     guard let trashedItem = try FileSystemItem.item(at: record.trashedURL) else {
       throw .notInTrash(record.trashedURL)
     }
     return try putBack(
       record.trashedURL, item: trashedItem, at: record.originalURL, resolution: .refuse
-    ).url
+    ).restoredItem
+  }
+
+  // MARK: - Checking identities
+
+  /// Succeeds when the item at `url` has `identity`. Throws `missing(url)` when nothing is there and
+  /// ``FileOperationError/differentItem(at:)`` when another item is.
+  private func check(
+    _ url: URL, holds identity: FileIdentity, missing: (URL) -> FileOperationError
+  ) throws(FileOperationError) {
+    guard let found = try FileIdentity.ofItem(at: url) else { throw missing(url) }
+    guard found == identity else { throw .differentItem(at: url) }
   }
 
   // MARK: - Putting items back
 
-  /// Where `putBack` placed an item, and the folders it had to recreate for that.
+  /// Where `putBack` placed an item, the item's identity there, and the folders it had to recreate for that.
   private struct Restoration {
     let url: URL
+    let identity: FileIdentity
     let createdFolders: [URL]
+
+    var restoredItem: RestoredItem { RestoredItem(url: url, identity: identity) }
   }
 
   /// Moves `current` (whose identity is `item`) to `original`, or to a numbered name beside it for
@@ -213,18 +283,34 @@ public struct FileOperations: Sendable {
     } catch {
       throw rollBack(after: error, of: current, createdFolders: createdFolders)
     }
-    return Restoration(url: target, createdFolders: createdFolders)
+    do {
+      return Restoration(
+        url: target, identity: try FileIdentity.ofPlacedItem(at: target),
+        createdFolders: createdFolders)
+    } catch {
+      throw rollBack(after: error, of: current, movedTo: target, createdFolders: createdFolders)
+    }
   }
 
   // MARK: - Rolling back
 
   /// Undoes the partial work of a failed move and returns the error to throw: `error` itself when the rollback
-  /// succeeded, otherwise an error that names both failures.
+  /// succeeded, otherwise an error that names both failures. `movedTo` is where the item from `url` already went when
+  /// a step after the move itself failed; it is moved back first, and if that fails nothing else is rolled back.
   private func rollBack(
-    after error: FileOperationError, of url: URL, replaced: TrashRecord? = nil,
-    createdFolders: [URL]
+    after error: FileOperationError, of url: URL, movedTo: URL? = nil,
+    replaced: TrashRecord? = nil, createdFolders: [URL]
   ) -> FileOperationError {
     var rollbackFailures: [String] = []
+    if let movedTo {
+      do {
+        try relocate(movedTo, to: url)
+      } catch {
+        rollbackFailures.append(
+          "the item stays at \(movedTo.path(percentEncoded: false)) (\(error))")
+        return combine(error, about: url, rollbackFailures: rollbackFailures)
+      }
+    }
     if let replaced {
       do {
         _ = try undo(replaced)

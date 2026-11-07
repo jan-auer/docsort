@@ -13,6 +13,8 @@ import Foundation
 /// - Events are kept in the order they were recorded and never removed; undone events stay with their undo date.
 /// - Only the latest active event of a document can be marked undone, so a document's active events always form an
 ///   unbroken chain from its origin to its current location.
+/// - An event whose result location now holds another document (see ``document(at:)``) cannot be marked undone, so
+///   the history never asks for another document's file to be moved.
 /// - The model never reads the clock; every date is passed in.
 public struct FilingHistory: Codable, Equatable, Sendable {
   /// The version of the encoded format. Decoding any other version fails, so a later format can be migrated
@@ -44,47 +46,65 @@ public struct FilingHistory: Codable, Equatable, Sendable {
   }
 
   /// Records that the event `eventID` was undone at `date`, after the matching `FileOperations.undo` succeeded and
-  /// put the item at `restoredURL` (the URL that `undo` returned).
+  /// put the item where `restored` (what `undo` returned) says.
   ///
   /// The event is marked undone. When the undo could not use the event's source, because that name was taken and the
-  /// undo kept both, the item is now at `restoredURL` instead; that is recorded as a move of the same document from
-  /// the event's source to `restoredURL`, so the history keeps matching the disk and the document can still be
+  /// undo kept both, the item is now at `restored.url` instead; that is recorded as a move of the same document from
+  /// the event's source to `restored.url`, so the history keeps matching the disk and the document can still be
   /// followed, filed again and reverted. Undoing that move later refuses while the source name is still taken.
   ///
-  /// Fails, changing nothing, when the event is unknown, already undone, or not the latest active event of its
-  /// document: a file can only be put back from where its latest event left it, so undoing an earlier event first
-  /// would leave the history describing places the file never was.
+  /// Fails, changing nothing, with the error ``undoBlocker(for:)`` reports.
   public mutating func recordUndo(
-    of eventID: FilingEvent.ID, restoredTo restoredURL: URL, at date: Date
+    of eventID: FilingEvent.ID, restoredTo restored: RestoredItem, at date: Date
   ) throws(FilingHistoryError) {
     let event = try markUndone(eventID, at: date)
-    guard Self.locationKey(restoredURL) != Self.locationKey(event.sourceURL) else { return }
+    guard Self.locationKey(restored.url) != Self.locationKey(event.sourceURL) else { return }
     let placement = MoveRecord(
-      originalURL: event.sourceURL, destinationURL: restoredURL, createdFolders: [],
-      replaced: nil)
+      originalURL: event.sourceURL, destinationURL: restored.url, createdFolders: [],
+      replaced: nil, movedItem: restored.identity)
     events.append(
       FilingEvent(
         id: UUID(), date: date, documentID: event.documentID, action: .moved(placement),
         undoneDate: nil))
   }
 
-  /// Marks the event `eventID` as undone at `date` and returns it; see ``recordUndo(of:restoredTo:at:)`` for the
-  /// rules. Callers outside the history use `recordUndo`, which also handles an undo that kept both.
-  @discardableResult
-  mutating func markUndone(
-    _ eventID: FilingEvent.ID, at date: Date
-  ) throws(FilingHistoryError) -> FilingEvent {
+  /// Why the event `eventID` cannot be undone, or `nil` when it can. Changes nothing, so the UI can call it before
+  /// offering Undo (together with `FileOperations.undoBlocker(for:)`, which checks the disk).
+  ///
+  /// An event can be undone only when it is known, still active, the latest active event of its document, and its
+  /// document is the one at its result location (``document(at:)``):
+  /// - a file can only be put back from where its latest event left it, so undoing an earlier event first would leave
+  ///   the history describing places the file never was;
+  /// - when another document was filed to the event's result later (for example after the file was removed outside
+  ///   the app), undoing would move that other document's file.
+  public func undoBlocker(for eventID: FilingEvent.ID) -> FilingHistoryError? {
     guard let index = events.firstIndex(where: { $0.id == eventID }) else {
-      throw .unknownEvent(eventID)
+      return .unknownEvent(eventID)
     }
     let event = events[index]
     if let undoneDate = event.undoneDate {
-      throw .alreadyUndone(eventID, undoneDate: undoneDate)
+      return .alreadyUndone(eventID, undoneDate: undoneDate)
     }
     if let laterEvent = events[(index + 1)...].first(where: {
       $0.documentID == event.documentID && $0.undoneDate == nil
     }) {
-      throw .laterEventActive(eventID, later: laterEvent.id)
+      return .laterEventActive(eventID, later: laterEvent.id)
+    }
+    if let holder = document(at: event.resultURL), holder != event.documentID {
+      return .resultHeldByOtherDocument(eventID, document: holder)
+    }
+    return nil
+  }
+
+  /// Marks the event `eventID` as undone at `date` and returns it, after ``undoBlocker(for:)`` found nothing. Callers
+  /// outside the history use ``recordUndo(of:restoredTo:at:)``, which also handles an undo that kept both.
+  @discardableResult
+  mutating func markUndone(
+    _ eventID: FilingEvent.ID, at date: Date
+  ) throws(FilingHistoryError) -> FilingEvent {
+    if let blocker = undoBlocker(for: eventID) { throw blocker }
+    guard let index = events.firstIndex(where: { $0.id == eventID }) else {
+      throw .unknownEvent(eventID)
     }
     events[index].undoneDate = date
     return events[index]
@@ -119,8 +139,9 @@ public struct FilingHistory: Codable, Equatable, Sendable {
 
   /// The document whose current location is `url`, or `nil` when there is none.
   ///
-  /// When several documents are at the same location (for example after a Replace sent one of them to the Trash),
-  /// the one with the most recent activity, an event or an undo, is the one there.
+  /// When several documents are at the same location (for example when a filed file was removed outside the app and
+  /// another one was filed under its name), the one with the most recent activity, an event or an undo, is the one
+  /// there.
   public func document(at url: URL) -> UUID? {
     let wantedKey = Self.locationKey(url)
     var latest: (documentID: UUID, summary: DocumentSummary)?
@@ -211,7 +232,8 @@ public struct FilingHistory: Codable, Equatable, Sendable {
   }
 }
 
-/// Why ``FilingHistory/recordUndo(of:restoredTo:at:)`` refused; the history is unchanged.
+/// Why an event cannot be undone (``FilingHistory/undoBlocker(for:)``) or why
+/// ``FilingHistory/recordUndo(of:restoredTo:at:)`` refused; the history is unchanged.
 public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConvertible {
   /// No event has this ID.
   case unknownEvent(FilingEvent.ID)
@@ -219,6 +241,8 @@ public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConverti
   case alreadyUndone(FilingEvent.ID, undoneDate: Date)
   /// A later event of the same document, `later`, is still active and must be undone first.
   case laterEventActive(FilingEvent.ID, later: FilingEvent.ID)
+  /// Another document, `document`, is now at the event's result location, so undoing would move its file.
+  case resultHeldByOtherDocument(FilingEvent.ID, document: UUID)
 
   /// A message naming the event and the cause, for logs.
   public var description: String {
@@ -229,6 +253,8 @@ public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConverti
       "The filing event \(id) was already undone at \(undoneDate)."
     case .laterEventActive(let id, let later):
       "The filing event \(id) cannot be undone before the later event \(later) of the same document."
+    case .resultHeldByOtherDocument(let id, let document):
+      "The filing event \(id) cannot be undone because document \(document) is now where it put its item."
     }
   }
 }

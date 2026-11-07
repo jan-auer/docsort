@@ -16,7 +16,7 @@ struct UndoMoveTests {
 
     let restored = try fixture.operations.undo(record, resolution: .refuse)
 
-    #expect(restored == source)
+    #expect(restored.url == source)
     #expect(try fixture.contents(of: source) == "invoice")
     #expect(try fixture.names(in: fixture.archive) == [])
   }
@@ -63,8 +63,8 @@ struct UndoMoveTests {
 
     let restored = try fixture.operations.undo(record, resolution: .keepBoth)
 
-    #expect(restored == fixture.inbox.appending(path: "scan 2.pdf"))
-    #expect(try fixture.contents(of: restored) == "moved")
+    #expect(restored.url == fixture.inbox.appending(path: "scan 2.pdf"))
+    #expect(try fixture.contents(of: restored.url) == "moved")
     #expect(try fixture.contents(of: source) == "newcomer")
   }
 
@@ -89,7 +89,7 @@ struct UndoMoveTests {
       source, into: fixture.archive, named: "a.pdf", resolution: .refuse)
     try FileManager.default.removeItem(at: fixture.inbox.appending(path: "Downloads"))
 
-    #expect(try fixture.operations.undo(record, resolution: .refuse) == source)
+    #expect(try fixture.operations.undo(record, resolution: .refuse).url == source)
     #expect(try fixture.contents(of: source) == "scan")
   }
 
@@ -100,7 +100,7 @@ struct UndoMoveTests {
     let record = try fixture.operations.move(
       source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
 
-    #expect(try fixture.operations.undo(record, resolution: .refuse) == source)
+    #expect(try fixture.operations.undo(record, resolution: .refuse).url == source)
     #expect(try fixture.names(in: fixture.archive) == ["rechnung.pdf"])
   }
 
@@ -112,7 +112,7 @@ struct UndoMoveTests {
     let record = try fixture.operations.move(
       source, into: fixture.archive, named: "Rechnung.pdf", resolution: .replace)
 
-    #expect(try fixture.operations.undo(record, resolution: .refuse) == source)
+    #expect(try fixture.operations.undo(record, resolution: .refuse).url == source)
 
     #expect(try fixture.contents(of: source) == "new")
     #expect(try fixture.contents(of: existing) == "old")
@@ -135,5 +135,128 @@ struct UndoMoveTests {
     }
     #expect(try fixture.contents(of: record.destinationURL) == "new")
     #expect(!fixture.exists(source))
+  }
+}
+
+@Suite("FileOperations undo identity checks")
+struct UndoIdentityTests {
+  @Test(
+    "a move records the identity of the item at its destination",
+    arguments: [RenamingKind.sameVolume, .crossVolume])
+  func recordsMovedItem(kind: RenamingKind) throws {
+    let fixture = try FileOperationsFixture(renaming: kind.renaming)
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "invoice")
+
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
+
+    #expect(record.movedItem == (try fixture.identity(of: record.destinationURL)))
+  }
+
+  @Test("a cross-volume move records the copy's identity, not the original's")
+  func crossVolumeRecordsCopy() throws {
+    let fixture = try FileOperationsFixture(renaming: CrossVolumeRenaming())
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "invoice")
+    let originalIdentity = try fixture.identity(of: source)
+
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
+
+    #expect(record.movedItem != originalIdentity)
+  }
+
+  @Test("nothing blocks undoing a move whose file is still where it was moved")
+  func noBlocker() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf")
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "a.pdf", resolution: .refuse)
+
+    #expect(fixture.operations.undoBlocker(for: record) == nil)
+  }
+
+  @Test("refuses to undo a move whose file was swapped for another one, changing nothing")
+  func refusesSwappedFile() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "filed")
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
+    try fixture.swapFile(at: record.destinationURL, contents: "swapped in by Finder")
+
+    #expect(
+      fixture.operations.undoBlocker(for: record) == .differentItem(at: record.destinationURL))
+    #expect(throws: FileOperationError.differentItem(at: record.destinationURL)) {
+      try fixture.operations.undo(record, resolution: .refuse)
+    }
+    #expect(try fixture.contents(of: record.destinationURL) == "swapped in by Finder")
+    #expect(try fixture.names(in: fixture.inbox) == [])
+  }
+
+  @Test("reports a missing file as the blocker")
+  func missingFileBlocks() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf")
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "a.pdf", resolution: .refuse)
+    try FileManager.default.removeItem(at: record.destinationURL)
+
+    #expect(fixture.operations.undoBlocker(for: record) == .sourceMissing(record.destinationURL))
+  }
+
+  @Test("refuses to undo a Replace whose replaced item in the Trash was swapped, changing nothing")
+  func refusesSwappedReplacedItem() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "new")
+    try fixture.directory.createFile("Archiv/Rechnung.pdf", contents: "old")
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "Rechnung.pdf", resolution: .replace)
+    let replaced = try #require(record.replaced)
+    try fixture.swapFile(at: replaced.trashedURL, contents: "something else")
+
+    #expect(fixture.operations.undoBlocker(for: record) == .differentItem(at: replaced.trashedURL))
+    #expect(throws: FileOperationError.differentItem(at: replaced.trashedURL)) {
+      try fixture.operations.undo(record, resolution: .refuse)
+    }
+    #expect(try fixture.contents(of: record.destinationURL) == "new")
+    #expect(!fixture.exists(source))
+  }
+
+  @Test("undoing a filing after a Replace took its place is refused; undoing in order works")
+  func replaceThenUndoEarlierFiling() throws {
+    let fixture = try FileOperationsFixture()
+    let fileA = try fixture.directory.createFile("Inbox/a.pdf", contents: "A")
+    let fileB = try fixture.directory.createFile("Inbox/b.pdf", contents: "B")
+    let target = fixture.archive.appending(path: "x.pdf")
+    let filingA = try fixture.operations.move(
+      fileA, into: fixture.archive, named: "x.pdf", resolution: .refuse)
+    let filingB = try fixture.operations.move(
+      fileB, into: fixture.archive, named: "x.pdf", resolution: .replace)
+
+    #expect(throws: FileOperationError.differentItem(at: target)) {
+      try fixture.operations.undo(filingA, resolution: .refuse)
+    }
+    #expect(try fixture.contents(of: target) == "B")
+    #expect(try fixture.names(in: fixture.inbox) == [])
+
+    #expect(try fixture.operations.undo(filingB, resolution: .refuse).url == fileB)
+    #expect(try fixture.contents(of: target) == "A")
+    #expect(try fixture.operations.undo(filingA, resolution: .refuse).url == fileA)
+    #expect(try fixture.contents(of: fileA) == "A")
+    #expect(try fixture.contents(of: fileB) == "B")
+    #expect(try fixture.names(in: fixture.archive) == [])
+  }
+
+  @Test(
+    "undo returns the identity of the item where it put it back",
+    arguments: [RenamingKind.sameVolume, .crossVolume])
+  func undoReturnsIdentity(kind: RenamingKind) throws {
+    let fixture = try FileOperationsFixture(renaming: kind.renaming)
+    let source = try fixture.directory.createFile("Inbox/scan.pdf")
+    let record = try fixture.operations.move(
+      source, into: fixture.archive, named: "a.pdf", resolution: .refuse)
+
+    let restored = try fixture.operations.undo(record, resolution: .refuse)
+
+    #expect(restored.identity == (try fixture.identity(of: source)))
   }
 }

@@ -32,6 +32,20 @@ struct FileOperationsFixture {
   func contents(of url: URL) throws -> String {
     String(decoding: try Data(contentsOf: url), as: UTF8.self)
   }
+
+  /// The identity of the item at `url`, which must exist.
+  func identity(of url: URL) throws -> FileIdentity {
+    try #require(try FileIdentity.ofItem(at: url))
+  }
+
+  /// Replaces the item at `url` with a new file holding `contents`, as Finder would when the user swaps files: the new
+  /// file exists before the old one is removed, so it cannot reuse the old file's identity.
+  func swapFile(at url: URL, contents: String) throws {
+    let replacement = try directory.createFile(
+      "replacement-\(UUID().uuidString)", contents: contents)
+    try FileManager.default.removeItem(at: url)
+    try FileManager.default.moveItem(at: replacement, to: url)
+  }
 }
 
 /// A Trash that moves items into a folder of the test's temporary directory, so tests never touch the user's Trash.

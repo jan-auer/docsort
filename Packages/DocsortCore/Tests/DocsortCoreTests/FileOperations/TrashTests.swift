@@ -18,7 +18,7 @@ struct TrashTests {
 
     let restored = try fixture.operations.undo(record)
 
-    #expect(restored == file)
+    #expect(restored.url == file)
     #expect(try fixture.contents(of: file) == "scan")
     #expect(try fixture.names(in: fixture.trashFolder) == [])
   }
@@ -65,7 +65,7 @@ struct TrashTests {
     let record = try fixture.operations.moveToTrash(file)
     try FileManager.default.removeItem(at: fixture.inbox.appending(path: "Unterordner"))
 
-    #expect(try fixture.operations.undo(record) == file)
+    #expect(try fixture.operations.undo(record).url == file)
     #expect(try fixture.contents(of: file) == "scan")
   }
 
@@ -80,8 +80,47 @@ struct TrashTests {
     #expect(record.trashedURL != file)
     #expect(FileManager.default.fileExists(atPath: record.trashedURL.path(percentEncoded: false)))
 
-    #expect(try operations.undo(record) == file)
+    #expect(try operations.undo(record).url == file)
     #expect(FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
     #expect(!FileManager.default.fileExists(atPath: record.trashedURL.path(percentEncoded: false)))
+  }
+}
+
+@Suite("FileOperations Trash identity checks")
+struct TrashIdentityTests {
+  @Test("a trash records the identity of the item in the Trash")
+  func recordsTrashedItem() throws {
+    let fixture = try FileOperationsFixture()
+    let file = try fixture.directory.createFile("Inbox/scan.pdf")
+
+    let record = try fixture.operations.moveToTrash(file)
+
+    #expect(record.trashedItem == (try fixture.identity(of: record.trashedURL)))
+    #expect(fixture.operations.undoBlocker(for: record) == nil)
+  }
+
+  @Test("refuses to put back an item that was swapped in the Trash, changing nothing")
+  func refusesSwappedItem() throws {
+    let fixture = try FileOperationsFixture()
+    let file = try fixture.directory.createFile("Inbox/scan.pdf", contents: "trashed")
+    let record = try fixture.operations.moveToTrash(file)
+    try fixture.swapFile(at: record.trashedURL, contents: "other")
+
+    #expect(fixture.operations.undoBlocker(for: record) == .differentItem(at: record.trashedURL))
+    #expect(throws: FileOperationError.differentItem(at: record.trashedURL)) {
+      try fixture.operations.undo(record)
+    }
+    #expect(!fixture.exists(file))
+    #expect(try fixture.contents(of: record.trashedURL) == "other")
+  }
+
+  @Test("reports an item that left the Trash as the blocker")
+  func missingItemBlocks() throws {
+    let fixture = try FileOperationsFixture()
+    let file = try fixture.directory.createFile("Inbox/scan.pdf")
+    let record = try fixture.operations.moveToTrash(file)
+    try FileManager.default.removeItem(at: record.trashedURL)
+
+    #expect(fixture.operations.undoBlocker(for: record) == .notInTrash(record.trashedURL))
   }
 }

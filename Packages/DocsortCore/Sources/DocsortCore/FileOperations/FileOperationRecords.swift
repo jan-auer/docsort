@@ -24,11 +24,15 @@ public struct TrashRecord: Codable, Hashable, Sendable {
   public let originalURL: URL
   /// Where the item is in the Trash.
   public let trashedURL: URL
+  /// The identity of the item at ``trashedURL``, taken right after it was trashed. Putting it back refuses any other
+  /// item found there.
+  public let trashedItem: FileIdentity
 
-  /// Records that the item at `originalURL` now lies at `trashedURL`.
-  public init(originalURL: URL, trashedURL: URL) {
+  /// Records that the item at `originalURL` now lies at `trashedURL`, where its identity is `trashedItem`.
+  public init(originalURL: URL, trashedURL: URL, trashedItem: FileIdentity) {
     self.originalURL = originalURL
     self.trashedURL = trashedURL
+    self.trashedItem = trashedItem
   }
 }
 
@@ -42,14 +46,35 @@ public struct MoveRecord: Codable, Hashable, Sendable {
   public let createdFolders: [URL]
   /// The item that ``ConflictResolution/replace`` sent to the Trash, if any. Undo puts it back.
   public let replaced: TrashRecord?
+  /// The identity of the item at ``destinationURL``, taken right after the move (after a move to another volume: the
+  /// copy's identity). Undo refuses any other item found there.
+  public let movedItem: FileIdentity
 
-  /// Records a move from `originalURL` to `destinationURL`.
-  public init(originalURL: URL, destinationURL: URL, createdFolders: [URL], replaced: TrashRecord?)
-  {
+  /// Records a move from `originalURL` to `destinationURL`, where the moved item's identity is `movedItem`.
+  public init(
+    originalURL: URL, destinationURL: URL, createdFolders: [URL], replaced: TrashRecord?,
+    movedItem: FileIdentity
+  ) {
     self.originalURL = originalURL
     self.destinationURL = destinationURL
     self.createdFolders = createdFolders
     self.replaced = replaced
+    self.movedItem = movedItem
+  }
+}
+
+/// Where an undo put an item back, and the item's identity there (a new one when it was copied back from another
+/// volume).
+public struct RestoredItem: Hashable, Sendable {
+  /// Where the item is now.
+  public let url: URL
+  /// The identity of the item at ``url``.
+  public let identity: FileIdentity
+
+  /// Records that the item with `identity` was put back at `url`.
+  public init(url: URL, identity: FileIdentity) {
+    self.url = url
+    self.identity = identity
   }
 }
 
@@ -66,6 +91,9 @@ public enum FileOperationError: Error, Equatable, Sendable {
   case originalLocationTaken(URL)
   /// The item to put back is no longer in the Trash (for example because the Trash was emptied).
   case notInTrash(URL)
+  /// The item at this URL is not the one the record describes: it was replaced or swapped since (by a later Replace,
+  /// in Finder, or by a sync client), so undo refuses to move it.
+  case differentItem(at: URL)
   /// An underlying file-system call failed. `operation` says what was attempted on `url`; `reason` is the
   /// system's explanation plus any detail about what was or was not rolled back.
   case failed(operation: String, url: URL, reason: String)
