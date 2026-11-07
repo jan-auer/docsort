@@ -64,8 +64,11 @@ Drive) are not covered and need their own grant.
 ## agent-tooling
 
 Agents use built-in tools wherever they work: `xcodebuild` and `swift test` stay the check commands, XCUITest
-covers keyboard flows, `log stream` reads the app's `os.Logger` output, and the Claude app's computer use handles
-visual checks of the running app. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
+covers keyboard flows (asserting on elements and accessibility identifiers), and `log stream` reads the app's
+`os.Logger` output. Nothing may capture the screen or audio: no computer use, no `screencapture`, no
+ScreenCaptureKit, no screenshots in UI tests. Each of these makes macOS ask the user for Screen & System Audio
+Recording, which the user does not want to grant. Visual checks use Xcode's `RenderPreview`; when only a look at the
+running app will do, ask the user. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
 benefit and works. Tested with worktrees, it qualifies only for rendering SwiftUI previews (`RenderPreview`). Its
 build and test tools are not used: a build started right after a file changed reported success on the old code, and
 otherwise they add nothing over `xcodebuild`. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason:
@@ -76,7 +79,10 @@ user's choice after a tooling survey in the first session.
 Test fixtures, mockups and examples never contain names, dates or details from the user's real archive. Write them
 from scratch in the archive's style. Don't derive them from real names by swapping parts out: twice such a
 transformation kept real dates, items and listing details. The real tree may serve as a private, uncommitted
-benchmark. Reason: the user asked for made-up names; reviews caught leaks twice.
+benchmark. Anything that may contain sample data gets an independent privacy review before it is published as an
+artifact or landed. The author's own check is not enough. Briefs must not invite drawing sample names from the real
+archive. Reason: the user asked for made-up names; reviews caught leaks three times (core fixtures twice, the design
+mockups once), and the first design brief allowed real names.
 
 ## search-scoped-ranking
 
