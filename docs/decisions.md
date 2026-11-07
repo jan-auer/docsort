@@ -39,6 +39,15 @@ Settled from the user's first mockup review:
 - A filed file can still be renamed, and "revert name" restores the name it had before filing.
 Reason: user's choice; files moving around in the sidebar is disorienting, and the history makes filing auditable.
 
+## deferred-and-wanted-features
+
+- Deferred: shortcuts that insert a date into the name field. Today's date is rarely the document's date; revisit
+  together with inferring the document date from its content.
+- Wanted: live watching of inbox folders. Files added or removed by something other than the app update the sidebar
+  live. Files the app moved stay checked off in place; files moved or deleted elsewhere disappear (a layout shift is
+  acceptable there). Built as its own core piece plus UI integration, after the UI shell.
+Reason: user's feedback in design round 2.
+
 ## app-sandbox
 
 The app keeps the App Sandbox on. It has read-write access to user-selected files and stores a security-scoped
