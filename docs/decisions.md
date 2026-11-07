@@ -27,8 +27,11 @@ options and proposes one. Reason: user's guidance; matching quality is the CLI's
 The app keeps the App Sandbox on. It has read-write access to user-selected files and stores a security-scoped
 bookmark for each folder picked in Settings (archive root, each inbox), resolved once at launch. Reason: the app
 can only touch folders the user granted, which guards an app that moves and trashes documents. This depends on one
-condition the user set: a bookmark to a folder must give read-write access to its whole subtree. Community and Apple
-forum reports say it does, but this is not yet verified here. If it turns out false, turn the sandbox off. Folders
+condition the user set: a bookmark to a folder must give read-write access to its whole subtree. Verified on
+2026-11-07 in the real sandboxed app: a bookmark picked through the open panel, resolved in a new process, allowed
+listing, creating, renaming, moving between deep subfolders and trashing 3–5 levels deep; without it, every operation
+failed. Apps built by `xcodebuild test` get extra test-only read access to `/`, so sandbox read checks must use an app
+from a plain build. If the condition ever turns out false, turn the sandbox off. Folders
 reached through symlinks outside a granted tree (for example `~/Inbox/Linked`, which points into Google
 Drive) are not covered and need their own grant.
 
@@ -37,9 +40,10 @@ Drive) are not covered and need their own grant.
 Agents use built-in tools wherever they work: `xcodebuild` and `swift test` stay the check commands, XCUITest
 covers keyboard flows, `log stream` reads the app's `os.Logger` output, and the Claude app's computer use handles
 visual checks of the running app. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
-benefit (structured build issues, rendered SwiftUI previews), and only once it is verified to work with this
-project's one-worktree-per-session setup. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason: user's
-choice after a tooling survey in the first session.
+benefit and works. Tested with worktrees, it qualifies only for rendering SwiftUI previews (`RenderPreview`). Its
+build and test tools are not used: a build started right after a file changed reported success on the old code, and
+otherwise they add nothing over `xcodebuild`. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason:
+user's choice after a tooling survey in the first session.
 
 ## hub-delegates-research
 
