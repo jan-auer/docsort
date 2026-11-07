@@ -263,8 +263,12 @@ struct FilingHistoryTests {
     let before = history
 
     #expect(
-      history.undoBlocker(for: trashing.id) == .undoneWithMove(trashing.id, move: filingB.id))
-    #expect(throws: FilingHistoryError.undoneWithMove(trashing.id, move: filingB.id)) {
+      history.undoBlocker(for: trashing.id)
+        == .undoneWithMove(trashing.id, move: filingB.id, undoFirst: filingB.id))
+    #expect(
+      throws: FilingHistoryError.undoneWithMove(
+        trashing.id, move: filingB.id, undoFirst: filingB.id)
+    ) {
       try history.markUndone(trashing.id, at: testDate(3))
     }
     #expect(history == before)
@@ -281,7 +285,8 @@ struct FilingHistoryTests {
 
     #expect(rescue.documentID == trashing.documentID)
     #expect(
-      history.undoBlocker(for: filingB.id) == .laterEventActive(trashing.id, later: rescue.id))
+      history.undoBlocker(for: filingB.id)
+        == .laterEventActive(trashing.id, later: rescue.id, undoFirst: rescue.id))
   }
 
   // MARK: - Marking undone
@@ -335,7 +340,9 @@ struct FilingHistoryTests {
       moveRecord(from: "/Archiv/a.pdf", to: "/Archiv/b.pdf"), at: testDate(2))
     let before = history
 
-    #expect(throws: FilingHistoryError.laterEventActive(first.id, later: second.id)) {
+    #expect(
+      throws: FilingHistoryError.laterEventActive(first.id, later: second.id, undoFirst: second.id)
+    ) {
       try history.markUndone(first.id, at: testDate(3))
     }
     #expect(history == before)
@@ -373,7 +380,9 @@ struct FilingHistoryTests {
     let unknown = UUID()
 
     #expect(history.undoBlocker(for: second.id) == nil)
-    #expect(history.undoBlocker(for: first.id) == .laterEventActive(first.id, later: second.id))
+    #expect(
+      history.undoBlocker(for: first.id)
+        == .laterEventActive(first.id, later: second.id, undoFirst: second.id))
     #expect(history.undoBlocker(for: other.id) == .alreadyUndone(other.id, undoneDate: testDate(4)))
     #expect(history.undoBlocker(for: unknown) == .unknownEvent(unknown))
     #expect(history == before)
@@ -403,6 +412,26 @@ struct FilingHistoryTests {
     #expect(history.undoBlocker(for: filingB.id) == nil)
   }
 
+  @Test("a blocked undo names the event to undo first, following a Replace and later moves")
+  func blockerNamesEventToUndoFirst() throws {
+    var history = FilingHistory()
+    let filingA = history.recordMove(
+      moveRecord(from: "/Inbox/a.pdf", to: "/Archiv/x.pdf"), at: testDate(1))
+    let filingB = history.recordMove(replacingMove(from: "/Inbox/b.pdf"), at: testDate(2))
+    let trashing = try #require(history.events.first { $0.causedBy == filingB.id })
+    let renamingB = history.recordMove(
+      moveRecord(from: "/Archiv/x.pdf", to: "/Archiv/b.pdf"), at: testDate(3))
+
+    #expect(renamingB.documentID == filingB.documentID)
+    #expect(
+      history.undoBlocker(for: filingA.id)
+        == .laterEventActive(filingA.id, later: trashing.id, undoFirst: renamingB.id))
+    #expect(
+      history.undoBlocker(for: trashing.id)
+        == .undoneWithMove(trashing.id, move: filingB.id, undoFirst: renamingB.id))
+    #expect(history.undoBlocker(for: renamingB.id) == nil)
+  }
+
   @Test("after a Replace took a filed document's place, undoing that filing is refused")
   func undoRefusesFilingReplacedLater() throws {
     var history = FilingHistory()
@@ -413,7 +442,8 @@ struct FilingHistoryTests {
     let before = history
 
     #expect(
-      history.undoBlocker(for: filingA.id) == .laterEventActive(filingA.id, later: trashing.id))
+      history.undoBlocker(for: filingA.id)
+        == .laterEventActive(filingA.id, later: trashing.id, undoFirst: filingB.id))
     #expect(throws: FilingHistoryError.self) {
       try history.markUndone(filingA.id, at: testDate(3))
     }

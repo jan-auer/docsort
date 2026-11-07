@@ -89,28 +89,72 @@ public struct FilingHistory: Codable, Equatable, Sendable {
   /// - when another document was filed to the event's result later (for example after the file was removed outside
   ///   the app), undoing would move that other document's file.
   public func undoBlocker(for eventID: FilingEvent.ID) -> FilingHistoryError? {
+    switch directBlock(for: eventID) {
+    case nil:
+      return nil
+    case .refused(let error):
+      return error
+    case .laterEvent(let blocked, let later):
+      return .laterEventActive(
+        blocked, later: later, undoFirst: eventToUndoFirst(startingAt: later))
+    case .undoneWithMove(let move):
+      return .undoneWithMove(eventID, move: move, undoFirst: eventToUndoFirst(startingAt: move))
+    }
+  }
+
+  /// What stops `eventID` from being undone directly, before following it to the event to undo first.
+  private enum Block {
+    /// A reason that undoing other events does not remove.
+    case refused(FilingHistoryError)
+    /// `later`, an active event of the same document as `blocked`, must be undone before `blocked`.
+    case laterEvent(blocked: FilingEvent.ID, later: FilingEvent.ID)
+    /// The event is the trash event of a Replace and is undone with `move`.
+    case undoneWithMove(move: FilingEvent.ID)
+  }
+
+  /// The first reason found why `eventID` cannot be undone now; see ``undoBlocker(for:)`` for the rules.
+  private func directBlock(for eventID: FilingEvent.ID) -> Block? {
     guard let index = events.firstIndex(where: { $0.id == eventID }) else {
-      return .unknownEvent(eventID)
+      return .refused(.unknownEvent(eventID))
     }
     let event = events[index]
     if let undoneDate = event.undoneDate {
-      return .alreadyUndone(eventID, undoneDate: undoneDate)
+      return .refused(.alreadyUndone(eventID, undoneDate: undoneDate))
     }
     if let move = event.causedBy {
-      return .undoneWithMove(eventID, move: move)
+      return .undoneWithMove(move: move)
     }
     if let laterEvent = laterActiveEvent(after: index) {
-      return .laterEventActive(eventID, later: laterEvent.id)
+      return .laterEvent(blocked: eventID, later: laterEvent.id)
     }
     if let holder = document(at: event.resultURL), holder != event.documentID {
-      return .resultHeldByOtherDocument(eventID, document: holder)
+      return .refused(.resultHeldByOtherDocument(eventID, document: holder))
     }
     for causedIndex in activeEventIndices(causedBy: eventID) {
       if let laterEvent = laterActiveEvent(after: causedIndex) {
-        return .laterEventActive(events[causedIndex].id, later: laterEvent.id)
+        return .laterEvent(blocked: events[causedIndex].id, later: laterEvent.id)
       }
     }
     return nil
+  }
+
+  /// The event the user has to undo first on the way to undoing `eventID`: follows later events and Replace links
+  /// from `eventID` until an event that can be undone now, or one blocked for a reason undoing does not remove.
+  private func eventToUndoFirst(startingAt eventID: FilingEvent.ID) -> FilingEvent.ID {
+    var current = eventID
+    var visited: Set<FilingEvent.ID> = [eventID]
+    while let block = directBlock(for: current) {
+      let next: FilingEvent.ID
+      switch block {
+      case .refused: return current
+      case .laterEvent(_, let later): next = later
+      case .undoneWithMove(let move): next = move
+      }
+      // The links only point forward in time, so a repeat cannot happen; the check keeps a corrupt log from looping.
+      guard visited.insert(next).inserted else { return current }
+      current = next
+    }
+    return current
   }
 
   /// Marks the event `eventID`, and the active events it caused, as undone at `date` and returns the event, after
@@ -278,12 +322,15 @@ public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConverti
   case unknownEvent(FilingEvent.ID)
   /// The event was already undone at `undoneDate`.
   case alreadyUndone(FilingEvent.ID, undoneDate: Date)
-  /// A later event of the same document, `later`, is still active and must be undone first.
-  case laterEventActive(FilingEvent.ID, later: FilingEvent.ID)
+  /// A later event of the same document, `later`, is still active and must be undone first. `undoFirst` is the event
+  /// the user can undo now on the way there: `later` itself, or, when `later` is blocked too (for example by a Replace
+  /// that sent the file to the Trash), the event at the end of that chain.
+  case laterEventActive(FilingEvent.ID, later: FilingEvent.ID, undoFirst: FilingEvent.ID)
   /// Another document, `document`, is now at the event's result location, so undoing would move its file.
   case resultHeldByOtherDocument(FilingEvent.ID, document: UUID)
   /// The event sent the item that the Replace of `move` replaced to the Trash; it is undone by undoing `move`.
-  case undoneWithMove(FilingEvent.ID, move: FilingEvent.ID)
+  /// `undoFirst` is the event the user can undo now on the way there: `move`, or a later event that blocks it.
+  case undoneWithMove(FilingEvent.ID, move: FilingEvent.ID, undoFirst: FilingEvent.ID)
 
   /// A message naming the event and the cause, for logs.
   public var description: String {
@@ -292,12 +339,12 @@ public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConverti
       "The filing history has no event \(id)."
     case .alreadyUndone(let id, let undoneDate):
       "The filing event \(id) was already undone at \(undoneDate)."
-    case .laterEventActive(let id, let later):
-      "The filing event \(id) cannot be undone before the later event \(later) of the same document."
+    case .laterEventActive(let id, let later, let undoFirst):
+      "The filing event \(id) cannot be undone before the later event \(later) of the same document; undo \(undoFirst) first."
     case .resultHeldByOtherDocument(let id, let document):
       "The filing event \(id) cannot be undone because document \(document) is now where it put its item."
-    case .undoneWithMove(let id, let move):
-      "The filing event \(id) trashed the item replaced by the move \(move) and is undone only with that move."
+    case .undoneWithMove(let id, let move, let undoFirst):
+      "The filing event \(id) trashed the item replaced by the move \(move) and is undone only with that move; undo \(undoFirst) first."
     }
   }
 }

@@ -204,6 +204,17 @@ public struct FileOperations: Sendable {
   /// one), and with ``FileOperationError/originalLocationTaken(_:)`` when the original name is taken and `resolution`
   /// is ``UndoConflictResolution/refuse``. If only removing an empty folder fails, the file is already back and the
   /// error's reason says so.
+  ///
+  /// When the original location is on another volume, putting the file back is a copy (see
+  /// ``move(_:into:named:resolution:)``):
+  /// - The returned ``RestoredItem`` then carries the copy's new identity, not the one the file had before it was
+  ///   filed; record it with the history so later checks compare against it.
+  /// - If the file changed while it was copied back, the undo fails with
+  ///   ``FileOperationError/originalChangedDuringCopy(original:copy:replaced:)`` and both items are kept.
+  /// - If putting back the replaced item fails afterwards, the file is moved back to ``MoveRecord/destinationURL``;
+  ///   across volumes that is another copy, so the item there no longer has ``MoveRecord/movedItem``'s identity and
+  ///   a later undo of `record` is refused with ``FileOperationError/differentItem(at:)``. The thrown error says
+  ///   where everything is.
   public func undo(
     _ record: MoveRecord, resolution: UndoConflictResolution
   ) throws(FileOperationError) -> RestoredItem {
