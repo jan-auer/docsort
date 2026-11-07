@@ -13,8 +13,12 @@ struct SidebarColumn<InboxList: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      inboxList
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      // The clear background takes the height even when the list is empty (first launch), so the History row
+      // stays at the bottom; a frame on an empty view builder would take no space.
+      ZStack(alignment: .top) {
+        Color.clear
+        inboxList
+      }
       Divider()
       historyRow
     }
