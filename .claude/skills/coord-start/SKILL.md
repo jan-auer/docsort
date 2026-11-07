@@ -31,7 +31,8 @@ Request: $ARGUMENTS
 
 6. **Start.**
    - In the Claude desktop app, start it with the session tool (`start_session`): a fresh session with the brief as
-     its prompt, with its own worktree and the branch name for a coordinator.
+     its prompt, with its own worktree and the branch name for a coordinator. Give it the model and effort from
+     the plan; if the start tool takes no effort, set it on the new session right after it starts.
    - Without a session tool, run `git worktree add ../<project>-<slug> -b branch/<slug>`, then give the user the
-     brief and the folder to open a session in.
+     brief, the folder to open a session in, and the model and effort to choose there.
 7. **Track.** Record its name, role, branch and the files it owns, and tell the user in one line what started.

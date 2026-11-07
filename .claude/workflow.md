@@ -55,13 +55,18 @@ Two files in the project carry what sessions learn. Read both before planning; k
 3. Bring design decisions to the hub (or, without a hub, the user) as questions; do not make architectural
    assumptions.
 4. Delegate each step to a subagent with a brief naming the goal, the files, what is already ruled out and what done
-   looks like. Choose the model for the step: Haiku for mechanical work, Sonnet for standard implementation, Opus for
-   architecture and critical reasoning.
+   looks like.
 5. Run subagents one after another. Run them in parallel only for read-only work or when their files are disjoint.
 6. Verify each result yourself (read the diff, run the relevant tests) before starting the next step. A subagent's
    report is a claim, not proof.
 7. Commit each independent change separately on your branch.
 8. Finish with a report (below). Do not merge; the hub lands your branch.
+
+## Model and effort
+
+Choose both for every subagent and every session you start, matched to the task: cheap and fast for mechanical or
+reconnaissance work, stronger for implementation, the strongest at high effort for architecture and verification.
+Coordinator sessions and the reviewer always run on the strongest model with high effort.
 
 ## Reports
 

@@ -3,6 +3,7 @@ name: coord-reviewer
 description: Reviews a branch diff before it lands, for the coordinator workflow. Use only from the coord-land skill.
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: high
 ---
 
 You review a branch before it is merged into `master`. You read; you never edit files, commit or merge.
