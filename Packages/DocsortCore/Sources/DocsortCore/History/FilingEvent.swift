@@ -70,7 +70,7 @@ public struct FilingEvent: Codable, Hashable, Sendable, Identifiable {
   public let documentID: UUID
   /// What happened, with the record needed to undo it.
   public let action: FilingAction
-  /// When the event was undone, or `nil` while it is active. Set through ``FilingHistory/markUndone(_:at:)``.
+  /// When the event was undone, or `nil` while it is active. Set through ``FilingHistory/recordUndo(of:restoredTo:at:)``.
   public internal(set) var undoneDate: Date?
 
   /// Where the item was before this event.

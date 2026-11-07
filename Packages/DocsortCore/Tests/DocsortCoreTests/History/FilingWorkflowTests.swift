@@ -55,11 +55,37 @@ struct FilingWorkflowTests {
       return
     }
     let restored = try fixture.operations.undo(record, resolution: .refuse)
-    try reloaded.markUndone(event.id, at: testDate(2))
+    try reloaded.recordUndo(of: event.id, restoredTo: restored, at: testDate(2))
 
     #expect(restored == source)
     #expect(try fixture.contents(of: source) == "invoice")
     #expect(try fixture.names(in: fixture.archive) == [])
     #expect(reloaded.document(at: source) == filing.documentID)
+  }
+
+  @Test(
+    "an undo that keeps both records where the file went, so the document can still be followed")
+  func undoWithKeepBoth() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "invoice")
+    let folder = fixture.archive.appending(path: "Rechnungen", directoryHint: .isDirectory)
+    var history = FilingHistory()
+    let filed = try fixture.operations.move(
+      source, into: folder, named: "Rechnung.pdf", resolution: .refuse)
+    let filing = history.recordMove(filed, at: testDate(1))
+    try fixture.directory.createFile("Inbox/scan.pdf", contents: "a new download")
+
+    let restored = try fixture.operations.undo(filed, resolution: .keepBoth)
+    try history.recordUndo(of: filing.id, restoredTo: restored, at: testDate(2))
+
+    #expect(restored.lastPathComponent == "scan 2.pdf")
+    #expect(history.document(at: restored) == filing.documentID)
+    #expect(history.document(at: source) == nil)
+    #expect(history.currentLocation(ofDocument: filing.documentID) == restored)
+    #expect(history.origin(ofDocument: filing.documentID) == source)
+
+    let refiled = try fixture.operations.move(
+      restored, into: folder, named: "Rechnung.pdf", resolution: .refuse)
+    #expect(history.recordMove(refiled, at: testDate(3)).documentID == filing.documentID)
   }
 }

@@ -43,14 +43,37 @@ public struct FilingHistory: Codable, Equatable, Sendable {
     append(.trashed(record), at: date)
   }
 
-  /// Marks the event `eventID` as undone at `date`; call it after the matching `FileOperations.undo` succeeded.
+  /// Records that the event `eventID` was undone at `date`, after the matching `FileOperations.undo` succeeded and
+  /// put the item at `restoredURL` (the URL that `undo` returned).
+  ///
+  /// The event is marked undone. When the undo could not use the event's source, because that name was taken and the
+  /// undo kept both, the item is now at `restoredURL` instead; that is recorded as a move of the same document from
+  /// the event's source to `restoredURL`, so the history keeps matching the disk and the document can still be
+  /// followed, filed again and reverted. Undoing that move later refuses while the source name is still taken.
   ///
   /// Fails, changing nothing, when the event is unknown, already undone, or not the latest active event of its
   /// document: a file can only be put back from where its latest event left it, so undoing an earlier event first
   /// would leave the history describing places the file never was.
-  public mutating func markUndone(
-    _ eventID: FilingEvent.ID, at date: Date
+  public mutating func recordUndo(
+    of eventID: FilingEvent.ID, restoredTo restoredURL: URL, at date: Date
   ) throws(FilingHistoryError) {
+    let event = try markUndone(eventID, at: date)
+    guard Self.locationKey(restoredURL) != Self.locationKey(event.sourceURL) else { return }
+    let placement = MoveRecord(
+      originalURL: event.sourceURL, destinationURL: restoredURL, createdFolders: [],
+      replaced: nil)
+    events.append(
+      FilingEvent(
+        id: UUID(), date: date, documentID: event.documentID, action: .moved(placement),
+        undoneDate: nil))
+  }
+
+  /// Marks the event `eventID` as undone at `date` and returns it; see ``recordUndo(of:restoredTo:at:)`` for the
+  /// rules. Callers outside the history use `recordUndo`, which also handles an undo that kept both.
+  @discardableResult
+  mutating func markUndone(
+    _ eventID: FilingEvent.ID, at date: Date
+  ) throws(FilingHistoryError) -> FilingEvent {
     guard let index = events.firstIndex(where: { $0.id == eventID }) else {
       throw .unknownEvent(eventID)
     }
@@ -64,6 +87,7 @@ public struct FilingHistory: Codable, Equatable, Sendable {
       throw .laterEventActive(eventID, later: laterEvent.id)
     }
     events[index].undoneDate = date
+    return events[index]
   }
 
   // MARK: - Documents
@@ -187,7 +211,7 @@ public struct FilingHistory: Codable, Equatable, Sendable {
   }
 }
 
-/// Why ``FilingHistory/markUndone(_:at:)`` refused; the history is unchanged.
+/// Why ``FilingHistory/recordUndo(of:restoredTo:at:)`` refused; the history is unchanged.
 public enum FilingHistoryError: Error, Equatable, Sendable, CustomStringConvertible {
   /// No event has this ID.
   case unknownEvent(FilingEvent.ID)
