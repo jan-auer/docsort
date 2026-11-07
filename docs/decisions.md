@@ -71,6 +71,19 @@ build and test tools are not used: a build started right after a file changed re
 otherwise they add nothing over `xcodebuild`. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason:
 user's choice after a tooling survey in the first session.
 
+## no-real-data-in-repo
+
+Test fixtures, mockups and examples never contain names, dates or details from the user's real archive. Write them
+from scratch in the archive's style. Don't derive them from real names by swapping parts out: twice such a
+transformation kept real dates, items and listing details. The real tree may serve as a private, uncommitted
+benchmark. Reason: the user asked for made-up names; reviews caught leaks twice.
+
+## search-scoped-ranking
+
+Inside a folder, the destination search ranks direct children first by default (the user types a common prefix,
+not scattered letters). It is a setting, so the user can switch to "exact name first" later. From the archive root,
+exact names win either way. Reason: user's choice in the core review.
+
 ## hub-delegates-research
 
 The hub does quick reads itself but hands research (stack, libraries, toolchain) to sessions or subagents.
