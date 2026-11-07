@@ -89,9 +89,9 @@ struct RecentDestinationsTests {
     #expect(recents.paths.isEmpty)
   }
 
-  @Test("a JSON round trip keeps paths and capacity")
+  @Test("a JSON round trip keeps the paths")
   func codableRoundTrip() throws {
-    let recents = RecentDestinations(paths: ["a", "b/c"], capacity: 5)
+    let recents = RecentDestinations(paths: ["a", "b/c"])
 
     let decoded = try JSONDecoder().decode(
       RecentDestinations.self, from: JSONEncoder().encode(recents))
@@ -99,13 +99,28 @@ struct RecentDestinationsTests {
     #expect(decoded == recents)
   }
 
+  @Test(
+    "only the paths are stored, so a later change of the default capacity applies to stored lists")
+  func storesOnlyPaths() throws {
+    let encoded = try JSONEncoder().encode(RecentDestinations(paths: ["a"], capacity: 5))
+    let stored = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+    #expect(stored?.keys.sorted() == ["paths"])
+
+    let manyPaths = (1...30).map { "folder \($0)" }
+    let json = try JSONSerialization.data(withJSONObject: ["paths": manyPaths])
+    let decoded = try JSONDecoder().decode(RecentDestinations.self, from: json)
+
+    #expect(decoded.capacity == RecentDestinations.defaultCapacity)
+    #expect(decoded.paths == Array(manyPaths.prefix(RecentDestinations.defaultCapacity)))
+  }
+
   @Test("decoding normalises stored paths the same way as init")
   func decodingNormalises() throws {
-    let json = Data(#"{"paths":["a/","a","b","c"],"capacity":2}"#.utf8)
+    let json = Data(#"{"paths":["a/","a","b","c"]}"#.utf8)
 
     let decoded = try JSONDecoder().decode(RecentDestinations.self, from: json)
 
-    #expect(decoded.paths == ["a", "b"])
+    #expect(decoded.paths == ["a", "b", "c"])
   }
 
   @Test("the preference stores the list under recentDestinations")

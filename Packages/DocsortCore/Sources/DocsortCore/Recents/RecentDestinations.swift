@@ -57,15 +57,20 @@ public struct RecentDestinations: Codable, Equatable, Sendable {
 
   private enum CodingKeys: String, CodingKey {
     case paths
-    case capacity
   }
 
-  /// Decodes a stored list and normalises it like `init(paths:capacity:)`.
+  /// Decodes a stored list with the default capacity and normalises it like `init(paths:capacity:)`.
+  ///
+  /// Only the paths are stored, so a change of ``defaultCapacity`` also applies to lists saved earlier.
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.init(
-      paths: try container.decode([String].self, forKey: .paths),
-      capacity: try container.decode(Int.self, forKey: .capacity))
+    self.init(paths: try container.decode([String].self, forKey: .paths))
+  }
+
+  /// Encodes the paths only; the capacity is not stored.
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(paths, forKey: .paths)
   }
 
   private mutating func trimToCapacity() {
