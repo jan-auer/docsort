@@ -81,8 +81,15 @@ from scratch in the archive's style. Don't derive them from real names by swappi
 transformation kept real dates, items and listing details. The real tree may serve as a private, uncommitted
 benchmark. Anything that may contain sample data gets an independent privacy review before it is published as an
 artifact or landed. The author's own check is not enough. Briefs must not invite drawing sample names from the real
-archive. Reason: the user asked for made-up names; reviews caught leaks three times (core fixtures twice, the design
-mockups once), and the first design brief allowed real names.
+archive. How to write sample data so it stays clean:
+- A fresh subagent writes it from an abstract spec: the shapes and situations needed, no concrete names, dates or
+  examples. It never reads the real archive, the old sample data, or notes from sessions that have seen the archive.
+  A session whose context holds real data drifts back to it even when it means to invent.
+- The fictional household has a different life situation from the user's.
+- Its dates sit in clearly different years (for example 2031–2033). The real archive has files on most days of recent
+  years, so invented recent dates collide with real documents of the same kind.
+Reason: the user asked for made-up names; reviews caught leaks five times (core fixtures three times, the design
+mockups twice), and the first design brief allowed real names.
 
 ## search-scoped-ranking
 
