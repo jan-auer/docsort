@@ -7,21 +7,30 @@ import Foundation
 ///   is exclusive in the kernel, so a file that appears after the check still cannot be replaced.
 /// - Each operation either completes or leaves the file system as it was; when rolling back fails too, the thrown
 ///   ``FileOperationError/failed(operation:url:reason:)`` says what is where.
-/// - A move to another volume copies first and removes the original only after the copy is complete.
+/// - A move to another volume copies first and removes the original only after the copy is complete and only if the
+///   original did not change meanwhile; if it did, both are kept
+///   (``FileOperationError/originalChangedDuringCopy(original:copy:replaced:)``).
 /// - Every record carries the identity (``FileIdentity``) of the item where the operation left it, and undo moves only
 ///   that item: when another item has taken its place, undo refuses with ``FileOperationError/differentItem(at:)``.
 public struct FileOperations: Sendable {
   let trash: any FileTrash
   let renaming: any ExclusiveRenaming
+  /// Runs with the original's URL once a cross-volume copy is complete, before the original is checked and removed.
+  /// A test seam, so tests can change the original at that moment; it does nothing otherwise.
+  let afterCrossVolumeCopy: @Sendable (URL) -> Void
 
   /// Creates file operations that send items to `trash`.
   public init(trash: any FileTrash = SystemTrash()) {
     self.init(trash: trash, renaming: SystemRenaming())
   }
 
-  init(trash: any FileTrash, renaming: any ExclusiveRenaming) {
+  init(
+    trash: any FileTrash, renaming: any ExclusiveRenaming,
+    afterCrossVolumeCopy: @escaping @Sendable (URL) -> Void = { _ in }
+  ) {
     self.trash = trash
     self.renaming = renaming
+    self.afterCrossVolumeCopy = afterCrossVolumeCopy
   }
 
   /// The item in `folder` whose name equals `name` ignoring case and Unicode normalisation, as it is named on disk,
@@ -40,7 +49,8 @@ public struct FileOperations: Sendable {
   /// When `name` is taken (see ``existingItem(named:in:)``), `resolution` decides: refuse, keep both under a
   /// numbered name, or send the existing item to the Trash. An item that is `source` itself is not a conflict, so a
   /// file can be renamed in place by changing only the case. On failure nothing is changed: created folders are
-  /// removed again and a replaced item is put back.
+  /// removed again and a replaced item is put back. The exception is
+  /// ``FileOperationError/originalChangedDuringCopy(original:copy:replaced:)``, which keeps both items and says where.
   public func move(
     _ source: URL, into folder: URL, named name: String, resolution: ConflictResolution
   ) throws(FileOperationError) -> MoveRecord {
@@ -81,6 +91,10 @@ public struct FileOperations: Sendable {
       path: targetName, directoryHint: sourceItem.isDirectory ? .isDirectory : .notDirectory)
     do {
       try relocate(source, to: destination)
+    } catch .originalChangedDuringCopy(let original, let copy, _) {
+      // Both the changed original and the complete copy stay; the copy holds the destination name, so a replaced
+      // item cannot go back there and stays in the Trash.
+      throw .originalChangedDuringCopy(original: original, copy: copy, replaced: replaced)
     } catch {
       throw rollBack(after: error, of: source, replaced: replaced, createdFolders: createdFolders)
     }

@@ -94,6 +94,12 @@ public enum FileOperationError: Error, Equatable, Sendable {
   /// The item at this URL is not the one the record describes: it was replaced or swapped since (by a later Replace,
   /// in Finder, or by a sync client), so undo refuses to move it.
   case differentItem(at: URL)
+  /// A move to another volume copied the item completely to `copy`, but the original at `original` changed or
+  /// vanished before it could be removed (for example a sync client wrote a newer version meanwhile). Unlike the other
+  /// cases this one changes the file system: both items are kept, the original as it now is and the complete copy at
+  /// the destination, so the user can decide which to keep. When the move replaced an item, that item stays in the
+  /// Trash and `replaced` records it; folders the move created stay.
+  case originalChangedDuringCopy(original: URL, copy: URL, replaced: TrashRecord?)
   /// An underlying file-system call failed. `operation` says what was attempted on `url`; `reason` is the
   /// system's explanation plus any detail about what was or was not rolled back.
   case failed(operation: String, url: URL, reason: String)

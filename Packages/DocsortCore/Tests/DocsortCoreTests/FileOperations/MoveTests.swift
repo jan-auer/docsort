@@ -253,3 +253,103 @@ struct MoveTests {
     #expect(try fixture.names(in: fixture.archive) == [])
   }
 }
+
+@Suite("FileOperations.move across volumes while the original changes")
+struct CrossVolumeChangeTests {
+  @Test("keeps both when the original is rewritten during the copy")
+  func originalRewritten() throws {
+    let fixture = try FileOperationsFixture(renaming: CrossVolumeRenaming()) { original in
+      #expect(throws: Never.self) { try Data("a newer version".utf8).write(to: original) }
+    }
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "invoice")
+    let destination = fixture.archive.appending(path: "Rechnung.pdf")
+
+    #expect(
+      throws: FileOperationError.originalChangedDuringCopy(
+        original: source, copy: destination, replaced: nil)
+    ) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
+    }
+    #expect(try fixture.contents(of: source) == "a newer version")
+    #expect(try fixture.contents(of: destination) == "invoice")
+  }
+
+  @Test("keeps both when the original is swapped for a file of the same size and date")
+  func originalSwapped() throws {
+    let fixture = try FileOperationsFixture(renaming: CrossVolumeRenaming()) { original in
+      #expect(throws: Never.self) {
+        let modified = try #require(
+          try FileManager.default.attributesOfItem(atPath: original.path)[.modificationDate]
+            as? Date)
+        let replacement = original.deletingLastPathComponent().appending(path: "replacement")
+        try Data("INVOICE".utf8).write(to: replacement)
+        try FileManager.default.setAttributes(
+          [.modificationDate: modified], ofItemAtPath: replacement.path)
+        try FileManager.default.removeItem(at: original)
+        try FileManager.default.moveItem(at: replacement, to: original)
+      }
+    }
+    let source = try fixture.directory.createFile(
+      "Inbox/scan.pdf", contents: "invoice", modified: testDate(1))
+    let destination = fixture.archive.appending(path: "Rechnung.pdf")
+
+    #expect(
+      throws: FileOperationError.originalChangedDuringCopy(
+        original: source, copy: destination, replaced: nil)
+    ) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Rechnung.pdf", resolution: .refuse)
+    }
+    #expect(try fixture.contents(of: source) == "INVOICE")
+    #expect(try fixture.contents(of: destination) == "invoice")
+  }
+
+  @Test("keeps both when a file deep inside the original folder changes during the copy")
+  func folderContentChanged() throws {
+    let fixture = try FileOperationsFixture(renaming: CrossVolumeRenaming()) { original in
+      #expect(throws: Never.self) {
+        try Data("edited body".utf8).write(to: original.appending(path: "Data/body.xml"))
+      }
+    }
+    try fixture.directory.createFile("Inbox/Bundle.pages/Data/body.xml", contents: "body")
+    let source = fixture.inbox.appending(path: "Bundle.pages", directoryHint: .isDirectory)
+
+    let error = #expect(throws: FileOperationError.self) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Brief.pages", resolution: .refuse)
+    }
+
+    guard case .originalChangedDuringCopy(let original, let copy, nil) = error else {
+      Issue.record("expected originalChangedDuringCopy, got \(String(describing: error))")
+      return
+    }
+    #expect(original == source)
+    #expect(try fixture.contents(of: source.appending(path: "Data/body.xml")) == "edited body")
+    #expect(try fixture.contents(of: copy.appending(path: "Data/body.xml")) == "body")
+  }
+
+  @Test("after a Replace, the replaced item stays in the Trash and the error carries its record")
+  func replacedItemStaysInTrash() throws {
+    let fixture = try FileOperationsFixture(renaming: CrossVolumeRenaming()) { original in
+      #expect(throws: Never.self) { try Data("a newer version".utf8).write(to: original) }
+    }
+    let source = try fixture.directory.createFile("Inbox/scan.pdf", contents: "invoice")
+    let existing = try fixture.directory.createFile("Archiv/Rechnung.pdf", contents: "old")
+
+    let error = #expect(throws: FileOperationError.self) {
+      try fixture.operations.move(
+        source, into: fixture.archive, named: "Rechnung.pdf", resolution: .replace)
+    }
+
+    guard case .originalChangedDuringCopy(_, let copy, let replaced?) = error else {
+      Issue.record(
+        "expected originalChangedDuringCopy with a replaced item, got \(String(describing: error))")
+      return
+    }
+    #expect(replaced.originalURL == existing)
+    #expect(try fixture.contents(of: replaced.trashedURL) == "old")
+    #expect(try fixture.contents(of: copy) == "invoice")
+    #expect(try fixture.contents(of: source) == "a newer version")
+  }
+}

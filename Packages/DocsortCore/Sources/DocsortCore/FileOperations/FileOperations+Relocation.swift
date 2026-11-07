@@ -26,9 +26,12 @@ extension FileOperations {
   ///
   /// The copy goes to a hidden staging name beside `destination` and is renamed exclusively into place only when it
   /// is complete, so `destination` never holds a partial copy and an item that appeared there meanwhile is never
-  /// replaced. If the original cannot be removed afterwards, the copy is removed again and the move fails.
+  /// replaced. If the original cannot be removed afterwards, the copy is removed again and the move fails. If the
+  /// original changed while it was copied (see ``removeOriginal(_:item:unchangedSince:copiedTo:)``), both are kept.
   private func copyAcrossVolumes(_ source: URL, to destination: URL) throws(FileOperationError) {
-    guard let sourceItem = try FileSystemItem.item(at: source) else { throw .sourceMissing(source) }
+    guard let sourceItem = try FileSystemItem.item(at: source),
+      let snapshot = try ContentSnapshot.of(source)
+    else { throw .sourceMissing(source) }
     let operation = "copy to other volume"
     let staging = Self.stagingURL(beside: destination)
 
@@ -58,17 +61,35 @@ extension FileOperations {
           operation: operation, url: source, reason: describePOSIXError(errorCode.rawValue)))
     }
 
-    try removeOriginal(source, item: sourceItem, copiedTo: destination)
+    afterCrossVolumeCopy(source)
+    try removeOriginal(source, item: sourceItem, unchangedSince: snapshot, copiedTo: destination)
   }
 
-  /// Removes `source` after it was copied completely to `destination`.
+  /// Removes `source` after it was copied completely to `destination`, if it is still what was copied.
+  ///
+  /// Right before removing, `source` is compared with `snapshot`, taken before the copy: the identity, size and
+  /// modification date of the item and of everything inside a folder. If anything differs or the original vanished
+  /// (for example a sync client wrote a newer version during the copy), nothing is removed and the move fails with
+  /// ``FileOperationError/originalChangedDuringCopy(original:copy:replaced:)``, keeping both. If the original cannot
+  /// be inspected, the copy is removed so the move did not happen.
   ///
   /// A file is unlinked in one step; if that fails, the copy is removed so the move did not happen. A folder is
   /// first renamed aside in one step (if that fails, the copy is removed) and then deleted; if deleting it fails
   /// part-way, the complete copy stays at `destination` and the error names both places.
   private func removeOriginal(
-    _ source: URL, item: FileSystemItem, copiedTo destination: URL
+    _ source: URL, item: FileSystemItem, unchangedSince snapshot: ContentSnapshot,
+    copiedTo destination: URL
   ) throws(FileOperationError) {
+    let current: ContentSnapshot?
+    do {
+      current = try ContentSnapshot.of(source)
+    } catch {
+      throw removingCopy(destination, after: error)
+    }
+    guard current == snapshot else {
+      throw .originalChangedDuringCopy(original: source, copy: destination, replaced: nil)
+    }
+
     let operation = "remove original after copying to other volume"
     let removalTarget: URL
     if item.isDirectory {

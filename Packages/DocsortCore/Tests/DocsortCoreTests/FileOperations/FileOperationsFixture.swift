@@ -12,12 +12,19 @@ struct FileOperationsFixture {
   let operations: FileOperations
 
   /// `renaming` replaces the exclusive-rename primitive, for example to force the cross-volume path.
-  init(renaming: any ExclusiveRenaming = SystemRenaming()) throws {
+  /// `afterCrossVolumeCopy` runs with the original's URL once a cross-volume copy is complete, before the original is
+  /// removed, for example to change the original as a sync client would.
+  init(
+    renaming: any ExclusiveRenaming = SystemRenaming(),
+    afterCrossVolumeCopy: @escaping @Sendable (URL) -> Void = { _ in }
+  ) throws {
     directory = try TemporaryDirectory()
     inbox = try directory.createFolder("Inbox")
     archive = try directory.createFolder("Archiv")
     trashFolder = try directory.createFolder("Trash")
-    operations = FileOperations(trash: FolderTrash(folder: trashFolder), renaming: renaming)
+    operations = FileOperations(
+      trash: FolderTrash(folder: trashFolder), renaming: renaming,
+      afterCrossVolumeCopy: afterCrossVolumeCopy)
   }
 
   /// The names in `folder`, sorted.

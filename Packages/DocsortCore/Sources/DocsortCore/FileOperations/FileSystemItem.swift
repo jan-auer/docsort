@@ -11,19 +11,32 @@ struct FileSystemItem: Equatable {
 
   /// The item at `url` itself (a symbolic link is described, not followed), or `nil` when nothing is there.
   static func item(at url: URL) throws(FileOperationError) -> FileSystemItem? {
-    try look(at: url, operation: "inspect item", using: lstat)
+    try status(at: url, operation: "inspect item", using: lstat).map(FileSystemItem.init)
   }
 
   /// The item `url` leads to, following symbolic links, or `nil` when nothing is there. Used for folders, which may
   /// be reached through a link.
   static func resolvedItem(at url: URL) throws(FileOperationError) -> FileSystemItem? {
-    try look(at: url, operation: "inspect folder", using: stat)
+    try status(at: url, operation: "inspect folder", using: stat).map(FileSystemItem.init)
   }
 
-  private static func look(
+  private init(_ status: stat) {
+    self.init(
+      device: status.st_dev, inode: status.st_ino, isDirectory: status.st_mode & S_IFMT == S_IFDIR)
+  }
+
+  private init(device: dev_t, inode: ino_t, isDirectory: Bool) {
+    self.device = device
+    self.inode = inode
+    self.isDirectory = isDirectory
+  }
+
+  /// What `statFunction` (`lstat` or `stat`) reports for `url`, or `nil` when nothing is there. Other failures are
+  /// reported as `operation` on `url`.
+  static func status(
     at url: URL, operation: String,
     using statFunction: (UnsafePointer<CChar>, UnsafeMutablePointer<stat>) -> Int32
-  ) throws(FileOperationError) -> FileSystemItem? {
+  ) throws(FileOperationError) -> stat? {
     var status = stat()
     let errorCode = url.withUnsafeFileSystemRepresentation { path in
       guard let path else { return EINVAL }
@@ -31,9 +44,7 @@ struct FileSystemItem: Equatable {
     }
     switch errorCode {
     case 0:
-      return FileSystemItem(
-        device: status.st_dev, inode: status.st_ino, isDirectory: status.st_mode & S_IFMT == S_IFDIR
-      )
+      return status
     case ENOENT, ENOTDIR:
       return nil
     default:
