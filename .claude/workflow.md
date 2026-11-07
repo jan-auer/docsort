@@ -59,7 +59,9 @@ Two files in the project carry what sessions learn. Read both before planning; k
 5. Run subagents one after another. Run them in parallel only for read-only work or when their files are disjoint.
 6. Verify each result yourself (read the diff, run the relevant tests) before starting the next step. A subagent's
    report is a claim, not proof.
-7. Commit each independent change separately on your branch.
+7. Commit often on your branch: each independent change separately, each verified step as soon as it passes, and
+   any work in progress (as a `WIP:` commit) before you end a turn or wait on the hub. Never leave a turn with
+   uncommitted work; squash or reword before reporting if the history needs tidying.
 8. Finish with a report (below). Do not merge; the hub lands your branch.
 
 ## Model and effort
