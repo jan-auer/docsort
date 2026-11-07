@@ -19,7 +19,7 @@ public enum UndoConflictResolution: Sendable {
 }
 
 /// An item that was moved to the Trash, with what is needed to put it back.
-public struct TrashRecord: Hashable, Sendable {
+public struct TrashRecord: Codable, Hashable, Sendable {
   /// Where the item was before it went to the Trash.
   public let originalURL: URL
   /// Where the item is in the Trash.
@@ -33,7 +33,7 @@ public struct TrashRecord: Hashable, Sendable {
 }
 
 /// A completed move, with everything needed to undo it.
-public struct MoveRecord: Hashable, Sendable {
+public struct MoveRecord: Codable, Hashable, Sendable {
   /// Where the file was before the move.
   public let originalURL: URL
   /// Where the file is after the move.
