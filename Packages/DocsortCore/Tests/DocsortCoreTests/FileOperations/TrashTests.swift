@@ -69,7 +69,13 @@ struct TrashTests {
     #expect(try fixture.contents(of: file) == "scan")
   }
 
-  @Test("the system Trash takes a file and gives it back, leaving the Trash as it was")
+  // This test uses the user's real Trash, so it runs only on request:
+  // DOCSORT_TEST_SYSTEM_TRASH=1 swift test --package-path Packages/DocsortCore --filter systemTrashRoundTrip
+  @Test(
+    "the system Trash takes a file and gives it back, leaving the Trash as it was",
+    .enabled(
+      if: ProcessInfo.processInfo.environment["DOCSORT_TEST_SYSTEM_TRASH"] == "1",
+      "uses the user's real Trash; set DOCSORT_TEST_SYSTEM_TRASH=1 to run it"))
   func systemTrashRoundTrip() throws {
     let directory = try TemporaryDirectory()
     let file = try directory.createFile(
