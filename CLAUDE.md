@@ -21,6 +21,16 @@ how to use them.
 - App Sandbox is on (see `app-sandbox` in `docs/decisions.md`): read-write access to user-selected files via the
   `ENABLE_USER_SELECTED_FILES` build setting, app-scoped security bookmarks via `App/Docsort.entitlements`.
 
+## Core package
+
+- `Packages/DocsortCore` is organised by concern (`Settings`, `Inbox`, `Destinations`, `FileOperations`, `History`,
+  `Recents`, `Preferences`, `FileSystem`); the module doc in `DocsortCore.swift` lists what each holds.
+- Its one dependency is ordo-one/FuzzyMatch, pinned `exact: "1.4.0"` with `Package.resolved` committed (decision
+  `fuzzy-matching-library`). Ranking changes must keep `DestinationRankingTests` passing.
+- Test fixtures use invented names modelled on the real archive, never real folder or file names; generic category
+  words (Rechnungen, Versicherungen) may stay. Tests build file trees with `TemporaryDirectory` and set dates
+  explicitly instead of sleeping.
+
 ## Check Commands
 
 Run before declaring work done:
