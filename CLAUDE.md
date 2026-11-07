@@ -18,6 +18,8 @@ how to use them.
   `.accessibilityIdentifier` (kebab-case, e.g. `main-window`, `settings-window`).
 - Formatter and linter: the swift-format bundled with Xcode (`swift format`), default config, no `.swift-format` file.
 - Logging: `os.Logger` with subsystem `org.jauer.Docsort` (see `App/Loggers.swift`).
+- App Sandbox is on (see `app-sandbox` in `docs/decisions.md`): read-write access to user-selected files via the
+  `ENABLE_USER_SELECTED_FILES` build setting, app-scoped security bookmarks via `App/Docsort.entitlements`.
 
 ## Check Commands
 
