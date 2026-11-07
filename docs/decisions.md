@@ -22,6 +22,13 @@ need to share configuration.
 Prefer a mature fuzzy-matching library over writing one; whoever implements destination search researches the
 options and proposes one. Reason: user's guidance; matching quality is the CLI's best-liked feature.
 
+Chosen: ordo-one/FuzzyMatch 1.4.0 (Smith-Waterman mode), wrapped with query trimming, bonuses for whole and last
+path segments, a recent-destinations boost and an ue/ae/oe/ss → ü/ä/ö/ß fallback. The user's rule was "nucleo if it
+is significantly better for my use, otherwise FuzzyMatch". On 66 CLI-style queries over the real archive, nucleo put
+the target first 41 times and FuzzyMatch 38, and both found it in the top 10 about equally (49 vs 48). FuzzyMatch
+only misses low-scoring scattered-letter matches. Revisit with nucleo through a Rust static library (the user
+accepts a Rust toolchain) if ranking falls short in daily use. Test fixtures use made-up names close to the real ones.
+
 ## inbox-and-history-behaviour
 
 Settled from the user's first mockup review:
