@@ -1,0 +1,93 @@
+<div class="page">
+  <header class="intro">
+    <div>
+      <h1>docsort <span class="tag">Destination picker · two candidates</span></h1>
+      <p>Two candidates for choosing where a file goes. Try both with the same tasks.</p>
+      <div class="controls">
+        <div class="ctl-row">
+          <span class="ctl-label" id="candLabel">Candidate</span>
+          <div class="seg big" role="radiogroup" aria-labelledby="candLabel" id="candSeg">
+            <button type="button" role="radio" id="cand-A" data-act="cand" data-cand="A" aria-checked="true">A · Columns with filter</button>
+            <button type="button" role="radio" id="cand-B" data-act="cand" data-cand="B" aria-checked="false">B · Drill-down list</button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <span class="ctl-label" id="themeLabel">Appearance</span>
+          <div class="seg" role="radiogroup" aria-labelledby="themeLabel" id="themeSeg">
+            <button type="button" role="radio" id="theme-auto" data-act="theme" data-theme-choice="auto" aria-checked="true">Auto</button>
+            <button type="button" role="radio" id="theme-light" data-act="theme" data-theme-choice="light" aria-checked="false">Light</button>
+            <button type="button" role="radio" id="theme-dark" data-act="theme" data-theme-choice="dark" aria-checked="false">Dark</button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <span class="ctl-label">Start over</span>
+          <button type="button" class="page-btn" id="resetBtn" data-act="reset">Reset</button>
+          <span class="ctl-label" style="min-width:0">The picker starts focused; click the filter field if focus is elsewhere.</span>
+        </div>
+      </div>
+    </div>
+    <section class="tasks" aria-labelledby="tasksTitle">
+      <div class="tasks-h">
+        <h2 id="tasksTitle">Tasks</h2>
+        <span class="note">Run each in both candidates. A and B tick off when the chosen destination matches.</span>
+        <button type="button" class="page-btn quiet" id="clearTicksBtn" data-act="clear-ticks">Clear ticks</button>
+      </div>
+      <ol id="taskList"></ol>
+    </section>
+  </header>
+
+  <div class="stage-scroll">
+    <div class="stage" id="stage">
+      <div class="win" id="win" aria-label="docsort window, filing panel slice">
+        <div class="toolbar">
+          <div class="traffic" aria-hidden="true"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+          <span class="app">docsort</span><span class="inbox">Web-Downloads</span><span class="sep">›</span><span class="fname">Rechnung_NA-33-08812.pdf</span>
+          <span class="slice">Sidebar hidden in this slice</span>
+        </div>
+        <div class="content">
+          <section class="preview" id="preview" aria-label="Preview placeholder">
+            <div class="ghost-page" aria-hidden="true"><i class="h"></i><i class="s"></i><i class="m"></i><i></i><i class="gap"></i><i></i><i class="m"></i><i></i><i class="s"></i><i class="gap"></i><i class="m"></i><i></i><i class="s"></i></div>
+            <div class="pv-label">Preview stays visible · ≥ 560 pt<br>now <b id="pvWidth">760 pt</b> wide</div>
+          </section>
+          <aside class="panel" id="panel" aria-label="Filing panel">
+            <label class="pn-label" for="filterInput">Destination</label>
+            <div class="search" id="filterBox">
+              <svg class="mag" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.3 10.3l3.7 3.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span class="chip scope" id="scopeChip" hidden></span>
+              <button type="button" class="chip" id="tokenChip" data-act="token" tabindex="-1" hidden></button>
+              <input id="filterInput" type="text" autocomplete="off" spellcheck="false" placeholder="Search all folders" aria-controls="pickerBody" aria-autocomplete="list" aria-label="Destination filter">
+              <span class="count" id="matchCount" aria-live="polite" hidden></span>
+              <button type="button" class="clear" id="filterClear" data-act="clear" aria-label="Clear filter" tabindex="-1" hidden></button>
+            </div>
+            <div class="picker" id="picker">
+              <nav class="pathbar" id="pathBar" aria-label="Current folder" hidden></nav>
+              <div class="pk-body" id="pickerBody" role="listbox" aria-label="Destination folders"></div>
+              <div class="pk-bar">
+                <button type="button" class="pk-btn" id="newFolderBtn" data-act="newfolder" tabindex="-1"></button>
+                <span class="pk-hint" id="pickerHint"></span>
+              </div>
+            </div>
+            <div class="pn-label" id="contentsLabel"><span id="contentsIn">Folder contents</span><span class="contents-path" id="contentsPath"></span><span class="cnt" id="contentsCount"></span></div>
+            <div class="contents" id="contents" aria-label="Folder contents"></div>
+            <label class="pn-label" for="nameInput">Name</label>
+            <div class="namebox" id="nameBox">
+              <input id="nameInput" type="text" autocomplete="off" spellcheck="false" aria-label="File name without extension">
+              <button type="button" class="revert" id="revertBtn" data-act="revert" title="Revert to the original name (⇧⌘R)" aria-label="Revert to the original name" hidden></button>
+              <span class="ext" id="nameExt">.pdf</span>
+            </div>
+            <div class="notice" id="nameNotice" hidden></div>
+            <div class="pn-actions">
+              <span class="hint" id="moveHint"></span>
+              <button type="button" class="btn default" id="moveBtn" data-act="move">Move<span class="k">⌘↩</span></button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="below">
+    <p class="status" id="status" role="status" aria-live="polite"><span class="lbl">Status</span><span class="msg" id="statusMsg"></span></p>
+    <section class="legend" id="legend" aria-labelledby="legendTitle"></section>
+  </div>
+</div>

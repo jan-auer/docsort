@@ -1,0 +1,1794 @@
+<title>docsort Picker</title>
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --page-bg: #f5f5f7;
+  --fg: #1d1d1f;
+  --fg2: #6e6e73;
+  --card: #ffffff;
+  --card-border: rgba(0,0,0,0.08);
+  --code-bg: rgba(0,0,0,0.05);
+  --desk-1: #c9d6ea;
+  --desk-2: #e7d9e9;
+  --desk-3: #f1e4d3;
+  --window-bg: #ffffff;
+  --window-border: rgba(0,0,0,0.22);
+  --window-shadow: 0 24px 70px rgba(0,0,0,0.28), 0 6px 18px rgba(0,0,0,0.14);
+  --toolbar-bg: #fbfbfb;
+  --label: rgba(0,0,0,0.85);
+  --label2: rgba(0,0,0,0.50);
+  --label3: rgba(0,0,0,0.28);
+  --separator: rgba(0,0,0,0.10);
+  --separator-strong: rgba(0,0,0,0.16);
+  --control-bg: #ffffff;
+  --control-border: rgba(0,0,0,0.14);
+  --control-shadow: 0 0.5px 1.5px rgba(0,0,0,0.12);
+  --button-bg: #ffffff;
+  --button-hover: #f4f4f4;
+  --button-press: #e6e6e6;
+  --field-bg: #ffffff;
+  --search-bg: rgba(0,0,0,0.05);
+  --accent: #007aff;
+  --accent-hover: #0068da;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(0,122,255,0.12);
+  --focus-ring: rgba(0,122,255,0.45);
+  --sel-unfocused: rgba(0,0,0,0.09);
+  --hover-bg: rgba(0,0,0,0.04);
+  --preview-bg: #e6e6e9;
+  --paper: #ffffff;
+  --paper-bar: rgba(0,0,0,0.08);
+  --paper-bar-strong: rgba(0,0,0,0.16);
+  --paper-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.10);
+  --ghost-border: rgba(0,0,0,0.18);
+  --ficon-page: #ffffff;
+  --ficon-stroke: rgba(0,0,0,0.30);
+  --ficon-pdf: #e5483c;
+  --ficon-img: #2f8de4;
+  --ficon-folder: #4aa3f0;
+  --ficon-folder-tab: #3a8fdc;
+  --warn: #ff9500;
+  --warn-fg: #9a4f00;
+  --warn-bg: rgba(255,149,0,0.12);
+  --warn-row: rgba(255,149,0,0.20);
+  --success: #28a745;
+  --new-badge-bg: #34c759;
+  --new-badge-fg: #ffffff;
+  --tl-red: #ff5f57;
+  --tl-yellow: #febc2e;
+  --tl-green: #28c840;
+  --tl-border: rgba(0,0,0,0.12);
+  --kbd-bg: rgba(0,0,0,0.06);
+  --scroll-thumb: rgba(0,0,0,0.22);
+  --table-alt: rgba(0,0,0,0.025);
+  --taken-row: rgba(0,122,255,0.14);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page-bg: #161618;
+    --fg: #f5f5f7;
+    --fg2: #a1a1a6;
+    --card: #1f1f22;
+    --card-border: rgba(255,255,255,0.08);
+    --code-bg: rgba(255,255,255,0.08);
+    --desk-1: #1d2a44;
+    --desk-2: #3a2742;
+    --desk-3: #3f3022;
+    --window-bg: #1e1e1e;
+    --window-border: rgba(255,255,255,0.14);
+    --window-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 6px 18px rgba(0,0,0,0.4);
+    --toolbar-bg: #262626;
+    --label: rgba(255,255,255,0.86);
+    --label2: rgba(255,255,255,0.55);
+    --label3: rgba(255,255,255,0.28);
+    --separator: rgba(255,255,255,0.10);
+    --separator-strong: rgba(255,255,255,0.16);
+    --control-bg: rgba(255,255,255,0.06);
+    --control-border: rgba(255,255,255,0.14);
+    --control-shadow: 0 0.5px 1px rgba(0,0,0,0.4);
+    --button-bg: #5a5a5d;
+    --button-hover: #67676a;
+    --button-press: #77777a;
+    --field-bg: rgba(255,255,255,0.05);
+    --search-bg: rgba(255,255,255,0.07);
+    --accent: #0a84ff;
+    --accent-hover: #2b95ff;
+    --accent-fg: #ffffff;
+    --accent-soft: rgba(10,132,255,0.22);
+    --focus-ring: rgba(10,132,255,0.6);
+    --sel-unfocused: rgba(255,255,255,0.10);
+    --hover-bg: rgba(255,255,255,0.05);
+    --preview-bg: #2a2a2c;
+    --paper: #3a3a3c;
+    --paper-bar: rgba(255,255,255,0.08);
+    --paper-bar-strong: rgba(255,255,255,0.16);
+    --paper-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.35);
+    --ghost-border: rgba(255,255,255,0.18);
+    --ficon-page: #f2f2f2;
+    --ficon-stroke: rgba(0,0,0,0.45);
+    --warn: #ff9f0a;
+    --warn-fg: #ffb340;
+    --warn-bg: rgba(255,159,10,0.14);
+    --warn-row: rgba(255,159,10,0.24);
+    --success: #30d158;
+    --new-badge-bg: #30d158;
+    --tl-border: rgba(0,0,0,0.3);
+    --kbd-bg: rgba(255,255,255,0.10);
+    --scroll-thumb: rgba(255,255,255,0.25);
+    --table-alt: rgba(255,255,255,0.03);
+    --taken-row: rgba(10,132,255,0.26);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page-bg: #161618;
+  --fg: #f5f5f7;
+  --fg2: #a1a1a6;
+  --card: #1f1f22;
+  --card-border: rgba(255,255,255,0.08);
+  --code-bg: rgba(255,255,255,0.08);
+  --desk-1: #1d2a44;
+  --desk-2: #3a2742;
+  --desk-3: #3f3022;
+  --window-bg: #1e1e1e;
+  --window-border: rgba(255,255,255,0.14);
+  --window-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 6px 18px rgba(0,0,0,0.4);
+  --toolbar-bg: #262626;
+  --label: rgba(255,255,255,0.86);
+  --label2: rgba(255,255,255,0.55);
+  --label3: rgba(255,255,255,0.28);
+  --separator: rgba(255,255,255,0.10);
+  --separator-strong: rgba(255,255,255,0.16);
+  --control-bg: rgba(255,255,255,0.06);
+  --control-border: rgba(255,255,255,0.14);
+  --control-shadow: 0 0.5px 1px rgba(0,0,0,0.4);
+  --button-bg: #5a5a5d;
+  --button-hover: #67676a;
+  --button-press: #77777a;
+  --field-bg: rgba(255,255,255,0.05);
+  --search-bg: rgba(255,255,255,0.07);
+  --accent: #0a84ff;
+  --accent-hover: #2b95ff;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(10,132,255,0.22);
+  --focus-ring: rgba(10,132,255,0.6);
+  --sel-unfocused: rgba(255,255,255,0.10);
+  --hover-bg: rgba(255,255,255,0.05);
+  --preview-bg: #2a2a2c;
+  --paper: #3a3a3c;
+  --paper-bar: rgba(255,255,255,0.08);
+  --paper-bar-strong: rgba(255,255,255,0.16);
+  --paper-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.35);
+  --ghost-border: rgba(255,255,255,0.18);
+  --ficon-page: #f2f2f2;
+  --ficon-stroke: rgba(0,0,0,0.45);
+  --warn: #ff9f0a;
+  --warn-fg: #ffb340;
+  --warn-bg: rgba(255,159,10,0.14);
+  --warn-row: rgba(255,159,10,0.24);
+  --success: #30d158;
+  --new-badge-bg: #30d158;
+  --tl-border: rgba(0,0,0,0.3);
+  --kbd-bg: rgba(255,255,255,0.10);
+  --scroll-thumb: rgba(255,255,255,0.25);
+  --table-alt: rgba(255,255,255,0.03);
+  --taken-row: rgba(10,132,255,0.26);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--page-bg);
+  color: var(--fg);
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+button, input { font: inherit; color: inherit; }
+kbd {
+  font-family: inherit; font-size: 11px; background: var(--kbd-bg); border-radius: 4px;
+  padding: 1px 5px; white-space: nowrap;
+}
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: var(--code-bg); border-radius: 4px; padding: 1px 4px; }
+
+/* ---------- Header ---------- */
+.intro {
+  max-width: 1148px; margin: 0 auto 18px; display: grid; gap: 16px 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+.intro h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+.intro h1 .tag { font-size: 12px; font-weight: 500; color: var(--fg2); margin-left: 6px; vertical-align: middle; }
+.intro p { margin: 0 0 14px; line-height: 1.45; color: var(--fg2); font-size: 14px; max-width: 60ch; }
+.controls { display: flex; flex-direction: column; gap: 10px; }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.ctl-label { font-size: 12px; color: var(--fg2); min-width: 74px; }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--search-bg); border-radius: 7px; padding: 2px; gap: 2px; }
+.seg button {
+  border: 0; background: transparent; padding: 3px 10px; border-radius: 5px; font-size: 12px; cursor: default;
+  color: var(--fg);
+}
+.seg.big button { font-size: 13px; padding: 4px 14px; }
+.seg button[aria-checked="true"] { background: var(--control-bg); box-shadow: var(--control-shadow), 0 0 0 0.5px var(--control-border); font-weight: 600; }
+.seg button:focus-visible, .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.page-btn {
+  border: 0.5px solid var(--control-border); background: var(--button-bg); border-radius: 6px; padding: 3px 12px;
+  font-size: 12px; box-shadow: var(--control-shadow); cursor: default;
+}
+.page-btn:hover { background: var(--button-hover); }
+.page-btn:active { background: var(--button-press); }
+.page-btn.quiet { border: 0; box-shadow: none; background: transparent; color: var(--fg2); padding: 3px 6px; }
+.tasks { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 16px; }
+.tasks-h { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.tasks-h h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.tasks-h .note { font-size: 12px; color: var(--fg2); flex: 1; min-width: 180px; }
+.tasks ol { margin: 0; padding-left: 20px; line-height: 1.5; }
+.tasks li { margin: 2px 0; }
+.tasks li .tt { display: inline; }
+.ticks { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: 1px; }
+.tick {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 16px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; color: var(--label3); box-shadow: inset 0 0 0 1px var(--control-border);
+}
+.tick.done { background: var(--success); color: var(--accent-fg); box-shadow: none; }
+@media (max-width: 860px) {
+  .intro { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- Stage ---------- */
+.stage-scroll { overflow-x: auto; overflow-y: hidden; max-width: 1148px; margin: 0 auto; border-radius: 14px; }
+.stage {
+  width: 1148px; padding: 24px; border-radius: 14px;
+  background:
+    radial-gradient(1000px 500px at 10% 0%, var(--desk-1), transparent 70%),
+    radial-gradient(800px 600px at 100% 30%, var(--desk-2), transparent 70%),
+    linear-gradient(160deg, var(--desk-1), var(--desk-3));
+}
+.win {
+  position: relative; width: 1100px; height: 700px; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+  background: var(--window-bg); box-shadow: var(--window-shadow), 0 0 0 0.5px var(--window-border);
+  color: var(--label); user-select: none; -webkit-user-select: none;
+}
+.toolbar {
+  height: 44px; flex: 0 0 44px; display: flex; align-items: center; gap: 6px; padding: 0 16px;
+  background: var(--toolbar-bg); border-bottom: 0.5px solid var(--separator-strong); white-space: nowrap; overflow: hidden;
+}
+.traffic { display: flex; gap: 8px; margin-right: 14px; }
+.traffic span { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px var(--tl-border); }
+.traffic .r { background: var(--tl-red); } .traffic .y { background: var(--tl-yellow); } .traffic .g { background: var(--tl-green); }
+.toolbar .app { font-weight: 700; font-size: 15px; margin-right: 8px; }
+.toolbar .inbox { color: var(--label2); }
+.toolbar .sep { color: var(--label3); }
+.toolbar .fname { font-weight: 600; }
+.toolbar .slice { margin-left: auto; font-size: 11px; color: var(--label3); }
+.content { flex: 1; min-height: 0; display: flex; }
+
+/* ---------- Ghost preview ---------- */
+.preview {
+  flex: 1; min-width: 0; background: var(--preview-bg); position: relative; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; overflow: hidden;
+}
+.ghost-page {
+  width: min(380px, 70%); aspect-ratio: 210 / 297; max-height: 72%; background: var(--paper); box-shadow: var(--paper-shadow);
+  padding: 8% 9%; display: flex; flex-direction: column; gap: 9px; opacity: 0.85;
+}
+.ghost-page i { display: block; height: 7px; border-radius: 3px; background: var(--paper-bar); }
+.ghost-page i.h { height: 14px; width: 45%; background: var(--paper-bar-strong); margin-bottom: 10px; }
+.ghost-page i.s { width: 62%; } .ghost-page i.m { width: 80%; } .ghost-page i.gap { margin-top: 14px; }
+.pv-label {
+  font-size: 12px; color: var(--label2); text-align: center; line-height: 1.5; padding: 4px 12px; border-radius: 6px;
+  border: 1px dashed var(--ghost-border);
+}
+.pv-label b { color: var(--label); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- Filing panel ---------- */
+.panel {
+  width: 340px; flex: 0 0 auto; display: flex; flex-direction: column; border-left: 0.5px solid var(--separator-strong);
+  background: var(--window-bg); padding: 12px 14px; gap: 6px; min-height: 0; position: relative;
+  transition: width .2s ease;
+}
+.panel.wide { width: 520px; }
+.pn-label { font-size: 11px; font-weight: 600; color: var(--label2); display: flex; align-items: baseline; gap: 6px; margin-top: 4px; white-space: nowrap; }
+.pn-label .cnt { margin-left: auto; font-weight: 400; flex: 0 0 auto; }
+.pn-label .contents-path { font-weight: 400; color: var(--label); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.search {
+  display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 6px 0 8px; border-radius: 7px; background: var(--search-bg);
+  box-shadow: inset 0 0 0 0.5px var(--control-border); cursor: text; flex: 0 0 auto; min-width: 0;
+}
+.search:focus-within { box-shadow: 0 0 0 3.5px var(--focus-ring), inset 0 0 0 1px var(--accent); background: var(--field-bg); }
+.search svg.mag { width: 14px; height: 14px; color: var(--label2); flex: 0 0 auto; }
+.search input { flex: 1; min-width: 40px; border: 0; background: transparent; outline: none; height: 100%; font-size: 13px; padding: 0; }
+.search input::placeholder { color: var(--label3); }
+.search .count { font-size: 11px; color: var(--label2); flex: 0 0 auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.search .clear { border: 0; background: transparent; color: var(--label3); width: 18px; height: 18px; padding: 0; display: inline-flex; cursor: default; flex: 0 0 auto; }
+.search .clear svg { width: 15px; height: 15px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; height: 20px; padding: 0 7px; border-radius: 5px;
+  background: var(--accent-soft); color: var(--label); font-size: 12px; white-space: nowrap; overflow: hidden; flex: 0 1 auto; min-width: 0;
+  border: 0; cursor: default;
+}
+.chip .t { overflow: hidden; text-overflow: ellipsis; }
+.chip.scope { background: var(--sel-unfocused); color: var(--label2); flex: 0 0 auto; }
+.badge-new { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: var(--new-badge-bg); color: var(--new-badge-fg); border-radius: 4px; padding: 1px 4px; flex: 0 0 auto; }
+
+/* picker box */
+.picker {
+  flex: 1 1 0; min-height: 160px; display: flex; flex-direction: column; border-radius: 7px; overflow: hidden;
+  box-shadow: inset 0 0 0 0.5px var(--control-border); background: var(--control-bg);
+}
+.pathbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 1px; padding: 4px 6px; border-bottom: 0.5px solid var(--separator);
+  overflow-x: auto; white-space: nowrap; font-size: 12px; scrollbar-width: none;
+}
+.pathbar::-webkit-scrollbar { display: none; }
+.pathbar .crumb { border: 0; background: transparent; padding: 1px 5px; border-radius: 4px; color: var(--label2); cursor: default; flex: 0 0 auto; }
+.pathbar .crumb:hover { background: var(--hover-bg); color: var(--label); }
+.pathbar .crumb.cur { color: var(--label); font-weight: 600; }
+.pathbar .crumb:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+.pathbar .sep { color: var(--label3); font-size: 11px; flex: 0 0 auto; }
+.pk-body { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.pk-bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 4px; border-top: 0.5px solid var(--separator);
+  background: var(--toolbar-bg);
+}
+.pk-btn {
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border: 0; border-radius: 5px; background: transparent;
+  color: var(--label); font-size: 12px; cursor: default; white-space: nowrap;
+}
+.pk-btn svg { width: 16px; height: 13px; color: var(--label2); }
+.pk-btn:hover { background: var(--hover-bg); }
+.pk-btn:active { background: var(--sel-unfocused); }
+.pk-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+.pk-hint { margin-left: auto; font-size: 11px; color: var(--label3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 4px; }
+
+/* candidate B: list */
+.list { flex: 1; overflow-y: auto; padding: 4px; }
+.res-h { font-size: 11px; font-weight: 600; color: var(--label2); padding: 6px 6px 3px; display: flex; gap: 6px; }
+.res {
+  display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 2px 4px 2px 6px; border-radius: 5px; cursor: default; white-space: nowrap; overflow: hidden;
+}
+.res .fold, .crow .fold, .nf-row .fold { width: 15px; height: 13px; flex: 0 0 15px; }
+.res .rt { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.par { color: var(--label2); }
+.last { color: var(--label); }
+.res b, .crow b { font-weight: 700; }
+.par b { color: var(--label); }
+.res:hover, .crow:hover { background: var(--hover-bg); }
+.res.hl { background: var(--sel-unfocused); }
+.win.pk-focus .res.hl { background: var(--accent); color: var(--accent-fg); }
+.win.pk-focus .res.hl .par, .win.pk-focus .res.hl .last, .win.pk-focus .res.hl .par b, .win.pk-focus .res.hl .into { color: var(--accent-fg); }
+.into {
+  flex: 0 0 auto; width: 20px; height: 18px; border: 0; padding: 0; border-radius: 4px; background: transparent; color: var(--label3);
+  display: inline-flex; align-items: center; justify-content: center; cursor: default;
+}
+.into svg { width: 11px; height: 11px; }
+.into:hover { background: var(--sel-unfocused); color: var(--label); }
+.chev { flex: 0 0 auto; width: 10px; height: 10px; color: var(--label3); display: inline-flex; }
+.chev svg { width: 10px; height: 10px; }
+.create { color: var(--accent); }
+.create svg.plus { width: 13px; height: 13px; flex: 0 0 13px; }
+.win.pk-focus .create.hl { color: var(--accent-fg); }
+.res-empty { color: var(--label2); padding: 10px 8px; font-size: 12px; line-height: 1.4; }
+
+/* candidate A: columns */
+.cols { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; }
+.col { flex: 0 0 163px; width: 163px; overflow-y: auto; overflow-x: hidden; padding: 3px; border-right: 0.5px solid var(--separator); }
+.col:last-child { border-right: 0; }
+.col-h { font-size: 10.5px; font-weight: 600; color: var(--label2); padding: 5px 5px 2px; text-transform: none; }
+.crow {
+  display: flex; align-items: center; gap: 5px; min-height: 22px; padding: 1px 4px 1px 5px; border-radius: 4px; cursor: default; white-space: nowrap; overflow: hidden;
+}
+.crow .rt { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.crow.two { min-height: 32px; align-items: center; }
+.crow.two .rt { display: flex; flex-direction: column; line-height: 1.2; }
+.crow.two .sub { font-size: 10.5px; color: var(--label2); overflow: hidden; text-overflow: ellipsis; }
+.crow.dim .rt { color: var(--label3); }
+.crow.sel { background: var(--sel-unfocused); }
+.win.pk-focus .crow.sel.hl { background: var(--accent); color: var(--accent-fg); }
+.win.pk-focus .crow.sel.hl .rt, .win.pk-focus .crow.sel.hl .sub, .win.pk-focus .crow.sel.hl .chev { color: var(--accent-fg); }
+.cols-empty { padding: 10px; }
+
+/* new-folder row */
+.nf-row { margin: 2px 0 4px; padding: 6px 6px 7px; border-radius: 6px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 4px; }
+.nf-row .nf-line { display: flex; align-items: center; gap: 5px; }
+.nf-row input {
+  flex: 1; min-width: 0; height: 22px; border-radius: 4px; border: 0; background: var(--field-bg); box-shadow: inset 0 0 0 0.5px var(--control-border);
+  padding: 0 6px; outline: none; font-size: 12.5px;
+}
+.nf-row input:focus { box-shadow: 0 0 0 3px var(--focus-ring), inset 0 0 0 1px var(--accent); }
+.nf-row .nf-note { font-size: 10.5px; line-height: 1.35; color: var(--label2); white-space: normal; }
+.nf-row .nf-note.warn { color: var(--warn-fg); }
+
+/* folder contents */
+.contents { position: relative; flex: 0 0 132px; overflow-y: auto; border-radius: 7px; box-shadow: inset 0 0 0 0.5px var(--control-border); padding: 3px 4px; background: var(--control-bg); }
+.ct { display: flex; align-items: center; gap: 7px; height: 22px; padding: 0 6px; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; color: var(--label); cursor: default; }
+.ct:nth-child(even) { background: var(--table-alt); }
+.ct:hover { background: var(--hover-bg); }
+.ct .ficon { transform: scale(0.8); }
+.ct .tn { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.ct.taken { background: var(--taken-row) !important; }
+.ct.conflict { background: var(--warn-row) !important; font-weight: 600; }
+.ct-empty { color: var(--label3); font-size: 12px; padding: 8px 6px; line-height: 1.4; }
+
+/* name */
+.namebox {
+  display: flex; align-items: center; height: 28px; border-radius: 6px; background: var(--field-bg); flex: 0 0 auto; gap: 4px;
+  box-shadow: inset 0 0 0 0.5px var(--control-border), var(--control-shadow); padding: 0 8px; cursor: text;
+}
+.namebox:focus-within { box-shadow: 0 0 0 3.5px var(--focus-ring), inset 0 0 0 1px var(--accent); }
+.namebox input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; height: 100%; font-size: 13px; padding: 0; }
+.namebox .ext { color: var(--label2); flex: 0 0 auto; }
+.revert {
+  flex: 0 0 auto; width: 18px; height: 18px; border: 0; border-radius: 50%; padding: 0; background: var(--sel-unfocused); color: var(--label2);
+  display: inline-flex; align-items: center; justify-content: center; cursor: default;
+}
+.revert svg { width: 11px; height: 11px; }
+.revert:hover { color: var(--label); }
+.revert:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+.notice { font-size: 12px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; display: flex; gap: 6px; align-items: flex-start; flex: 0 0 auto; }
+.notice svg { width: 14px; height: 14px; flex: 0 0 14px; margin-top: 1px; }
+.notice.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.notice.warn svg { color: var(--warn); }
+.notice.info { background: var(--sel-unfocused); color: var(--label); }
+.pn-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 2px; flex: 0 0 auto; }
+.pn-actions .hint { font-size: 11px; color: var(--label3); margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.btn {
+  height: 28px; padding: 0 16px; border-radius: 6px; border: 0; background: var(--button-bg); color: var(--label);
+  box-shadow: var(--control-shadow), 0 0 0 0.5px var(--control-border); font-size: 13px; cursor: default; white-space: nowrap;
+}
+.btn.default { background: var(--accent); color: var(--accent-fg); box-shadow: var(--control-shadow); }
+.btn.default:hover:not(:disabled) { background: var(--accent-hover); }
+.btn:disabled { opacity: 0.4; }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3.5px var(--focus-ring); }
+.btn .k { opacity: 0.75; margin-left: 4px; font-size: 11.5px; }
+
+/* file icons */
+.ficon { width: 15px; height: 19px; display: inline-block; flex: 0 0 auto; }
+.ficon svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- Status and legend ---------- */
+.below { max-width: 1148px; margin: 12px auto 0; display: flex; flex-direction: column; gap: 10px; }
+.status {
+  margin: 0; min-height: 34px; display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 8px;
+  background: var(--card); border: 1px solid var(--card-border); font-size: 13px; color: var(--fg);
+}
+.status .lbl { font-size: 11px; font-weight: 600; color: var(--fg2); flex: 0 0 auto; }
+.status .msg { min-width: 0; overflow-wrap: anywhere; }
+.status.flash .msg { animation: flash .5s ease-out; }
+@keyframes flash { from { opacity: 0.2; } to { opacity: 1; } }
+.legend { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 16px 12px; }
+.legend h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.legend h2 span { font-weight: 400; color: var(--fg2); font-size: 12px; margin-left: 6px; }
+.legend .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 3px 22px; }
+.legend .kr { display: flex; gap: 10px; font-size: 12px; padding: 2px 0; border-bottom: 0.5px solid var(--separator); }
+.legend .kr .keys { flex: 0 0 112px; color: var(--fg); }
+.legend .kr .what { color: var(--fg2); flex: 1; }
+.legend .kr .keys kbd { margin-right: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { transition: none; }
+  .cols { scroll-behavior: auto; }
+  .status.flash .msg { animation: none; }
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+</style>
+<div class="page">
+  <header class="intro">
+    <div>
+      <h1>docsort <span class="tag">Destination picker · two candidates</span></h1>
+      <p>Two candidates for choosing where a file goes. Try both with the same tasks.</p>
+      <div class="controls">
+        <div class="ctl-row">
+          <span class="ctl-label" id="candLabel">Candidate</span>
+          <div class="seg big" role="radiogroup" aria-labelledby="candLabel" id="candSeg">
+            <button type="button" role="radio" id="cand-A" data-act="cand" data-cand="A" aria-checked="true">A · Columns with filter</button>
+            <button type="button" role="radio" id="cand-B" data-act="cand" data-cand="B" aria-checked="false">B · Drill-down list</button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <span class="ctl-label" id="themeLabel">Appearance</span>
+          <div class="seg" role="radiogroup" aria-labelledby="themeLabel" id="themeSeg">
+            <button type="button" role="radio" id="theme-auto" data-act="theme" data-theme-choice="auto" aria-checked="true">Auto</button>
+            <button type="button" role="radio" id="theme-light" data-act="theme" data-theme-choice="light" aria-checked="false">Light</button>
+            <button type="button" role="radio" id="theme-dark" data-act="theme" data-theme-choice="dark" aria-checked="false">Dark</button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <span class="ctl-label">Start over</span>
+          <button type="button" class="page-btn" id="resetBtn" data-act="reset">Reset</button>
+          <span class="ctl-label" style="min-width:0">The picker starts focused; click the filter field if focus is elsewhere.</span>
+        </div>
+      </div>
+    </div>
+    <section class="tasks" aria-labelledby="tasksTitle">
+      <div class="tasks-h">
+        <h2 id="tasksTitle">Tasks</h2>
+        <span class="note">Run each in both candidates. A and B tick off when the chosen destination matches.</span>
+        <button type="button" class="page-btn quiet" id="clearTicksBtn" data-act="clear-ticks">Clear ticks</button>
+      </div>
+      <ol id="taskList"></ol>
+    </section>
+  </header>
+
+  <div class="stage-scroll">
+    <div class="stage" id="stage">
+      <div class="win" id="win" aria-label="docsort window, filing panel slice">
+        <div class="toolbar">
+          <div class="traffic" aria-hidden="true"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+          <span class="app">docsort</span><span class="inbox">Web-Downloads</span><span class="sep">›</span><span class="fname">Rechnung_NA-33-08812.pdf</span>
+          <span class="slice">Sidebar hidden in this slice</span>
+        </div>
+        <div class="content">
+          <section class="preview" id="preview" aria-label="Preview placeholder">
+            <div class="ghost-page" aria-hidden="true"><i class="h"></i><i class="s"></i><i class="m"></i><i></i><i class="gap"></i><i></i><i class="m"></i><i></i><i class="s"></i><i class="gap"></i><i class="m"></i><i></i><i class="s"></i></div>
+            <div class="pv-label">Preview stays visible · ≥ 560 pt<br>now <b id="pvWidth">760 pt</b> wide</div>
+          </section>
+          <aside class="panel" id="panel" aria-label="Filing panel">
+            <label class="pn-label" for="filterInput">Destination</label>
+            <div class="search" id="filterBox">
+              <svg class="mag" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.3 10.3l3.7 3.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span class="chip scope" id="scopeChip" hidden></span>
+              <button type="button" class="chip" id="tokenChip" data-act="token" tabindex="-1" hidden></button>
+              <input id="filterInput" type="text" autocomplete="off" spellcheck="false" placeholder="Search all folders" aria-controls="pickerBody" aria-autocomplete="list" aria-label="Destination filter">
+              <span class="count" id="matchCount" aria-live="polite" hidden></span>
+              <button type="button" class="clear" id="filterClear" data-act="clear" aria-label="Clear filter" tabindex="-1" hidden></button>
+            </div>
+            <div class="picker" id="picker">
+              <nav class="pathbar" id="pathBar" aria-label="Current folder" hidden></nav>
+              <div class="pk-body" id="pickerBody" role="listbox" aria-label="Destination folders"></div>
+              <div class="pk-bar">
+                <button type="button" class="pk-btn" id="newFolderBtn" data-act="newfolder" tabindex="-1"></button>
+                <span class="pk-hint" id="pickerHint"></span>
+              </div>
+            </div>
+            <div class="pn-label" id="contentsLabel"><span id="contentsIn">Folder contents</span><span class="contents-path" id="contentsPath"></span><span class="cnt" id="contentsCount"></span></div>
+            <div class="contents" id="contents" aria-label="Folder contents"></div>
+            <label class="pn-label" for="nameInput">Name</label>
+            <div class="namebox" id="nameBox">
+              <input id="nameInput" type="text" autocomplete="off" spellcheck="false" aria-label="File name without extension">
+              <button type="button" class="revert" id="revertBtn" data-act="revert" title="Revert to the original name (⇧⌘R)" aria-label="Revert to the original name" hidden></button>
+              <span class="ext" id="nameExt">.pdf</span>
+            </div>
+            <div class="notice" id="nameNotice" hidden></div>
+            <div class="pn-actions">
+              <span class="hint" id="moveHint"></span>
+              <button type="button" class="btn default" id="moveBtn" data-act="move">Move<span class="k">⌘↩</span></button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="below">
+    <p class="status" id="status" role="status" aria-live="polite"><span class="lbl">Status</span><span class="msg" id="statusMsg"></span></p>
+    <section class="legend" id="legend" aria-labelledby="legendTitle"></section>
+  </div>
+</div>
+<script>
+const FOLDERS = ["! Abgeschlossen","! Abgeschlossen/Alte Wohnung Seegasse bis 2031","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Kaution","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Mietvertrag","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Übergabeprotokoll","! Abgeschlossen/Auto verkauft 2031","! Abgeschlossen/Auto verkauft 2031/Abmeldung","! Abgeschlossen/Auto verkauft 2031/Kaufvertrag Verkauf","! Abgeschlossen/Auto verkauft 2031/Versicherung Kündigung","! Abgeschlossen/Dienst Vermessungsamt bis 2032","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Dienstreisen","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2031","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2032","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2033","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Personalakt Kopien","! Abgeschlossen/Girokonto Hausbank bis 2031","! Abgeschlossen/Handyvertrag alt","! Abgeschlossen/Matura Matthias 2031","Ahnenforschung","Ahnenforschung/Anfragen Archive","Ahnenforschung/Anfragen Archive/Landesarchiv","Ahnenforschung/Anfragen Archive/Pfarre St. Ägidius","Ahnenforschung/Anfragen Archive/Stadtarchiv Wettelau","Ahnenforschung/Fahrten zu Ahnenorten","Ahnenforschung/Fahrten zu Ahnenorten/2032-08 Pfarrarchiv Kirchberg","Ahnenforschung/Fahrten zu Ahnenorten/2033-04 Friedhof Oberau","Ahnenforschung/Familie Gruber","Ahnenforschung/Familie Gruber/Briefe","Ahnenforschung/Familie Gruber/Fotos","Ahnenforschung/Familie Gruber/Pfarrmatriken","Ahnenforschung/Familie Hollerer","Ahnenforschung/Familie Hollerer/Fotos","Ahnenforschung/Familie Hollerer/Pfarrmatriken","Ahnenforschung/Familie Strassl","Ahnenforschung/Familie Strassl/Briefe","Ahnenforschung/Familie Strassl/Fotos","Ahnenforschung/Familie Strassl/Pfarrmatriken","Ahnenforschung/Familie Weißenbacher","Ahnenforschung/Familie Weißenbacher/Briefe","Ahnenforschung/Familie Weißenbacher/Fotos","Ahnenforschung/Familie Weißenbacher/Pfarrmatriken","Ahnenforschung/Stammbaum","Ahnenforschung/Stammbaum/Druckfassung","Ahnenforschung/Stammbaum/Entwürfe","Arbeit Margit","Arbeit Margit/Betriebsrat","Arbeit Margit/Dienstreisen & Exkursionen","Arbeit Margit/Dienstreisen & Exkursionen/2032","Arbeit Margit/Dienstreisen & Exkursionen/2033","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld/Lehrverpflichtung","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld/Nachträge","Arbeit Margit/Fortbildungen","Arbeit Margit/Fortbildungen/2031-11 Stimmbildung mit Kindern","Arbeit Margit/Fortbildungen/2032-04 Chorleitung Grundkurs","Arbeit Margit/Fortbildungen/2032-10 Rhythmik Werkstatt","Arbeit Margit/Fortbildungen/2033-03 Tagung Musikpädagogik","Arbeit Margit/Fortbildungen/2033-08 Sommerakademie Blockflöte","Arbeit Margit/Gehaltszettel","Arbeit Margit/Gehaltszettel/2031","Arbeit Margit/Gehaltszettel/2032","Arbeit Margit/Gehaltszettel/2033","Arbeit Margit/Jahreslohnzettel","Arbeit Margit/Jahreslohnzettel/2031","Arbeit Margit/Jahreslohnzettel/2032","Arbeit Margit/Jahreslohnzettel/2033","Arbeit Margit/Konzerte & Vorspiele","Arbeit Margit/Konzerte & Vorspiele/2031-12 Adventvorspiel","Arbeit Margit/Konzerte & Vorspiele/2032-06 Schlusskonzert","Arbeit Margit/Konzerte & Vorspiele/2032-12 Adventvorspiel","Arbeit Margit/Konzerte & Vorspiele/2033-06 Schlusskonzert","Arbeit Margit/Schule Mitteilungen","Arbeit Margit/Schule Mitteilungen/2031","Arbeit Margit/Schule Mitteilungen/2032","Arbeit Margit/Schule Mitteilungen/2033","Arbeit Margit/Stundenpläne","Arbeit Margit/Stundenpläne/Schuljahr 2031-32","Arbeit Margit/Stundenpläne/Schuljahr 2032-33","Arbeit Margit/Stundenpläne/Schuljahr ab Herbst 2033","Bank & Geld","Bank & Geld/Girokonto Bürgerbank","Bank & Geld/Girokonto Bürgerbank/2031-Q1","Bank & Geld/Girokonto Bürgerbank/2031-Q2","Bank & Geld/Girokonto Bürgerbank/2031-Q3","Bank & Geld/Girokonto Bürgerbank/2031-Q4","Bank & Geld/Girokonto Bürgerbank/2032-Q1","Bank & Geld/Girokonto Bürgerbank/2032-Q2","Bank & Geld/Girokonto Bürgerbank/2032-Q3","Bank & Geld/Girokonto Bürgerbank/2032-Q4","Bank & Geld/Girokonto Bürgerbank/2033-Q1","Bank & Geld/Girokonto Bürgerbank/2033-Q2","Bank & Geld/Girokonto Bürgerbank/2033-Q3","Bank & Geld/Girokonto Bürgerbank/2033-Q4","Bank & Geld/Girokonto Bürgerbank/Daueraufträge","Bank & Geld/Girokonto Bürgerbank/Kontovertrag & Karten","Bank & Geld/Girokonto Bürgerbank/Online-Banking","Bank & Geld/Haushaltsbuch","Bank & Geld/Haushaltsbuch/2031","Bank & Geld/Haushaltsbuch/2031/2031-Q1","Bank & Geld/Haushaltsbuch/2031/2031-Q2","Bank & Geld/Haushaltsbuch/2031/2031-Q3","Bank & Geld/Haushaltsbuch/2031/2031-Q4","Bank & Geld/Haushaltsbuch/2032","Bank & Geld/Haushaltsbuch/2032/2032-Q1","Bank & Geld/Haushaltsbuch/2032/2032-Q2","Bank & Geld/Haushaltsbuch/2032/2032-Q3","Bank & Geld/Haushaltsbuch/2032/2032-Q4","Bank & Geld/Haushaltsbuch/2033","Bank & Geld/Haushaltsbuch/2033/2033-Q1","Bank & Geld/Haushaltsbuch/2033/2033-Q2","Bank & Geld/Haushaltsbuch/2033/2033-Q3","Bank & Geld/Haushaltsbuch/2033/2033-Q4","Bank & Geld/Kreditkarte","Bank & Geld/Kreditkarte/2031","Bank & Geld/Kreditkarte/2031/2031-Q1","Bank & Geld/Kreditkarte/2031/2031-Q2","Bank & Geld/Kreditkarte/2031/2031-Q3","Bank & Geld/Kreditkarte/2031/2031-Q4","Bank & Geld/Kreditkarte/2032","Bank & Geld/Kreditkarte/2032/2032-Q1","Bank & Geld/Kreditkarte/2032/2032-Q2","Bank & Geld/Kreditkarte/2032/2032-Q3","Bank & Geld/Kreditkarte/2032/2032-Q4","Bank & Geld/Kreditkarte/2033","Bank & Geld/Kreditkarte/2033/2033-Q1","Bank & Geld/Kreditkarte/2033/2033-Q2","Bank & Geld/Kreditkarte/2033/2033-Q3","Bank & Geld/Kreditkarte/2033/2033-Q4","Bank & Geld/Kreditkarte/Kartenvertrag","Bank & Geld/Notgroschen Tagesgeld","Bank & Geld/Notgroschen Tagesgeld/Vertrag","Bank & Geld/Notgroschen Tagesgeld/Zinsmitteilungen","Bank & Geld/Sparbuch Bürgerbank","Bank & Geld/Sparbuch Bürgerbank/2031","Bank & Geld/Sparbuch Bürgerbank/2032","Bank & Geld/Sparbuch Bürgerbank/2033","Bank & Geld/Überweisungen Matthias","Bank & Geld/Überweisungen Matthias/2031","Bank & Geld/Überweisungen Matthias/2032","Bank & Geld/Überweisungen Matthias/2033","Chor Liederkranz","Chor Liederkranz/Chorreisen","Chor Liederkranz/Chorreisen/2032-09 Chorreise Seetal","Chor Liederkranz/Chorreisen/2033-09 Chorfest Hochalm","Chor Liederkranz/Chronik","Chor Liederkranz/Chronik/Entwürfe","Chor Liederkranz/Chronik/Fotos","Chor Liederkranz/Chronik/Zeitungsberichte","Chor Liederkranz/Förderungen Gemeinde","Chor Liederkranz/Förderungen Gemeinde/2031","Chor Liederkranz/Förderungen Gemeinde/2032","Chor Liederkranz/Förderungen Gemeinde/2033","Chor Liederkranz/Kassa","Chor Liederkranz/Kassa/2031","Chor Liederkranz/Kassa/2032","Chor Liederkranz/Kassa/2033","Chor Liederkranz/Kassa/Kassabuch","Chor Liederkranz/Kassa/Kassaprüfung","Chor Liederkranz/Kassa/Kassaprüfung/2031","Chor Liederkranz/Kassa/Kassaprüfung/2032","Chor Liederkranz/Kassa/Kassaprüfung/2033","Chor Liederkranz/Konzerte","Chor Liederkranz/Konzerte/2031-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2031-12 Adventsingen","Chor Liederkranz/Konzerte/2032-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2032-12 Adventsingen","Chor Liederkranz/Konzerte/2033-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2033-12 Adventsingen","Chor Liederkranz/Mitgliedschaft","Chor Liederkranz/Noten","Chor Liederkranz/Probenpläne","Chor Liederkranz/Probenpläne/2031","Chor Liederkranz/Probenpläne/2032","Chor Liederkranz/Probenpläne/2033","Chor Liederkranz/Vorstand & Protokolle","Chor Liederkranz/Vorstand & Protokolle/2031","Chor Liederkranz/Vorstand & Protokolle/2032","Chor Liederkranz/Vorstand & Protokolle/2033","Dokumente & Ausweise","Dokumente & Ausweise/Heiratsurkunde","Dokumente & Ausweise/Konrad","Dokumente & Ausweise/Konrad/Führerschein","Dokumente & Ausweise/Konrad/Geburtsurkunde","Dokumente & Ausweise/Konrad/Personalausweis","Dokumente & Ausweise/Konrad/Reisepass","Dokumente & Ausweise/Konrad/Staatsbürgerschaftsnachweis","Dokumente & Ausweise/Margit","Dokumente & Ausweise/Margit/Führerschein","Dokumente & Ausweise/Margit/Geburtsurkunde","Dokumente & Ausweise/Margit/Personalausweis","Dokumente & Ausweise/Margit/Reisepass","Dokumente & Ausweise/Margit/Staatsbürgerschaftsnachweis","Dokumente & Ausweise/Meldezettel","Dokumente & Ausweise/Testament & Verfügungen","Dokumente & Ausweise/Vorsorgevollmacht","Dokumente & Ausweise/Wahlkarten","Dokumente & Ausweise/Wahlkarten/2031","Dokumente & Ausweise/Wahlkarten/2032","Dokumente & Ausweise/Wahlkarten/2033","Einkäufe & Garantien","Einkäufe & Garantien/Elektronik","Einkäufe & Garantien/Elektronik/Drucker & Scanner","Einkäufe & Garantien/Elektronik/Fernseher","Einkäufe & Garantien/Elektronik/Kopfhörer","Einkäufe & Garantien/Elektronik/Laptop Konrad","Einkäufe & Garantien/Elektronik/Tablet Margit","Einkäufe & Garantien/Geschenke","Einkäufe & Garantien/Geschenke/2031","Einkäufe & Garantien/Geschenke/2032","Einkäufe & Garantien/Geschenke/2033","Einkäufe & Garantien/Haushaltsgeräte","Einkäufe & Garantien/Haushaltsgeräte/Bügeleisen","Einkäufe & Garantien/Haushaltsgeräte/Kaffeemaschine","Einkäufe & Garantien/Haushaltsgeräte/Kühlschrank","Einkäufe & Garantien/Haushaltsgeräte/Mikrowelle","Einkäufe & Garantien/Haushaltsgeräte/Nähmaschine","Einkäufe & Garantien/Haushaltsgeräte/Staubsauger","Einkäufe & Garantien/Haushaltsgeräte/Waschmaschine","Einkäufe & Garantien/Kleidung & Schuhe","Einkäufe & Garantien/Kleidung & Schuhe/2031","Einkäufe & Garantien/Kleidung & Schuhe/2032","Einkäufe & Garantien/Kleidung & Schuhe/2033","Einkäufe & Garantien/Online-Bestellungen","Einkäufe & Garantien/Online-Bestellungen/2031","Einkäufe & Garantien/Online-Bestellungen/2032","Einkäufe & Garantien/Online-Bestellungen/2033","Gesundheit","Gesundheit/Apotheke Dauerrezepte","Gesundheit/Apotheke Dauerrezepte/2031","Gesundheit/Apotheke Dauerrezepte/2032","Gesundheit/Apotheke Dauerrezepte/2033","Gesundheit/Gesundheitskasse Ilmtal","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2031","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2032","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2033","Gesundheit/Gesundheitskasse Ilmtal/Schreiben","Gesundheit/Gesundheitskasse Ilmtal/e-card","Gesundheit/Impfpässe","Gesundheit/Konrad","Gesundheit/Konrad/2033-05 Kur Bad Seetal","Gesundheit/Konrad/Augenarzt & Brillen","Gesundheit/Konrad/Hausarzt Dr. Rameis","Gesundheit/Konrad/Hörtest","Gesundheit/Konrad/Labor & Befunde","Gesundheit/Konrad/Physiotherapie","Gesundheit/Konrad/Zahnarzt","Gesundheit/Margit","Gesundheit/Margit/Frauenärztin","Gesundheit/Margit/HNO & Stimme","Gesundheit/Margit/Hausarzt Dr. Rameis","Gesundheit/Margit/Labor & Befunde","Gesundheit/Margit/Physiotherapie","Gesundheit/Margit/Zahnarzt","Gesundheit/Patientenverfügung","Hund Fritzi","Hund Fritzi/Chip & Heimtierausweis","Hund Fritzi/Futter & Zubehör","Hund Fritzi/Futter & Zubehör/2031","Hund Fritzi/Futter & Zubehör/2032","Hund Fritzi/Futter & Zubehör/2033","Hund Fritzi/Hundeabgabe","Hund Fritzi/Hundeabgabe/2031","Hund Fritzi/Hundeabgabe/2032","Hund Fritzi/Hundeabgabe/2033","Hund Fritzi/Hundepension & Sitter","Hund Fritzi/Hundeschule Pfotenweg","Hund Fritzi/Hundeschule Pfotenweg/2031-05 Junghundekurs","Hund Fritzi/Hundeschule Pfotenweg/2032-04 Begleithundeprüfung","Hund Fritzi/Hundeschule Pfotenweg/Mitgliedsbeiträge","Hund Fritzi/Tierarzt","Hund Fritzi/Tierarzt/Behandlungen","Hund Fritzi/Tierarzt/Impfungen","Hund Fritzi/Tierarzt/Rechnungen","Hund Fritzi/Tierarzt/Zahnkontrolle","Kleingarten Am Weidenbach","Kleingarten Am Weidenbach/Gartenbuch & Ernte","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2031","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2032","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2033","Kleingarten Am Weidenbach/Gartenfeste","Kleingarten Am Weidenbach/Gartenfeste/2032-08 Sommerfest","Kleingarten Am Weidenbach/Gartenfeste/2033-08 Sommerfest","Kleingarten Am Weidenbach/Gartenhütte","Kleingarten Am Weidenbach/Gartenhütte/2032-04 Dachpappe erneuert","Kleingarten Am Weidenbach/Gartenhütte/2033-06 Regentonne","Kleingarten Am Weidenbach/Gemeinschaftsarbeit","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2031","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2032","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2033","Kleingarten Am Weidenbach/Pacht & Wasser","Kleingarten Am Weidenbach/Pachtvertrag Parzelle 23","Kleingarten Am Weidenbach/Saatgut & Pflanzen","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2031","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2032","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2033","Kleingarten Am Weidenbach/Vereinsmitteilungen","Kleingarten Am Weidenbach/Vereinsmitteilungen/2031","Kleingarten Am Weidenbach/Vereinsmitteilungen/2032","Kleingarten Am Weidenbach/Vereinsmitteilungen/2033","Kleingarten Am Weidenbach/Werkzeug & Geräte","Kommunikation","Kommunikation/Abos & Mitgliedschaften online","Kommunikation/Handy Konrad parla mobil","Kommunikation/Handy Konrad parla mobil/Rechnungen","Kommunikation/Handy Konrad parla mobil/Vertrag","Kommunikation/Handy Margit parla mobil","Kommunikation/Handy Margit parla mobil/Rechnungen","Kommunikation/Handy Margit parla mobil/Vertrag","Kommunikation/Ilmnet Internet","Kommunikation/Ilmnet Internet/Rechnungen","Kommunikation/Ilmnet Internet/Router & Technik","Kommunikation/Ilmnet Internet/Vertrag","Kommunikation/Zeitungsabo Ilmtaler Rundschau","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2031","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2032","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2033","Matthias","Matthias/Besuche","Matthias/Besuche/2031-12 Weihnachten daheim","Matthias/Besuche/2032-07 Sommer daheim","Matthias/Besuche/2033-07 Sommer daheim","Matthias/Dokumente Matthias","Matthias/Dokumente Matthias/Meldebestätigungen","Matthias/Dokumente Matthias/Reisepass Kopie","Matthias/Dokumente Matthias/Zeugnisse","Matthias/Familienbeihilfe","Matthias/Familienbeihilfe/2031","Matthias/Familienbeihilfe/2032","Matthias/Familienbeihilfe/2033","Matthias/Studium Westerholm","Matthias/Studium Westerholm/1. Studienjahr","Matthias/Studium Westerholm/1. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/1. Studienjahr/Collegegeld","Matthias/Studium Westerholm/1. Studienjahr/Prüfungen","Matthias/Studium Westerholm/1. Studienjahr/Wohnen","Matthias/Studium Westerholm/2. Studienjahr","Matthias/Studium Westerholm/2. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/2. Studienjahr/Collegegeld","Matthias/Studium Westerholm/2. Studienjahr/Prüfungen","Matthias/Studium Westerholm/2. Studienjahr/Wohnen","Matthias/Studium Westerholm/3. Studienjahr","Matthias/Studium Westerholm/3. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/3. Studienjahr/Collegegeld","Matthias/Studium Westerholm/3. Studienjahr/Prüfungen","Matthias/Studium Westerholm/3. Studienjahr/Wohnen","Matthias/Studium Westerholm/Auslandsversicherung","Matthias/Studium Westerholm/Bewerbung & Zulassung","Matthias/Unterhalt & Überweisungen","Matthias/Unterhalt & Überweisungen/2031","Matthias/Unterhalt & Überweisungen/2032","Matthias/Unterhalt & Überweisungen/2033","Mobilität","Mobilität/Bahntickets","Mobilität/Bahntickets/2031","Mobilität/Bahntickets/2032","Mobilität/Bahntickets/2033","Mobilität/Fahrgastrechte","Mobilität/Fahrräder","Mobilität/Fahrräder/E-Bike Margit","Mobilität/Fahrräder/Fahrradanhänger","Mobilität/Fahrräder/Radwerkstatt Speiche","Mobilität/Fahrräder/Trekkingrad Konrad","Mobilität/Fahrräder/Zubehör & Schlösser","Mobilität/Jahreskarte Regio Plus","Mobilität/Rufbus & Taxi","Mobilität/Rufbus & Taxi/2031","Mobilität/Rufbus & Taxi/2032","Mobilität/Rufbus & Taxi/2033","Mobilität/rollmit Carsharing","Mobilität/rollmit Carsharing/Abrechnungen","Mobilität/rollmit Carsharing/Abrechnungen/2031","Mobilität/rollmit Carsharing/Abrechnungen/2032","Mobilität/rollmit Carsharing/Abrechnungen/2033","Mobilität/rollmit Carsharing/Mitgliedschaft","Musik Margit","Musik Margit/Blockflöten","Musik Margit/Blockflöten/Kaufbelege","Musik Margit/Blockflöten/Wartung","Musik Margit/Klavier","Musik Margit/Klavier/Kaufvertrag","Musik Margit/Klavier/Reparaturen","Musik Margit/Klavier/Stimmungen Klavierbau Sonnleitner","Musik Margit/Konzertbesuche","Musik Margit/Konzertbesuche/2031","Musik Margit/Konzertbesuche/2032","Musik Margit/Konzertbesuche/2033","Musik Margit/Kurse","Musik Margit/Kurse/2032-07 Kammermusikwoche","Musik Margit/Kurse/2033-07 Kammermusikwoche","Musik Margit/Noten & Bücher","Pension Konrad","Pension Konrad/1. Antrag Ruhestand","Pension Konrad/1. Antrag Ruhestand/Beratungsgespräch","Pension Konrad/1. Antrag Ruhestand/Dienstzeitenbestätigung","Pension Konrad/1. Antrag Ruhestand/Formulare","Pension Konrad/2. Bescheid Ruhegenuss","Pension Konrad/2. Bescheid Ruhegenuss/Berechnungsblatt","Pension Konrad/2. Bescheid Ruhegenuss/Bescheid","Pension Konrad/3. Laufende Bezüge","Pension Konrad/3. Laufende Bezüge/2032","Pension Konrad/3. Laufende Bezüge/2033","Pension Konrad/4. Neuberechnung & Nachzahlung","Pension Konrad/Dienstzeit Vermessungsamt","Pension Konrad/Dienstzeit Vermessungsamt/2032-06 Abschiedsfeier","Pension Konrad/Dienstzeit Vermessungsamt/Dienstzeugnis","Pension Konrad/Dienstzeit Vermessungsamt/Jubiläen","Pension Konrad/Pensionistenausweis","Reisen","Reisen/2031-08 Radtour Ilmtal","Reisen/2031-08 Radtour Ilmtal/Karten","Reisen/2031-08 Radtour Ilmtal/Unterkünfte","Reisen/2031-10 Herbstwandern Seetal","Reisen/2032-02 Städtereise Sankt Veitsberg","Reisen/2032-02 Städtereise Sankt Veitsberg/Bahn","Reisen/2032-02 Städtereise Sankt Veitsberg/Hotel","Reisen/2032-02 Städtereise Sankt Veitsberg/Museen","Reisen/2032-05 Pfingsten Hochalm","Reisen/2032-09 Besuch Matthias Westerholm","Reisen/2032-09 Besuch Matthias Westerholm/Bahn","Reisen/2032-09 Besuch Matthias Westerholm/Unterkunft","Reisen/2033-01 Langlaufwoche Hochalm","Reisen/2033-03 Thermenwochenende Bad Seetal","Reisen/2033-06 Wanderwoche Hochalm","Reisen/2033-06 Wanderwoche Hochalm/Anreise","Reisen/2033-06 Wanderwoche Hochalm/Unterkunft","Reisen/2033-06 Wanderwoche Hochalm/Wanderkarten","Reisen/Reiseplanung Ideen","Steuern","Steuern/Finanzamt Schreiben","Steuern/Kirchenbeitrag absetzbar","Steuern/Kirchenbeitrag absetzbar/2031","Steuern/Kirchenbeitrag absetzbar/2032","Steuern/Kirchenbeitrag absetzbar/2033","Steuern/Krankheitskosten Belege","Steuern/Krankheitskosten Belege/2031","Steuern/Krankheitskosten Belege/2031/Konrad","Steuern/Krankheitskosten Belege/2031/Margit","Steuern/Krankheitskosten Belege/2032","Steuern/Krankheitskosten Belege/2032/Konrad","Steuern/Krankheitskosten Belege/2032/Margit","Steuern/Krankheitskosten Belege/2033","Steuern/Krankheitskosten Belege/2033/Konrad","Steuern/Krankheitskosten Belege/2033/Margit","Steuern/Spendenbestätigungen","Steuern/Spendenbestätigungen/2031","Steuern/Spendenbestätigungen/2032","Steuern/Spendenbestätigungen/2033","Steuern/Steuerausgleich","Steuern/Steuerausgleich/2031","Steuern/Steuerausgleich/2031/Konrad","Steuern/Steuerausgleich/2031/Margit","Steuern/Steuerausgleich/2032","Steuern/Steuerausgleich/2032/Konrad","Steuern/Steuerausgleich/2032/Margit","Steuern/Steuerausgleich/2033","Steuern/Steuerausgleich/2033/Konrad","Steuern/Steuerausgleich/2033/Margit","Vereine & Ehrenamt","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2031","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2032","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2033","Vereine & Ehrenamt/Naturschutzbund Ilmtal","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2031","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2032","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2033","Vereine & Ehrenamt/Seniorentreff Brunnfeld","Vereine & Ehrenamt/Spenden","Vereine & Ehrenamt/Spenden/2031","Vereine & Ehrenamt/Spenden/2032","Vereine & Ehrenamt/Spenden/2033","Vereine & Ehrenamt/Stadtbücherei","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt/2032-04 Flohmarkt","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt/2033-04 Flohmarkt","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2032-Q3","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2032-Q4","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q1","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q2","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q3","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q4","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft/Seniorenheim Am Anger","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft/Volksschule Kirchberg","Vereine & Ehrenamt/Stadtbücherei/Vereinbarung Ehrenamt","Vereine & Ehrenamt/Tierschutzverein Wettelau","Vereine & Ehrenamt/Tierschutzverein Wettelau/2031","Vereine & Ehrenamt/Tierschutzverein Wettelau/2032","Vereine & Ehrenamt/Tierschutzverein Wettelau/2033","Versicherungen","Versicherungen/Ablebensversicherung","Versicherungen/Ablebensversicherung/Jahresmitteilungen","Versicherungen/Ablebensversicherung/Polizze","Versicherungen/Haushaltsversicherung Hollerau","Versicherungen/Haushaltsversicherung Hollerau/Polizze","Versicherungen/Haushaltsversicherung Hollerau/Prämien","Versicherungen/Haushaltsversicherung Hollerau/Schadensfälle","Versicherungen/Hundehaftpflicht Fritzi","Versicherungen/Hundehaftpflicht Fritzi/Nachträge","Versicherungen/Hundehaftpflicht Fritzi/Polizze","Versicherungen/Instrumentenversicherung Klavier","Versicherungen/Instrumentenversicherung Klavier/Polizze","Versicherungen/Instrumentenversicherung Klavier/Wertgutachten","Versicherungen/Privathaftpflicht","Versicherungen/Privathaftpflicht/Polizze","Versicherungen/Privathaftpflicht/Prämien","Versicherungen/Rechtsschutz","Versicherungen/Rechtsschutz/Fälle","Versicherungen/Rechtsschutz/Polizze","Versicherungen/Reiseversicherung","Versicherungen/Reiseversicherung/2032-09 Schadensmeldung Gepäck","Versicherungen/Reiseversicherung/Polizze","Versicherungen/Unfallversicherung Konrad","Versicherungen/Unfallversicherung Konrad/Polizze","Versicherungen/Unfallversicherung Konrad/Prämien","Wohnung Brunnfeldgasse","Wohnung Brunnfeldgasse/Betriebskosten","Wohnung Brunnfeldgasse/Betriebskosten/2031","Wohnung Brunnfeldgasse/Betriebskosten/2032","Wohnung Brunnfeldgasse/Betriebskosten/2033","Wohnung Brunnfeldgasse/Einrichtung","Wohnung Brunnfeldgasse/Einrichtung/Arbeitszimmer Konrad","Wohnung Brunnfeldgasse/Einrichtung/Küche","Wohnung Brunnfeldgasse/Einrichtung/Lampen","Wohnung Brunnfeldgasse/Einrichtung/Schlafzimmer","Wohnung Brunnfeldgasse/Einrichtung/Teppiche & Vorhänge","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2031","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2032","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2033","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2031","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2032","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2033","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Vertrag","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Hausordnung","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Hausversammlungen","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Mitgliedsanteil","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Mitteilungen","Wohnung Brunnfeldgasse/Kellerabteil","Wohnung Brunnfeldgasse/Mietvertrag","Wohnung Brunnfeldgasse/Mietvertrag/Nachträge","Wohnung Brunnfeldgasse/Mietvertrag/Übergabeprotokoll","Wohnung Brunnfeldgasse/Mietvorschreibungen","Wohnung Brunnfeldgasse/Mietvorschreibungen/2031","Wohnung Brunnfeldgasse/Mietvorschreibungen/2032","Wohnung Brunnfeldgasse/Mietvorschreibungen/2033","Wohnung Brunnfeldgasse/Reparaturen","Wohnung Brunnfeldgasse/Reparaturen/2031-11 Heizkörperventil Wohnzimmer","Wohnung Brunnfeldgasse/Reparaturen/2032-03 Wasserhahn Küche","Wohnung Brunnfeldgasse/Reparaturen/2032-08 Wasserschaden Bad","Wohnung Brunnfeldgasse/Reparaturen/2033-02 Fensterdichtungen","Wohnung Brunnfeldgasse/Reparaturen/2033-07 Gegensprechanlage","Wohnung Brunnfeldgasse/Rundfunkbeitrag","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2031","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2032","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2031","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2032","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2031","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2032","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke/Vertrag","Wohnung Brunnfeldgasse/Zählerstände","Wohnung Brunnfeldgasse/Zählerstände/2031","Wohnung Brunnfeldgasse/Zählerstände/2032","Wohnung Brunnfeldgasse/Zählerstände/2033"];
+const KNOWN_CONTENTS = {"Arbeit Margit/Gehaltszettel/2033":["2033-01 Gehaltszettel.pdf","2033-02 Gehaltszettel.pdf","2033-03 Gehaltszettel.pdf","2033-04 Gehaltszettel.pdf","2033-05 Gehaltszettel.pdf","2033-06 Gehaltszettel.pdf","2033-06 Urlaubszuschuss.pdf","2033-07 Gehaltszettel.pdf","2033-08 Gehaltszettel.pdf"],"Kommunikation/Ilmnet Internet/Rechnungen":["2033-03-04 Rechnung März.pdf","2033-04-04 Rechnung April.pdf","2033-05-04 Rechnung Mai.pdf","2033-06-04 Rechnung Juni.pdf","2033-07-04 Rechnung Juli.pdf","2033-07-19 Gutschrift Störung.pdf","2033-08-04 Rechnung August.pdf","2033-09-04 Rechnung September.pdf","2033-10-04 Rechnung Oktober.pdf"],"Mobilität/Jahreskarte Regio Plus":["2031-10-18 Jahreskarte Konrad.pdf","2031-10-18 Jahreskarte Margit.pdf","2032-03-02 Fahrgastrechte Entschädigung.pdf","2032-10-19 Verlängerung Jahreskarte Konrad.pdf","2032-10-19 Verlängerung Jahreskarte Margit.pdf","2033-04-11 Ersatzkarte Margit.pdf","2033-10-20 Verlängerung Jahreskarte Margit.pdf"],"Bank & Geld/Girokonto Bürgerbank/2033-Q3":["2033-07 Kontoauszug.pdf","2033-08 Kontoauszug.pdf","2033-08-14 Änderung Dauerauftrag Matthias.pdf"],"Kleingarten Am Weidenbach/Pacht & Wasser":["2031-03-15 Pachtvorschreibung 2031.pdf","2031-10-06 Wasserabrechnung 2031.pdf","2032-03-14 Pachtvorschreibung 2032.pdf","2032-10-04 Wasserabrechnung 2032.pdf","2033-03-16 Pachtvorschreibung 2033.pdf","2033-05-02 Zählertausch Parzelle 23.pdf"],"Chor Liederkranz/Kassa/2033":["2033-01-15 Mitgliedsbeiträge Liste.pdf","2033-02-03 Saalmiete Pfarrsaal.pdf","2033-03-28 Förderung Gemeinde Zusage.pdf","2033-05-20 Abrechnung Frühjahrskonzert.pdf","2033-06-12 Blumen Chorleiterin.pdf","2033-09-25 Abrechnung Chorfest Bus.pdf"],"Chor Liederkranz/Noten":["2031-09-12 Notenhaus Allegretto Weihnachtslieder.pdf","2032-02-20 Notenhaus Allegretto Frühjahrsprogramm.pdf","2032-04-02 Aufführungsrechte Meldung.pdf","2032-10-08 Notenhaus Allegretto Adventprogramm.pdf","2033-02-17 Notenhaus Allegretto Frühjahrsprogramm.pdf"],"Gesundheit/Konrad/Augenarzt & Brillen":["2031-11-08 Befund Augenarzt Dr. Zöhrer.pdf","2032-01-20 Rechnung Gleitsichtbrille.pdf","2032-02-05 Rückerstattung Brille.pdf","2033-09-22 Befund Augenarzt Dr. Zöhrer.pdf"],"Matthias/Studium Westerholm/2. Studienjahr/Collegegeld":["2032-10-03 Collegegeld 1. Rate.pdf","2032-10-05 Zahlungsbestätigung 1. Rate.pdf","2033-03-02 Collegegeld 2. Rate.pdf","2033-03-04 Zahlungsbestätigung 2. Rate.pdf"],"Matthias/Studium Westerholm/3. Studienjahr/Wohnen":["2033-07-21 Mietvertrag Wohnheim Kanaalzicht.pdf","2033-08-29 Kaution Wohnheim.pdf","2033-09-01 Übergabe Zimmer 4.pdf"],"Hund Fritzi/Tierarzt/Impfungen":["2031-06-10 Grundimmunisierung Fritzi.pdf","2031-07-08 Tollwut Fritzi.pdf","2032-07-12 Auffrischung Fritzi.pdf"]};
+</script>
+<script>
+'use strict';
+/* docsort destination-picker prototype: candidate A (columns with filter) and B (drill-down list with scoped filter).
+   Plain DOM, no libraries. FOLDERS and KNOWN_CONTENTS come from the data script above. */
+
+const TODAY = '2033-10-26';
+const FILE_DATE = '2033-10-13';
+const FILE_STEM = 'Rechnung_NA-33-08812';
+const FILE_EXT = '.pdf';
+/* The same Recent list as the main-window mockup, newest first. */
+const START_RECENT = ['Mobilität/Jahreskarte Regio Plus', 'Kommunikation/Ilmnet Internet/Rechnungen', 'Chor Liederkranz/Kassa/2033', 'Gesundheit/Konrad/Augenarzt & Brillen', 'Bank & Geld/Girokonto Bürgerbank/2033-Q3', 'Arbeit Margit/Gehaltszettel/2033', 'Kleingarten Am Weidenbach/Pacht & Wasser'];
+const MAX_RESULTS_B = 50;
+const WINDOW_WIDTH = 1100;
+const PANEL_WIDTH = { normal: 340, wide: 520 };
+/* Task targets, all folders of the fictional sample archive (or, for TASK_NEW_FOLDER, one created in it). */
+const TASK_DEEP_FOLDER = 'Gesundheit/Margit/Physiotherapie';
+const TASK_CONTENTS_FOLDER = 'Chor Liederkranz/Noten';
+const TASK_BROWSE_FOLDER = 'Hund Fritzi';
+const TASK_BROWSE_PICK = 'Hundeschule Pfotenweg';
+const TASK_NEW_FOLDER = 'Reisen/2033-11 Besuch Matthias Westerholm';
+const TASK_RECENT_FOLDER = 'Kleingarten Am Weidenbach/Pacht & Wasser';
+
+const TASKS = [
+  { id: 't1', html: `File into <code>${TASK_DEEP_FOLDER}</code> without typing the full path.` },
+  { id: 't2', html: `Find <code>${TASK_CONTENTS_FOLDER}</code> and check the newest file in it (take its name with <kbd>⌥↑</kbd> or a click).` },
+  { id: 't3', html: `Browse the subfolders of <code>${TASK_BROWSE_FOLDER}</code> and pick <code>${TASK_BROWSE_PICK}</code> (not from Recent).` },
+  { id: 't4', html: `Create a new folder <code>${TASK_NEW_FOLDER.slice(TASK_NEW_FOLDER.lastIndexOf('/') + 1)}</code> inside <code>${TASK_NEW_FOLDER.slice(0, TASK_NEW_FOLDER.lastIndexOf('/'))}</code>.` },
+  { id: 't5', html: `From Recent, pick <code>${TASK_RECENT_FOLDER}</code>.` },
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lastSeg = (p) => p.slice(p.lastIndexOf('/') + 1);
+const parentOf = (p) => (p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '');
+const chainOf = (p) => { const parts = p.split('/'); return parts.map((_, i) => parts.slice(0, i + 1).join('/')); };
+const tokenText = (p) => p.replace(/\//g, ' › ');
+const where = (p) => p || 'Archive';
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const collator = new Intl.Collator('de', { numeric: true, sensitivity: 'base' });
+const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------------------------------------------------------- icons */
+const stroke = (vb, d, w = 1.4) =>
+  `<svg viewBox="${vb}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  chev: stroke('0 0 12 12', '<path d="M4.5 2.5 8 6l-3.5 3.5"/>', 1.6),
+  plus: stroke('0 0 12 12', '<path d="M6 1.5v9M1.5 6h9"/>', 1.5).replace('<svg ', '<svg class="plus" '),
+  revert: stroke('0 0 12 12', '<path d="M2.6 4.2A4 4 0 1 1 2 6.6"/><path d="M2.4 1.6v2.8h2.8"/>', 1.4),
+  warn: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 1.3 15.3 14.4H.7Z M7.15 5.6h1.7l-.3 4.9h-1.1Z M8 11.4a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z"/></svg>',
+  clear: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Z M5.4 4.3 4.3 5.4 6.9 8l-2.6 2.6 1.1 1.1L8 9.1l2.6 2.6 1.1-1.1L9.1 8l2.6-2.6-1.1-1.1L8 6.9Z"/></svg>',
+  folder: '<svg class="fold" viewBox="0 0 16 13" aria-hidden="true"><path d="M1 2.2A1.2 1.2 0 0 1 2.2 1h3.6l1.5 1.6h6.5A1.2 1.2 0 0 1 15 3.8v7A1.2 1.2 0 0 1 13.8 12H2.2A1.2 1.2 0 0 1 1 10.8z" style="fill:var(--ficon-folder)"/><path d="M1 4.3h14" style="stroke:var(--ficon-folder-tab)" stroke-width=".8"/></svg>',
+  newFolder: '<svg viewBox="0 0 16 13" aria-hidden="true"><path d="M1 2.2A1.2 1.2 0 0 1 2.2 1h3.6l1.5 1.6h6.5A1.2 1.2 0 0 1 15 3.8v7A1.2 1.2 0 0 1 13.8 12H2.2A1.2 1.2 0 0 1 1 10.8z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M8 5.2v4.6M5.7 7.5h4.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+};
+function fileIcon(name) {
+  const ext = (name.match(/\.([^.]+)$/) || ['', ''])[1].toLowerCase();
+  const band = ext === 'pdf' ? '--ficon-pdf' : ['jpg', 'jpeg', 'png', 'heic'].includes(ext) ? '--ficon-img' : '--label3';
+  const label = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png', 'heic'].includes(ext) ? 'JPG' : '';
+  return `<span class="ficon"><svg viewBox="0 0 15 19" aria-hidden="true"><path d="M1.5 1.5h8l4 4v12h-12z" style="fill:var(--ficon-page);stroke:var(--ficon-stroke)" stroke-width=".8"/><path d="M9.5 1.5v4h4" fill="none" style="stroke:var(--ficon-stroke)" stroke-width=".8"/><rect x="1.9" y="11" width="11.2" height="4.6" style="fill:var(${band})"/>${label ? `<text x="7.5" y="14.5" text-anchor="middle" font-size="3.7" font-weight="700" font-family="-apple-system,Helvetica,sans-serif" style="fill:var(--ficon-page)">${label}</text>` : ''}</svg></span>`;
+}
+
+/* ---------------------------------------------------------------- folder model */
+const F = { list: [], set: new Set(), pending: new Set(), index: new Map() };
+function resetFolders() { F.list = FOLDERS.slice(); F.pending = new Set(); rebuildIndex(); }
+function rebuildIndex() {
+  F.set = new Set(F.list);
+  const map = new Map();
+  for (const p of F.list) {
+    const par = parentOf(p);
+    if (!map.has(par)) map.set(par, []);
+    map.get(par).push(p);
+  }
+  for (const arr of map.values()) arr.sort((a, b) => collator.compare(lastSeg(a), lastSeg(b)));
+  F.index = map;
+  resultsCache.key = '';
+}
+const kids = (p) => F.index.get(p) || [];
+const exists = (p) => F.set.has(p);
+const isNew = (p) => F.pending.has(p);
+function childNamed(parent, name) {
+  const want = name.toLowerCase();
+  return kids(parent).find((c) => lastSeg(c).toLowerCase() === want) || null;
+}
+/* Resolves a typed new-folder name (slashes nest) against the tree: which folders it would create, or which existing
+   folder it names. */
+function resolveNew(parent, raw) {
+  const parts = raw.split('/').map((s) => s.trim()).filter(Boolean);
+  let cur = parent;
+  const create = [];
+  for (const part of parts) {
+    const hit = create.length ? null : childNamed(cur, part);
+    if (hit) cur = hit;
+    else { cur = (cur ? cur + '/' : '') + part; create.push(cur); }
+  }
+  return { path: cur, create, existing: parts.length && !create.length ? cur : null };
+}
+function addPending(paths) {
+  for (const p of paths) if (!exists(p)) { F.list.push(p); F.pending.add(p); }
+  rebuildIndex();
+}
+
+/* ---------------------------------------------------------------- folder contents */
+const generatedCache = new Map();
+/* Generated folder contents never go back before the sample archive's first year. */
+const GENERATED_FIRST_YEAR = 2031;
+const GEN_WORDS = ['Rechnung', 'Bestätigung', 'Schreiben', 'Vertrag', 'Information', 'Mitteilung', 'Beleg', 'Antrag', 'Bescheid', 'Polizze', 'Kontoauszug', 'Lieferschein', 'Angebot', 'Zahlungsbestätigung'];
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function seeded(seed) {
+  let x = seed || 1;
+  return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+}
+function baseContents(folder) {
+  if (isNew(folder)) return [];
+  if (KNOWN_CONTENTS[folder]) return KNOWN_CONTENTS[folder];
+  if (generatedCache.has(folder)) return generatedCache.get(folder);
+  const rnd = seeded(hashStr(folder));
+  const list = [];
+  if (rnd() > 0.18) {
+    const n = 3 + Math.floor(rnd() * 6);
+    // A folder named for a year holds that year's files; anything else ends just before today.
+    const year = (folder.match(/\b(203[1-3])\b/) || [])[1];
+    let y = year ? +year : +TODAY.slice(0, 4), m = year && year !== TODAY.slice(0, 4) ? 12 : +TODAY.slice(5, 7) - 1, d = 1 + Math.floor(rnd() * 27);
+    const firstYear = year ? +year : GENERATED_FIRST_YEAR;
+    const seg = lastSeg(folder).replace(/^[\d.\s!-]+/, '').trim();
+    for (let i = 0; i < n && y >= firstYear; i++) {
+      const word = GEN_WORDS[Math.floor(rnd() * GEN_WORDS.length)];
+      const desc = seg && seg.length < 18 && rnd() > 0.5 ? `${seg} ${word}` : word;
+      list.push(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} ${desc}.pdf`);
+      const step = 1 + Math.floor(rnd() * 5);
+      m -= step;
+      while (m < 1) { m += 12; y -= 1; }
+      d = 1 + Math.floor(rnd() * 27);
+    }
+  }
+  generatedCache.set(folder, list);
+  return list;
+}
+/* Alphabetical, so with the archive's "YYYY-MM-DD …" names the newest file is at the bottom. */
+const contentsOf = (folder) => baseContents(folder).slice().sort(collator.compare);
+const stemOf = (name) => name.replace(/\.[^.]+$/, '');
+
+/* ---------------------------------------------------------------- fuzzy matching (same scorer as the main mockup) */
+function foldChar(c) {
+  if (c === 'ß') return 'ss';
+  return c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+const prepCache = new Map();
+function prep(str) {
+  let p = prepCache.get(str);
+  if (p) return p;
+  let f = '';
+  const map = [], segStart = [], wordStart = [];
+  const lastSlash = str.lastIndexOf('/');
+  let lastStart = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    const fc = foldChar(c);
+    const prev = i > 0 ? str[i - 1] : '/';
+    const seg = prev === '/';
+    const word = seg || /[\s\-_.()!,&]/.test(prev) || (/[a-zäöü]/.test(prev) && /[A-ZÄÖÜ]/.test(c)) || (/\D/.test(prev) && /\d/.test(c));
+    if (i === lastSlash + 1) lastStart = f.length;
+    for (let k = 0; k < fc.length; k++) {
+      map.push(i); segStart.push(seg && k === 0); wordStart.push(word && k === 0); f += fc[k];
+    }
+  }
+  p = { f, map, segStart, wordStart, lastStart };
+  prepCache.set(str, p);
+  return p;
+}
+const CONSEC = 5;
+function matchToken(tok, p) {
+  const n = p.f.length, m = tok.length;
+  if (m > n) return null;
+  for (let i = 0, j = 0; ; j++) {
+    if (i === m) break;
+    if (j === n) return null;
+    if (p.f[j] === tok[i]) i++;
+  }
+  const NEG = -1e9;
+  let prev = new Float64Array(n).fill(NEG);
+  const back = new Int32Array(m * n).fill(-1);
+  const bonus = (j) => 1 + (p.segStart[j] ? 9 : p.wordStart[j] ? 6 : 0) + (j >= p.lastStart ? 2 : 0);
+  for (let j = 0; j < n; j++) if (p.f[j] === tok[0]) prev[j] = bonus(j) - j * 0.02;
+  for (let i = 1; i < m; i++) {
+    const cur = new Float64Array(n).fill(NEG);
+    let best = NEG, bestK = -1;
+    for (let j = 0; j < n; j++) {
+      if (j >= 2 && prev[j - 2] > best) { best = prev[j - 2]; bestK = j - 2; }
+      if (p.f[j] !== tok[i]) continue;
+      const consec = j >= 1 && prev[j - 1] > NEG / 2 ? prev[j - 1] + CONSEC : NEG;
+      const gap = best > NEG / 2 ? best - 0.5 : NEG;
+      if (consec >= gap && consec > NEG / 2) { cur[j] = consec + bonus(j); back[i * n + j] = j - 1; }
+      else if (gap > NEG / 2) { cur[j] = gap + bonus(j); back[i * n + j] = bestK; }
+    }
+    prev = cur;
+  }
+  let bestJ = -1, bestScore = NEG;
+  for (let j = 0; j < n; j++) if (prev[j] > bestScore) { bestScore = prev[j]; bestJ = j; }
+  if (bestJ < 0 || bestScore < NEG / 2) return null;
+  const pos = new Array(m);
+  for (let i = m - 1, j = bestJ; i >= 0; i--) { pos[i] = j; j = back[i * n + j]; }
+  return { score: bestScore, pos };
+}
+/* Ranks candidates ({path, display}) for a query; marks are indices into display. */
+function fuzzy(query, candidates, recentBoost) {
+  const tokens = query.split(/\s+/).filter(Boolean).map((t) => t.split('').map(foldChar).join(''));
+  if (!tokens.length) return [];
+  const out = [];
+  for (const c of candidates) {
+    const p = prep(c.display);
+    let score = 0;
+    const marks = new Set();
+    let allInLast = true;
+    let ok = true;
+    for (const t of tokens) {
+      const r = matchToken(t, p);
+      if (!r) { ok = false; break; }
+      score += r.score;
+      for (const j of r.pos) { marks.add(p.map[j]); if (j < p.lastStart) allInLast = false; }
+    }
+    if (!ok) continue;
+    if (allInLast) score += 6;
+    const lastF = p.f.slice(p.lastStart);
+    if (tokens.some((t) => lastF.startsWith(t))) score += 5;
+    score -= c.display.length * 0.12 + (c.display.split('/').length - 1) * 0.8;
+    const ri = recentBoost.indexOf(c.path);
+    if (ri >= 0) score += 14 - ri * 0.5;
+    out.push({ ...c, score, marks });
+  }
+  out.sort((a, b) => b.score - a.score || a.display.length - b.display.length);
+  return out;
+}
+
+/* ---------------------------------------------------------------- state */
+const S = {
+  cand: 'A',
+  focus: 'picker',          // picker | newfolder | name | none
+  query: '',
+  recent: START_RECENT.slice(),
+  chosen: null,             // chosen destination (token in the filter field)
+  chosenVia: null,          // recent | browse | filter | new
+  chosenSnap: null,         // picker state to restore when going back to the picker
+  nf: null,                 // new-folder row: { parent, value, snap }
+  take: null,               // ⌥↑/⌥↓ position: { folder, idx }
+  nameHint: '',
+  contentsShown: null,
+  status: '',
+  done: { A: new Set(), B: new Set() },
+  // stepped: the folder the user last stepped to in A with ← / → or a click; the parent for A's no-match row
+  a: { sel: [], sec0: 'recent', matches: [], matchMap: new Map(), visible: null, stepped: null },
+  b: { scope: '', hl: 0 },
+};
+
+function resetState() {
+  resetFolders();
+  S.focus = 'picker';
+  S.query = '';
+  S.recent = START_RECENT.slice();
+  S.chosen = null; S.chosenVia = null; S.chosenSnap = null;
+  S.nf = null; S.take = null; S.nameHint = ''; S.contentsShown = null;
+  S.a = { sel: [S.recent[0]], sec0: 'recent', matches: [], matchMap: new Map(), visible: null, stepped: null };
+  S.b = { scope: '', hl: 0 };
+  $('filterInput').value = '';
+  $('nameInput').value = FILE_STEM;
+  setStatus(`Start: picker focused, Recent first. Candidate ${S.cand === 'A' ? 'A · Columns with filter' : 'B · Drill-down list'}.`);
+}
+
+/* ---------------------------------------------------------------- candidate A: columns */
+function aRecompute() {
+  const q = S.query.trim();
+  if (!q) { S.a.matches = []; S.a.matchMap = new Map(); S.a.visible = null; return; }
+  const res = fuzzy(q, F.list.map((p) => ({ path: p, display: p })), S.recent);
+  S.a.matches = res;
+  S.a.matchMap = new Map(res.map((r, i) => [r.path, { rank: i, marks: r.marks }]));
+  const vis = new Set();
+  for (const r of res) for (const c of chainOf(r.path)) vis.add(c);
+  S.a.visible = vis;
+}
+const aFiltering = () => !!S.query.trim();
+function aVisibleKids(p) {
+  const k = kids(p);
+  if (!aFiltering() || (S.nf && S.nf.parent === p)) return k;
+  return k.filter((c) => S.a.visible.has(c));
+}
+function aColItems(i) {
+  if (i === 0) {
+    if (S.nf && S.nf.parent === '') return kids('').map((p) => ({ path: p, sec: 'all' }));
+    if (!aFiltering()) return S.recent.filter(exists).map((p) => ({ path: p, sec: 'recent' })).concat(kids('').map((p) => ({ path: p, sec: 'all' })));
+    return aVisibleKids('').map((p) => ({ path: p, sec: 'all' }));
+  }
+  const parent = S.a.sel[i - 1];
+  if (parent === undefined) return [];
+  return aVisibleKids(parent).map((p) => ({ path: p, sec: 'all' }));
+}
+const aHighlightPath = () => S.a.sel[S.a.sel.length - 1] || null;
+function aColumnCount() {
+  const n = S.a.sel.length;
+  if (!n) return 1;
+  const h = S.a.sel[n - 1];
+  return (S.nf && S.nf.parent === h) || aVisibleKids(h).length ? n + 1 : n;
+}
+function aMove(delta) {
+  const n = S.a.sel.length;
+  const col = Math.max(0, n - 1);
+  const items = aColItems(col);
+  if (!items.length) return;
+  let idx = n ? items.findIndex((it) => it.path === S.a.sel[col] && (col > 0 || it.sec === S.a.sec0)) : -1;
+  idx = idx < 0 ? 0 : clamp(idx + delta, 0, items.length - 1);
+  S.a.sel = S.a.sel.slice(0, col).concat(items[idx].path);
+  if (col === 0) S.a.sec0 = items[idx].sec;
+  afterHighlight();
+}
+function aInto() {
+  const h = aHighlightPath();
+  if (!h) return;
+  const k = aVisibleKids(h);
+  if (!k.length) { setStatus(`“${lastSeg(h)}” has no subfolders.`); return; }
+  S.a.sel.push(k[0]);
+  S.a.stepped = k[0];
+  afterHighlight();
+}
+function aOut() {
+  if (S.a.sel.length > 1) { S.a.sel.pop(); S.a.stepped = aHighlightPath(); afterHighlight(); }
+}
+function aSelectPath(p) { S.a.sel = chainOf(p); S.a.sec0 = 'all'; }
+function aJump(dir) {
+  const m = S.a.matches;
+  if (!m.length) return;
+  const cur = S.a.matchMap.get(aHighlightPath());
+  let i = cur ? cur.rank : dir > 0 ? -1 : 0;
+  i = (i + dir + m.length) % m.length;
+  aSelectPath(m[i].path);
+  afterHighlight();
+}
+function aClickRow(col, path, sec) {
+  S.a.sel = S.a.sel.slice(0, col).concat(path);
+  if (col === 0) S.a.sec0 = sec;
+  S.a.stepped = path;
+}
+
+/* ---------------------------------------------------------------- candidate B: drill-down list */
+let resultsCache = { key: '', items: [] };
+function bItems() {
+  const key = [S.query, S.b.scope, F.list.length, S.recent.join('|')].join('\u0001');
+  if (resultsCache.key === key) return resultsCache.items;
+  const q = S.query.trim(), scope = S.b.scope;
+  const items = [];
+  if (!q) {
+    if (!scope) {
+      const rec = S.recent.filter(exists);
+      if (rec.length) {
+        items.push({ type: 'header', text: 'Recent' });
+        for (const p of rec) items.push({ type: 'folder', path: p, display: p, marks: new Set(), recent: true });
+      }
+      items.push({ type: 'header', text: 'All folders' });
+      for (const p of kids('')) items.push({ type: 'folder', path: p, display: p, marks: new Set() });
+    } else {
+      // The folder you stand in is choosable itself, as the first row.
+      items.push({ type: 'folder', path: scope, display: lastSeg(scope), marks: new Set(), self: true });
+      for (const p of kids(scope)) items.push({ type: 'folder', path: p, display: lastSeg(p), marks: new Set() });
+    }
+  } else {
+    const prefix = scope ? scope + '/' : '';
+    const cands = F.list.filter((p) => p.startsWith(prefix)).map((p) => ({ path: p, display: p.slice(prefix.length) }));
+    const res = fuzzy(q, cands, S.recent);
+    if (res.length) {
+      items.push({ type: 'header', text: `${res.length} ${res.length === 1 ? 'match' : 'matches'}${scope ? ` in ${lastSeg(scope)}` : ''}${res.length > MAX_RESULTS_B ? ` · best ${MAX_RESULTS_B} shown` : ''}` });
+      for (const r of res.slice(0, MAX_RESULTS_B)) items.push({ type: 'folder', ...r });
+    } else {
+      items.push({ type: 'create', name: q, parent: scope });
+    }
+  }
+  resultsCache = { key, items };
+  return items;
+}
+const bSelectable = () => bItems().filter((x) => x.type === 'folder' || x.type === 'create');
+function bMove(delta) {
+  const sel = bSelectable();
+  if (!sel.length) return;
+  S.b.hl = clamp(S.b.hl + delta, 0, sel.length - 1);
+  afterHighlight();
+}
+function bInto(path) {
+  const p = path || (highlighted() && highlighted().kind === 'folder' ? highlighted().path : null);
+  if (!p || p === S.b.scope) return;
+  S.b.scope = p; setQuery(''); S.b.hl = 0;
+  afterHighlight();
+}
+function bIndexOf(path, allowRecent) {
+  return bSelectable().findIndex((x) => x.type === 'folder' && x.path === path && !x.self && (allowRecent || !x.recent));
+}
+function bOut() {
+  if (!S.b.scope) return;
+  const old = S.b.scope;
+  S.b.scope = parentOf(old); setQuery('');
+  S.b.hl = Math.max(0, bIndexOf(old, false));
+  afterHighlight();
+}
+function bRoot() {
+  if (!S.b.scope && !S.query) return;
+  const top = S.b.scope ? chainOf(S.b.scope)[0] : null;
+  S.b.scope = ''; setQuery('');
+  S.b.hl = top ? Math.max(0, bIndexOf(top, false)) : 0;
+  afterHighlight();
+}
+function bJump(path) {
+  const old = S.b.scope;
+  S.b.scope = path; setQuery('');
+  const child = old.startsWith(path ? path + '/' : '') && old !== path ? chainOf(old)[path ? chainOf(path).length : 0] : null;
+  S.b.hl = child ? Math.max(0, bIndexOf(child, false)) : 0;
+  afterHighlight();
+}
+
+/* ---------------------------------------------------------------- shared picker logic */
+/* The highlighted row: { kind: 'folder', path, via } or { kind: 'create', name, parent } or null. */
+function highlighted() {
+  if (S.cand === 'A') {
+    if (aFiltering() && !S.a.matches.length) return { kind: 'create', name: S.query.trim(), parent: S.a.stepped && exists(S.a.stepped) ? S.a.stepped : '' };
+    const p = aHighlightPath();
+    if (!p) return null;
+    const via = aFiltering() ? 'filter' : S.a.sec0 === 'recent' && S.a.sel.length === 1 ? 'recent' : 'browse';
+    return { kind: 'folder', path: p, via };
+  }
+  const sel = bSelectable();
+  if (!sel.length) return null;
+  const it = sel[clamp(S.b.hl, 0, sel.length - 1)];
+  if (it.type === 'create') return { kind: 'create', name: it.name, parent: it.parent };
+  return { kind: 'folder', path: it.path, via: it.recent ? 'recent' : S.query.trim() ? 'filter' : 'browse', self: !!it.self };
+}
+function setQuery(q) { S.query = q; $('filterInput').value = q; if (S.cand === 'A') aRecompute(); }
+function snapshotPicker() { return { query: S.query, a: { sel: S.a.sel.slice(), sec0: S.a.sec0 }, b: { ...S.b } }; }
+function restorePicker(snap) {
+  S.query = snap.query; $('filterInput').value = snap.query;
+  S.a.sel = snap.a.sel.slice(); S.a.sec0 = snap.a.sec0;
+  S.b = { ...snap.b };
+  aRecompute();
+  resultsCache.key = '';
+}
+function afterHighlight() {
+  renderPicker();
+  renderContents();
+  renderName();
+  renderFilterField();
+}
+function onFilterInput() {
+  if (S.chosen) { S.chosen = null; S.chosenSnap = null; }
+  S.query = $('filterInput').value;
+  if (S.cand === 'A') {
+    aRecompute();
+    if (aFiltering()) {
+      if (S.a.matches.length) aSelectPath(S.a.matches[0].path);
+      else S.a.sel = [];
+    } else if (!S.a.sel.length) { S.a.sel = [S.recent[0]]; S.a.sec0 = 'recent'; }
+  } else {
+    S.b.hl = 0;
+  }
+  afterHighlight();
+}
+function clearFilter() {
+  if (S.cand === 'A') {
+    const keep = aHighlightPath();
+    setQuery('');
+    if (keep) aSelectPath(keep); else { S.a.sel = [S.recent[0]]; S.a.sec0 = 'recent'; }
+  } else {
+    const keep = highlighted();
+    setQuery('');
+    const i = keep && keep.kind === 'folder' ? bIndexOf(keep.path, true) : -1;
+    S.b.hl = Math.max(0, i);
+  }
+  afterHighlight();
+}
+
+function chooseHighlighted() {
+  const h = highlighted();
+  if (!h) return;
+  if (h.kind === 'create') { createFromQuery(h); return; }
+  choose(h.path, h.via);
+}
+function choose(path, via) {
+  S.chosenSnap = snapshotPicker();
+  S.chosen = path; S.chosenVia = via;
+  $('filterInput').value = '';
+  if (via === 'new') {
+    const created = chainOf(path).filter(isNew);
+    setStatus(`New folder ${esc(created.map(lastSeg).join('/'))} in ${esc(where(parentOf(created[0])))} (created on move)`);
+  } else setStatus(`Chose ${esc(path)}`);
+  checkTasks(path, via);
+  S.focus = 'name';
+  $('nameInput').focus({ preventScroll: true });
+  $('nameInput').select();
+  renderAll();
+}
+function unchoose() {
+  if (!S.chosen) return;
+  const snap = S.chosenSnap;
+  S.chosen = null; S.chosenVia = null; S.chosenSnap = null;
+  if (snap) restorePicker(snap);
+}
+function backToPicker() {
+  unchoose();
+  S.focus = 'picker';
+  const inp = $('filterInput');
+  inp.focus({ preventScroll: true });
+  inp.setSelectionRange(inp.value.length, inp.value.length);
+  renderAll();
+}
+/* Puts the picker on a folder that was just created or found, with the filter cleared. */
+function adoptPath(path) {
+  setQuery('');
+  if (S.cand === 'A') aSelectPath(path);
+  else { S.b.scope = parentOf(path); resultsCache.key = ''; S.b.hl = Math.max(0, bIndexOf(path, false)); }
+}
+function createFromQuery(h) {
+  const res = resolveNew(h.parent, h.name);
+  if (res.existing) { adoptPath(res.existing); choose(res.existing, 'browse'); return; }
+  addPending(res.create);
+  adoptPath(res.path);
+  choose(res.path, 'new');
+}
+
+/* ---------------------------------------------------------------- new folder */
+function newFolderCmd() {
+  if (S.nf) { $('nfInput') && $('nfInput').focus(); return; }
+  if (S.chosen) unchoose();
+  const h = highlighted();
+  if (h && h.kind === 'create') { createFromQuery(h); return; }
+  const parent = h ? h.path : S.cand === 'B' ? S.b.scope : '';
+  S.nf = { parent, value: '', snap: snapshotPicker() };
+  if (S.cand === 'B') { S.b.scope = parent; setQuery(''); S.b.hl = 0; resultsCache.key = ''; }
+  S.focus = 'newfolder';
+  renderAll();
+  const inp = $('nfInput');
+  if (inp) { inp.focus({ preventScroll: true }); scrollNfIntoView(); }
+  setStatus(`New folder in ${esc(where(parent))}: type a name, Tab or Return confirms, Esc cancels.`);
+}
+function nfNotice(parent, value) {
+  if (/:/.test(value)) return { warn: true, text: 'Folder names can’t contain “:”.' };
+  const res = value.trim() ? resolveNew(parent, value) : null;
+  if (res && res.existing) return { warn: true, text: `${where(lastSeg(parentOf(res.existing)) || '')} already contains a folder named “${lastSeg(res.existing)}”. Return selects it.` };
+  if (res && res.create.length > 1) return { warn: false, text: `Creates ${res.create.length} nested folders. ⌘D inserts today’s date.` };
+  return { warn: false, text: 'Tab or Return confirms · Esc cancels · ⌘D inserts the date' };
+}
+function onNfInput() {
+  const inp = $('nfInput');
+  S.nf.value = inp.value;
+  placeNfRow();
+  const n = nfNotice(S.nf.parent, S.nf.value);
+  const note = $('nfNote');
+  note.textContent = n.text;
+  note.classList.toggle('warn', n.warn);
+}
+/* Moves sibling rows around the (focused, never moved) new-folder row so it sits at its alphabetical position. */
+function placeNfRow() {
+  const before = $('nfBefore'), after = $('nfAfter');
+  if (!before || !after) return;
+  const rows = [...before.children, ...after.children];
+  const first = (S.nf.value.split('/')[0] || '').trim();
+  for (const r of rows) {
+    const goesBefore = first && collator.compare(r.dataset.name, first) < 0;
+    (goesBefore ? before : after).appendChild(r);
+  }
+  // keep document order inside each part
+  for (const part of [before, after]) {
+    [...part.children].sort((x, y) => collator.compare(x.dataset.name, y.dataset.name)).forEach((r) => part.appendChild(r));
+  }
+  scrollNfIntoView();
+}
+function scrollNfIntoView() {
+  const row = $('nfRowBox');
+  if (!row) return;
+  const box = row.closest('.col, .list');
+  if (!box) return;
+  const top = row.offsetTop - box.offsetTop;
+  if (top < box.scrollTop + 4 || top + row.offsetHeight > box.scrollTop + box.clientHeight - 4) box.scrollTop = Math.max(0, top - box.clientHeight / 2 + row.offsetHeight / 2);
+}
+function confirmNf() {
+  const nf = S.nf;
+  if (!nf) return false;
+  const v = nf.value.trim().replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+  if (!v) { cancelNf(); return false; }
+  if (/:/.test(v)) { setStatus('Folder names can’t contain “:”.'); return false; }
+  const res = resolveNew(nf.parent, v);
+  S.nf = null;
+  if (res.existing) { adoptPath(res.existing); choose(res.existing, 'browse'); return true; }
+  addPending(res.create);
+  adoptPath(res.path);
+  choose(res.path, 'new');
+  return true;
+}
+function cancelNf() {
+  if (!S.nf) return;
+  const snap = S.nf.snap;
+  S.nf = null;
+  restorePicker(snap);
+  S.focus = 'picker';
+  $('filterInput').focus({ preventScroll: true });
+  setStatus('New folder cancelled; nothing was created.');
+  renderAll();
+}
+
+/* ---------------------------------------------------------------- name field */
+function contentsFolder() {
+  if (S.chosen) return S.chosen;
+  if (S.nf) return null;
+  const h = highlighted();
+  return h && h.kind === 'folder' ? h.path : null;
+}
+function effectiveStem() {
+  let v = $('nameInput').value.trim();
+  if (!v) return FILE_STEM;
+  while (v.toLowerCase().endsWith(FILE_EXT) && v.length > FILE_EXT.length) v = v.slice(0, v.length - FILE_EXT.length).trimEnd();
+  return v;
+}
+function setName(stem) {
+  const inp = $('nameInput');
+  inp.value = stem;
+  if (S.focus !== 'name') { S.focus = 'name'; inp.focus({ preventScroll: true }); }
+  inp.select();
+  S.nameHint = '';
+}
+function takeName(dir) {
+  const folder = contentsFolder();
+  if (!folder) return;
+  const files = contentsOf(folder);
+  if (!files.length) { flashHint(`“${lastSeg(folder)}” has no files to take a name from.`); return; }
+  let idx;
+  if (!S.take || S.take.folder !== folder) idx = files.length - 1;
+  else idx = clamp(S.take.idx + dir, 0, files.length - 1);
+  S.take = { folder, idx };
+  setName(stemOf(files[idx]));
+  if (folder === TASK_CONTENTS_FOLDER) markDone('t2');
+  renderContents(); renderName();
+}
+function takeNameFromClick(i) {
+  const folder = contentsFolder();
+  if (!folder) return;
+  const files = contentsOf(folder);
+  if (!files[i]) return;
+  if (!S.chosen) { const h = highlighted(); if (h && h.kind === 'folder') { S.chosenSnap = snapshotPicker(); S.chosen = h.path; S.chosenVia = h.via; $('filterInput').value = ''; checkTasks(h.path, h.via); } }
+  S.take = { folder, idx: i };
+  setName(stemOf(files[i]));
+  if (folder === TASK_CONTENTS_FOLDER) markDone('t2');
+  setStatus(`Took the name “${esc(stemOf(files[i]))}” from ${esc(folder)}`);
+  renderAll();
+}
+function revertName() {
+  setName(FILE_STEM);
+  S.take = null;
+  renderContents(); renderName();
+}
+function insertDate(date, inp) {
+  const v = inp.value;
+  const s = inp.selectionStart ?? v.length, e = inp.selectionEnd ?? v.length;
+  const allSel = v.length > 0 && s === 0 && e === v.length;
+  const m = v.match(/^\d{4}-\d{2}-\d{2} ?/);
+  const oldLen = m ? m[0].length : 0;
+  const prefix = date + ' ';
+  inp.value = prefix + v.slice(oldLen);
+  if (allSel) inp.setSelectionRange(prefix.length, inp.value.length);
+  else {
+    const shift = prefix.length - oldLen;
+    inp.setSelectionRange(Math.max(prefix.length, s + shift), Math.max(prefix.length, e + shift));
+  }
+}
+function flashHint(text) {
+  S.nameHint = text;
+  renderName();
+  clearTimeout(flashHint.t);
+  flashHint.t = setTimeout(() => { S.nameHint = ''; renderName(); }, 3000);
+}
+function findConflict(folder) {
+  if (!folder || isNew(folder)) return null;
+  const target = (effectiveStem() + FILE_EXT).toLowerCase();
+  return contentsOf(folder).find((n) => n.toLowerCase() === target) || null;
+}
+
+/* ---------------------------------------------------------------- move */
+function doMove() {
+  if (S.nf && !confirmNf()) return;
+  const h = highlighted();
+  if (!S.chosen && h && h.kind === 'create') { createFromQuery(h); }
+  const folder = S.chosen || (h && h.kind === 'folder' ? h.path : null);
+  if (!folder) { setStatus('Nothing to move to: highlight or choose a folder first.'); return; }
+  const via = S.chosen ? S.chosenVia : h.via;
+  const name = effectiveStem() + FILE_EXT;
+  const created = chainOf(folder).filter(isNew);
+  const conflict = findConflict(folder);
+  let msg = `Would move to <b>${esc(folder)}</b> as <b>${esc(name)}</b>`;
+  if (created.length) msg += ` · creates ${esc(created.map(lastSeg).join('/'))} in ${esc(where(parentOf(created[0])))}`;
+  if (conflict) msg += ` · “${esc(conflict)}” exists: the Keep Both / Replace sheet would open`;
+  setStatus(msg);
+  checkTasks(folder, via);
+}
+
+/* ---------------------------------------------------------------- tasks */
+function checkTasks(path, via) {
+  if (path === TASK_DEEP_FOLDER) markDone('t1');
+  if (path === `${TASK_BROWSE_FOLDER}/${TASK_BROWSE_PICK}` && via === 'browse') markDone('t3');
+  if (path === TASK_NEW_FOLDER && isNew(path)) markDone('t4');
+  if (path === TASK_RECENT_FOLDER && via === 'recent') markDone('t5');
+}
+function markDone(id) {
+  if (S.done[S.cand].has(id)) return;
+  S.done[S.cand].add(id);
+  renderTasks();
+}
+function renderTasks() {
+  $('taskList').innerHTML = TASKS.map((t) => `<li id="task-${t.id}"><span class="tt">${t.html}</span><span class="ticks">${['A', 'B'].map((c) => `<span class="tick${S.done[c].has(t.id) ? ' done' : ''}" title="${S.done[c].has(t.id) ? `Done in ${c}` : `Not done in ${c} yet`}">${c}</span>`).join('')}</span></li>`).join('');
+}
+
+/* ---------------------------------------------------------------- rendering */
+function setStatus(html) {
+  S.status = html;
+  const el = $('statusMsg');
+  el.innerHTML = html;
+  const st = $('status');
+  st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+}
+function segHtml(text, localMarks) {
+  let html = '', inBold = false;
+  for (let i = 0; i < text.length; i++) {
+    const b = localMarks.has(i);
+    if (b && !inBold) { html += '<b>'; inBold = true; }
+    if (!b && inBold) { html += '</b>'; inBold = false; }
+    html += esc(text[i]);
+  }
+  return html + (inBold ? '</b>' : '');
+}
+function localMarks(marks, from, to) {
+  const out = new Set();
+  for (const k of marks) if (k >= from && k < to) out.add(k - from);
+  return out;
+}
+/* Relative path with the parent part in secondary colour; marks index into display. */
+function pathHtml(display, marks) {
+  const cut = display.lastIndexOf('/');
+  const last = `<span class="last">${segHtml(display.slice(cut + 1), localMarks(marks, cut + 1, display.length))}</span>`;
+  if (cut < 0) return last;
+  return `<span class="par">${segHtml(display.slice(0, cut + 1), localMarks(marks, 0, cut + 1))}</span>${last}`;
+}
+function nfRowHtml(parent) {
+  const n = nfNotice(parent, S.nf.value);
+  return `<div class="nf-row" id="nfRowBox"><div class="nf-line">${ICON.folder}<input id="nfInput" type="text" autocomplete="off" spellcheck="false" placeholder="Folder name" aria-label="New folder name in ${esc(where(parent))}" value="${esc(S.nf.value)}"></div><div class="nf-note${n.warn ? ' warn' : ''}" id="nfNote">${esc(n.text)}</div></div>`;
+}
+/* Sibling rows split around the new-folder row by the typed name. */
+function nfHostHtml(rowsHtml, parent) {
+  const first = (S.nf.value.split('/')[0] || '').trim();
+  const before = [], after = [];
+  for (const r of rowsHtml) (first && collator.compare(r.name, first) < 0 ? before : after).push(r.html);
+  return `<div id="nfBefore">${before.join('')}</div>${nfRowHtml(parent)}<div id="nfAfter">${after.join('')}</div>`;
+}
+
+function renderPanelWidth() {
+  const wide = S.cand === 'A' && (S.focus === 'picker' || S.focus === 'newfolder');
+  $('panel').classList.toggle('wide', wide);
+  $('pvWidth').textContent = `${WINDOW_WIDTH - (wide ? PANEL_WIDTH.wide : PANEL_WIDTH.normal)} pt`;
+  $('win').classList.toggle('pk-focus', S.focus === 'picker' || S.focus === 'newfolder');
+}
+function renderFilterField() {
+  const inp = $('filterInput');
+  const token = $('tokenChip'), scope = $('scopeChip'), count = $('matchCount');
+  if (S.chosen) {
+    token.hidden = false;
+    token.title = `${S.chosen} · click or ⇧Tab to change`;
+    token.innerHTML = `<span class="t">${esc(tokenText(S.chosen))}</span>${isNew(S.chosen) ? '<span class="badge-new">New</span>' : ''}`;
+    inp.placeholder = '';
+  } else {
+    token.hidden = true;
+    inp.placeholder = S.cand === 'B' && S.b.scope ? `Search in ${lastSeg(S.b.scope)}` : 'Search all folders';
+  }
+  const showScope = S.cand === 'B' && !!S.b.scope && !S.chosen;
+  scope.hidden = !showScope;
+  if (showScope) { scope.innerHTML = `<span class="t">in ${esc(lastSeg(S.b.scope))}</span>`; scope.title = `Searching inside ${S.b.scope}. ⌘↑ searches the whole archive.`; }
+  const showCount = S.cand === 'A' && aFiltering() && !S.chosen;
+  count.hidden = !showCount;
+  if (showCount) {
+    const n = S.a.matches.length;
+    const cur = S.a.matchMap.get(aHighlightPath());
+    count.textContent = !n ? 'No matches' : cur ? `${cur.rank + 1} of ${n}` : `${n} ${n === 1 ? 'match' : 'matches'}`;
+  }
+  const clr = $('filterClear');
+  clr.hidden = !(S.query || S.chosen);
+  clr.innerHTML = ICON.clear;
+}
+function renderPicker() {
+  if (S.nf && document.activeElement && document.activeElement.id === 'nfInput') return;
+  $('pathBar').hidden = S.cand !== 'B';
+  if (S.cand === 'A') renderColumns(); else renderList();
+  const h = highlighted();
+  const parent = S.nf ? S.nf.parent : h && h.kind === 'folder' ? h.path : S.cand === 'B' ? S.b.scope : '';
+  const btn = $('newFolderBtn');
+  btn.innerHTML = `${ICON.newFolder}<span>New Folder</span>`;
+  btn.title = h && h.kind === 'create' ? `New Folder “${h.name}” in ${where(h.parent)} (⇧⌘N)` : `New Folder in ${where(parent)} (⇧⌘N)`;
+  btn.setAttribute('aria-label', btn.title);
+  $('pickerHint').textContent = S.cand === 'A' ? '→ open · ← back · ⌘G next match · Tab choose' : '→ into · ← out · ⌘↑ top · Tab choose';
+}
+function renderColumns() {
+  const body = $('pickerBody');
+  if (aFiltering() && !S.a.matches.length) {
+    const h = highlighted();
+    body.innerHTML = `<div class="list"><div class="res create hl" role="option" aria-selected="true" id="createRow" data-act="create">${ICON.plus}<span class="rt">New Folder “${esc(h.name)}” in ${esc(where(h.parent))}</span></div><div class="res-empty">No folder matches “${esc(h.name)}”. Tab, Return or ⇧⌘N creates it in ${esc(where(h.parent))}${h.parent ? ', the folder you last stepped into' : ''}.</div></div>`;
+    return;
+  }
+  const n = aColumnCount();
+  const hlPath = aHighlightPath();
+  const hm = S.a.matchMap.get(hlPath);
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const items = aColItems(i);
+    const focusedCol = i === S.a.sel.length - 1;
+    const host = S.nf && (S.nf.parent === '' ? i === 0 : S.a.sel[i - 1] === S.nf.parent && i === S.a.sel.indexOf(S.nf.parent) + 1);
+    const rows = [];
+    let lastSec = null;
+    let head = '';
+    for (const it of items) {
+      if (i === 0 && !aFiltering() && !host && it.sec !== lastSec) {
+        const h = `<div class="col-h">${it.sec === 'recent' ? 'Recent' : 'Archive'}</div>`;
+        if (rows.length) rows.push({ name: '', html: h }); else head += h;
+        lastSec = it.sec;
+      }
+      const p = it.path;
+      const selected = S.a.sel[i] === p && (i > 0 || it.sec === S.a.sec0);
+      const filtering = aFiltering();
+      const dim = filtering && !S.a.matchMap.has(p);
+      let marks = new Set();
+      if (filtering) {
+        const start = p.lastIndexOf('/') + 1;
+        if (hm && (hlPath === p || hlPath.startsWith(p + '/'))) marks = localMarks(hm.marks, start, p.length);
+        else if (S.a.matchMap.has(p)) marks = localMarks(S.a.matchMap.get(p).marks, start, p.length);
+      }
+      const hasKids = aVisibleKids(p).length > 0;
+      const cls = `crow${selected ? ' sel' : ''}${selected && focusedCol ? ' hl' : ''}${dim ? ' dim' : ''}${it.sec === 'recent' ? ' two' : ''}`;
+      const label = it.sec === 'recent'
+        ? `<span class="rt"><span>${esc(lastSeg(p))}</span><span class="sub">${esc(parentOf(p))}</span></span>`
+        : `<span class="rt">${segHtml(lastSeg(p), marks)}</span>`;
+      rows.push({
+        name: lastSeg(p),
+        html: `<div class="${cls}" role="option" aria-selected="${selected}" data-act="arow" data-col="${i}" data-sec="${it.sec}" data-path="${esc(p)}" data-name="${esc(lastSeg(p))}" title="${esc(p)}">${ICON.folder}${label}${isNew(p) ? '<span class="badge-new">New</span>' : ''}${hasKids ? `<span class="chev">${ICON.chev}</span>` : ''}</div>`,
+      });
+    }
+    const inner = host ? nfHostHtml(rows.filter((r) => r.name), S.nf.parent) : head + rows.map((r) => r.html).join('');
+    html += `<div class="col" data-col="${i}">${inner || '<div class="res-empty">Empty</div>'}</div>`;
+  }
+  body.innerHTML = `<div class="cols" id="cols">${html}</div>`;
+  const cols = $('cols');
+  cols.querySelectorAll('.col').forEach((col) => {
+    const sel = col.querySelector('.crow.sel');
+    if (sel) {
+      const top = sel.offsetTop - col.offsetTop;
+      if (top < col.scrollTop + 18 || top + sel.offsetHeight > col.scrollTop + col.clientHeight) col.scrollTop = Math.max(0, top - col.clientHeight / 2 + sel.offsetHeight / 2);
+    }
+  });
+  scrollColsToEnd(false);
+}
+function scrollColsToEnd(smooth) {
+  const cols = $('cols');
+  if (!cols) return;
+  const left = cols.scrollWidth - cols.clientWidth;
+  if (smooth && !reducedMotion()) cols.scrollTo({ left, behavior: 'smooth' });
+  else { cols.style.scrollBehavior = 'auto'; cols.scrollLeft = left; cols.style.scrollBehavior = ''; }
+}
+function renderList() {
+  const crumbs = [{ path: '', name: 'Archive' }].concat(S.b.scope ? chainOf(S.b.scope).map((p) => ({ path: p, name: lastSeg(p) })) : []);
+  $('pathBar').innerHTML = crumbs.map((c, i) => `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" class="crumb${i === crumbs.length - 1 ? ' cur' : ''}" data-act="crumb" data-path="${esc(c.path)}" tabindex="-1" id="crumb-${i}" title="${c.path ? esc(c.path) : 'Archive root (⌘↑)'}">${esc(c.name)}</button>`).join('');
+  const pb = $('pathBar'); pb.scrollLeft = pb.scrollWidth;
+  const body = $('pickerBody');
+  if (S.nf) {
+    const rows = kids(S.nf.parent).map((p) => ({
+      name: lastSeg(p),
+      html: `<div class="res" data-name="${esc(lastSeg(p))}" title="${esc(p)}">${ICON.folder}<span class="rt"><span class="last">${esc(lastSeg(p))}</span></span>${isNew(p) ? '<span class="badge-new">New</span>' : ''}</div>`,
+    }));
+    body.innerHTML = `<div class="list" id="bList"><div class="res-h">New folder in ${esc(where(S.nf.parent))}</div>${nfHostHtml(rows, S.nf.parent)}</div>`;
+    return;
+  }
+  const items = bItems();
+  const sel = bSelectable();
+  S.b.hl = clamp(S.b.hl, 0, Math.max(0, sel.length - 1));
+  const hlItem = sel[S.b.hl];
+  let si = -1, html = '';
+  for (const it of items) {
+    if (it.type === 'header') { html += `<div class="res-h">${esc(it.text)}</div>`; continue; }
+    if (it.type === 'info') { html += `<div class="res-empty">${esc(it.text)}</div>`; continue; }
+    si++;
+    const isHl = it === hlItem;
+    if (it.type === 'create') {
+      html += `<div class="res create${isHl ? ' hl' : ''}" role="option" aria-selected="${isHl}" id="createRow" data-act="create">${ICON.plus}<span class="rt">New Folder “${esc(it.name)}” in ${esc(where(it.parent))}</span></div><div class="res-empty">No folder${S.b.scope ? ` in ${esc(lastSeg(S.b.scope))}` : ''} matches. Tab, Return or ⇧⌘N creates it in ${esc(where(S.b.scope))}.</div>`;
+      continue;
+    }
+    const hasKids = !it.self && kids(it.path).length > 0;
+    const label = it.self ? `<span class="last">${esc(it.display)}</span><span class="par"> — this folder</span>` : pathHtml(it.display, it.marks);
+    html += `<div class="res${isHl ? ' hl' : ''}${it.self ? ' self' : ''}" role="option" aria-selected="${isHl}" id="bres-${si}" data-act="brow" data-si="${si}" title="${esc(it.path)}">${ICON.folder}<span class="rt">${label}</span>${isNew(it.path) ? '<span class="badge-new">New</span>' : ''}${hasKids ? `<button type="button" class="into" data-act="binto" data-path="${esc(it.path)}" tabindex="-1" title="Show subfolders (→)" aria-label="Show subfolders of ${esc(lastSeg(it.path))}">${ICON.chev}</button>` : ''}</div>`;
+  }
+  body.innerHTML = `<div class="list" id="bList">${html}</div>`;
+  const list = $('bList');
+  const hlEl = list.querySelector('.res.hl');
+  if (hlEl) {
+    const top = hlEl.offsetTop - list.offsetTop, bottom = top + hlEl.offsetHeight;
+    if (top < list.scrollTop + 22) list.scrollTop = Math.max(0, top - 26);
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 4;
+    $('filterInput').setAttribute('aria-activedescendant', hlEl.id);
+  }
+}
+function renderContents() {
+  const box = $('contents');
+  const folder = contentsFolder();
+  const pathEl = $('contentsPath'), cnt = $('contentsCount'), inEl = $('contentsIn');
+  if (!folder) {
+    inEl.textContent = 'Folder contents'; pathEl.textContent = ''; cnt.textContent = '';
+    box.innerHTML = `<div class="ct-empty">${S.nf ? 'Name the new folder; its contents appear once it is chosen.' : 'Highlight a folder to see its files.'}</div>`;
+    S.contentsShown = null;
+    return;
+  }
+  inEl.textContent = 'In';
+  pathEl.textContent = folder; pathEl.title = folder;
+  if (isNew(folder)) {
+    cnt.textContent = '';
+    box.innerHTML = '<div class="ct-empty">New folder. docsort creates it when you move the file, so cancelling leaves nothing behind.</div>';
+    S.contentsShown = folder;
+    return;
+  }
+  const files = contentsOf(folder);
+  cnt.textContent = files.length === 1 ? '1 file' : `${files.length} files`;
+  const conflict = findConflict(folder);
+  const taken = S.take && S.take.folder === folder ? S.take.idx : -1;
+  box.innerHTML = files.length
+    ? files.map((n, i) => `<div class="ct${n === conflict ? ' conflict' : ''}${i === taken ? ' taken' : ''}" data-act="ct" data-i="${i}" id="ct-${i}" title="Click to use “${esc(stemOf(n))}” as the name">${fileIcon(n)}<span class="tn">${esc(n)}</span></div>`).join('')
+    : '<div class="ct-empty">No files yet.</div>';
+  if (S.contentsShown !== folder) { box.scrollTop = box.scrollHeight; S.contentsShown = folder; }
+  const focusRow = (conflict && box.querySelector('.ct.conflict')) || (taken >= 0 && $(`ct-${taken}`));
+  if (focusRow) {
+    const top = focusRow.offsetTop; // .contents is the offset parent
+    if (top < box.scrollTop || top + focusRow.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top - box.clientHeight / 2;
+  }
+}
+function renderName() {
+  const inp = $('nameInput');
+  $('revertBtn').hidden = inp.value === FILE_STEM;
+  $('revertBtn').innerHTML = ICON.revert;
+  const notice = $('nameNotice');
+  const folder = contentsFolder();
+  const conflict = findConflict(folder);
+  let html = '', cls = 'notice';
+  if (S.nameHint) { html = `<span>${esc(S.nameHint)}</span>`; cls += ' info'; }
+  else if (conflict) { html = `${ICON.warn}<span>“${esc(conflict)}” already exists in this folder.</span>`; cls += ' warn'; }
+  notice.className = cls;
+  notice.hidden = !html;
+  notice.innerHTML = html;
+  const target = S.chosen || (folder || null);
+  $('moveBtn').disabled = !target && !(highlighted() && highlighted().kind === 'create');
+  $('moveHint').textContent = S.focus === 'name' ? 'Return does not move' : S.focus === 'picker' ? '⌘Return moves with this name' : '';
+  $('nameBox').title = 'Name the file. ⌥↑/⌥↓ take names from Folder contents, ⌘D inserts today’s date, ⇧⌘R reverts.';
+}
+const LEGEND = {
+  A: [
+    ['type', 'Filter the whole tree; columns keep only matches and their parents'],
+    ['↑ ↓', 'Move within the focused column'],
+    ['→ ←', 'Into the highlighted folder / out to its parent'],
+    ['⌘G ⇧⌘G', 'Next / previous match in rank order (also ⌃G ⌃⇧G)'],
+    ['Tab Return', 'Choose the highlighted folder, go to the name'],
+    ['⇧⌘N', 'New folder inside the highlighted one (also ⌃⇧N)'],
+    ['Esc', 'Clear the filter; again: leave the picker'],
+    ['⌘Return', 'Move now (from picker or name)'],
+    ['dbl-click', 'Choose a folder'],
+  ],
+  B: [
+    ['type', 'Filter inside the current folder (scope chip shows it)'],
+    ['↑ ↓', 'Move the highlight'],
+    ['→', 'Step into the highlighted folder; its first row is the folder itself'],
+    ['← ⌫', 'Step out, when the filter is empty'],
+    ['⌘↑', 'Back to the archive root'],
+    ['Tab Return', 'Choose the highlighted folder, go to the name'],
+    ['⇧⌘N', 'New folder: steps into the highlighted folder (also ⌃⇧N)'],
+    ['Esc', 'Clear the filter; again: leave the picker'],
+    ['⌘Return', 'Move now (from picker or name)'],
+    ['dbl-click', 'Step in, or choose a folder without subfolders'],
+  ],
+  name: [
+    ['⌥↑ ⌥↓', 'Take the previous / next name from Folder contents'],
+    ['⌘D ⌥⌘D', 'Insert today’s / the file’s date'],
+    ['⇧⌘R ↺', 'Revert to the original name (also ⌃⇧R)'],
+    ['⇧Tab Esc', 'Back to the picker'],
+  ],
+};
+function renderLegend() {
+  const row = ([k, w]) => `<div class="kr"><span class="keys">${k.split(' ').map((x) => (x === 'type' || x === 'dbl-click' ? `<em>${x}</em>` : `<kbd>${esc(x)}</kbd>`)).join(' ')}</span><span class="what">${esc(w)}</span></div>`;
+  $('legend').innerHTML = `<h2 id="legendTitle">Keys · candidate ${S.cand}<span>${S.cand === 'A' ? 'Columns with filter' : 'Drill-down list with scoped filter'}</span></h2>
+    <div class="grid">${LEGEND[S.cand].map(row).join('')}${LEGEND.name.map(([k, w]) => row([k, 'Name field: ' + w])).join('')}</div>`;
+}
+function renderHeader() {
+  document.querySelectorAll('#candSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.cand === S.cand)));
+}
+function renderAll() {
+  renderHeader();
+  renderPanelWidth();
+  renderFilterField();
+  renderPicker();
+  renderContents();
+  renderName();
+  renderLegend();
+}
+
+/* ---------------------------------------------------------------- focus */
+function focusOf(el) {
+  const id = el && el.id;
+  if (id === 'filterInput') return 'picker';
+  if (id === 'nfInput') return 'newfolder';
+  if (id === 'nameInput' || id === 'revertBtn' || id === 'moveBtn') return 'name';
+  return 'none';
+}
+function syncFocus() {
+  const f = focusOf(document.activeElement);
+  if (f === S.focus) return;
+  const prev = S.focus;
+  S.focus = f;
+  if (prev === 'newfolder' && S.nf && (f === 'picker' || f === 'name')) {
+    const snap = S.nf.snap; S.nf = null; restorePicker(snap);
+  }
+  if (f === 'picker' && S.chosen) unchoose();
+  renderAll();
+}
+
+/* ---------------------------------------------------------------- keyboard */
+function keyOf(e) {
+  let key = e.key;
+  if (key === ' ') key = 'space';
+  else if (key.length === 1) {
+    if (e.altKey && /^Key[A-Z]$/.test(e.code)) key = e.code.slice(3).toLowerCase();
+    else key = key.toLowerCase();
+  }
+  if ((e.metaKey || e.ctrlKey) && /^Key[A-Z]$/.test(e.code)) key = e.code.slice(3).toLowerCase();
+  return { key, cmd: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey };
+}
+function is(k, spec) {
+  const parts = spec.split('+');
+  const key = parts.pop();
+  return k.key === key && k.cmd === parts.includes('cmd') && k.ctrl === parts.includes('ctrl') && k.alt === parts.includes('alt') && k.shift === parts.includes('shift');
+}
+const caretAtEnd = (inp) => inp.selectionStart === inp.value.length && inp.selectionEnd === inp.value.length;
+function pickerKey(k) {
+  const inp = $('filterInput');
+  if (is(k, 'cmd+Enter') || is(k, 'ctrl+Enter')) { doMove(); return true; }
+  if (is(k, 'Enter') || is(k, 'Tab')) { chooseHighlighted(); return true; }
+  if (is(k, 'ArrowDown') || is(k, 'ArrowUp')) {
+    const d = k.key === 'ArrowDown' ? 1 : -1;
+    if (S.cand === 'A') aMove(d); else bMove(d);
+    return true;
+  }
+  if (is(k, 'ArrowRight')) {
+    if (!caretAtEnd(inp)) return false;
+    if (S.cand === 'A') aInto(); else bInto();
+    return true;
+  }
+  if (is(k, 'ArrowLeft')) {
+    if (S.cand === 'A') { if (!caretAtEnd(inp)) return false; aOut(); return true; }
+    if (inp.value) return false;
+    bOut(); return true;
+  }
+  if (is(k, 'Backspace') && inp.value === '' && S.cand === 'B' && S.b.scope) { bOut(); return true; }
+  if (is(k, 'cmd+ArrowUp') || is(k, 'ctrl+ArrowUp')) { if (S.cand === 'B') bRoot(); return true; }
+  if (is(k, 'cmd+g') || is(k, 'ctrl+g')) { if (S.cand === 'A') aJump(1); return true; }
+  if (is(k, 'cmd+shift+g') || is(k, 'ctrl+shift+g')) { if (S.cand === 'A') aJump(-1); return true; }
+  if (is(k, 'cmd+shift+n') || is(k, 'ctrl+shift+n')) { newFolderCmd(); return true; }
+  if (is(k, 'cmd+d') || is(k, 'cmd+alt+d')) return true;
+  if (is(k, 'Escape')) {
+    if (S.query) { clearFilter(); setStatus('Filter cleared.'); }
+    else { inp.blur(); setStatus('Second Esc: in the app this returns to the sidebar; here it only leaves the picker.'); }
+    return true;
+  }
+  return false;
+}
+function nfKey(k) {
+  const inp = $('nfInput');
+  if (is(k, 'Enter') || is(k, 'Tab')) { confirmNf(); return true; }
+  if (is(k, 'Escape') || is(k, 'shift+Tab')) { cancelNf(); return true; }
+  if (is(k, 'cmd+Enter') || is(k, 'ctrl+Enter')) { doMove(); return true; }
+  if (is(k, 'cmd+d')) { insertDate(TODAY, inp); onNfInput(); return true; }
+  if (is(k, 'cmd+shift+n') || is(k, 'ctrl+shift+n')) return true;
+  return false;
+}
+function nameKey(k) {
+  const inp = $('nameInput');
+  if (is(k, 'cmd+Enter') || is(k, 'ctrl+Enter')) { doMove(); return true; }
+  if (is(k, 'Enter')) { flashHint('Press ⌘Return to move'); return true; }
+  if (is(k, 'alt+ArrowUp')) { takeName(-1); return true; }
+  if (is(k, 'alt+ArrowDown')) { takeName(1); return true; }
+  if (is(k, 'cmd+shift+r') || is(k, 'ctrl+shift+r')) { revertName(); return true; }
+  if (is(k, 'cmd+d')) { insertDate(TODAY, inp); onNameInput(); return true; }
+  if (is(k, 'cmd+alt+d')) { insertDate(FILE_DATE, inp); onNameInput(); return true; }
+  if (is(k, 'shift+Tab') || is(k, 'Escape')) { backToPicker(); return true; }
+  if (is(k, 'cmd+shift+n') || is(k, 'ctrl+shift+n')) { backToPicker(); newFolderCmd(); return true; }
+  return false;
+}
+function onNameInput() {
+  S.nameHint = '';
+  S.take = null;
+  renderContents();
+  renderName();
+}
+document.addEventListener('keydown', (e) => {
+  const a = document.activeElement;
+  const id = a && a.id;
+  const k = keyOf(e);
+  let handled = false;
+  if (id === 'filterInput') handled = pickerKey(k);
+  else if (id === 'nfInput') handled = nfKey(k);
+  else if (id === 'nameInput') handled = nameKey(k);
+  else if (a && $('win').contains(a) && (is(k, 'cmd+Enter') || is(k, 'ctrl+Enter'))) { doMove(); handled = true; }
+  if (handled) { e.preventDefault(); e.stopPropagation(); }
+});
+
+/* ---------------------------------------------------------------- mouse */
+function focusPicker() {
+  if (S.nf) { const snap = S.nf.snap; S.nf = null; restorePicker(snap); }
+  if (S.chosen) unchoose();
+  S.focus = 'picker';
+  const inp = $('filterInput');
+  inp.focus({ preventScroll: true });
+}
+$('win').addEventListener('mousedown', (e) => {
+  if (e.target.closest('input')) return;
+  e.preventDefault();
+});
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) {
+    if (e.target.closest('#filterBox')) { $('filterInput').focus(); }
+    return;
+  }
+  const act = el.dataset.act;
+  switch (act) {
+    case 'cand':
+      if (S.cand !== el.dataset.cand) { S.cand = el.dataset.cand; resetState(); renderAll(); }
+      $('filterInput').focus({ preventScroll: true });
+      break;
+    case 'theme': setTheme(el.dataset.themeChoice); break;
+    case 'reset': resetState(); renderAll(); $('filterInput').focus({ preventScroll: true }); break;
+    case 'clear-ticks': S.done = { A: new Set(), B: new Set() }; renderTasks(); break;
+    case 'arow': {
+      // The second click of a double-click is ignored: the first one may have scrolled the columns under the pointer.
+      if (e.detail >= 2) break;
+      focusPicker();
+      aClickRow(+el.dataset.col, el.dataset.path, el.dataset.sec);
+      renderAll();
+      break;
+    }
+    case 'brow': {
+      if (e.detail >= 2) break;
+      focusPicker();
+      S.b.hl = +el.dataset.si;
+      renderAll();
+      break;
+    }
+    case 'binto': if (e.detail >= 2) break; focusPicker(); bInto(el.dataset.path); renderAll(); break;
+    case 'crumb': focusPicker(); bJump(el.dataset.path); renderAll(); break;
+    case 'create': { const h = highlighted(); if (h && h.kind === 'create') createFromQuery(h); break; }
+    case 'newfolder': {
+      if (S.chosen) unchoose();
+      if (S.focus !== 'picker') { S.focus = 'picker'; $('filterInput').focus({ preventScroll: true }); }
+      newFolderCmd();
+      break;
+    }
+    case 'ct': takeNameFromClick(+el.dataset.i); break;
+    case 'revert': revertName(); break;
+    case 'move': doMove(); break;
+    case 'clear': focusPicker(); if (S.query) clearFilter(); renderAll(); break;
+    case 'token': backToPicker(); break;
+    default: break;
+  }
+});
+/* A double-click acts on the row its first click highlighted. */
+document.addEventListener('dblclick', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || (el.dataset.act !== 'arow' && el.dataset.act !== 'brow')) return;
+  const h = highlighted();
+  if (!h || h.kind !== 'folder') return;
+  if (S.cand === 'A' || h.self) choose(h.path, h.via);
+  else if (kids(h.path).length) { bInto(h.path); renderAll(); }
+  else choose(h.path, h.via);
+});
+/* Header buttons keep the picker focused, so the panel does not jump while switching. */
+document.querySelector('.intro').addEventListener('mousedown', (e) => {
+  if (e.target.closest('[data-act="cand"], [data-act="reset"], [data-act="theme"], [data-act="clear-ticks"]')) e.preventDefault();
+});
+$('filterInput').addEventListener('input', onFilterInput);
+$('nameInput').addEventListener('input', onNameInput);
+$('pickerBody').addEventListener('input', (e) => { if (e.target.id === 'nfInput') onNfInput(); });
+document.addEventListener('focusin', syncFocus);
+document.addEventListener('focusout', () => setTimeout(syncFocus, 0));
+$('panel').addEventListener('transitionend', (e) => { if (e.propertyName === 'width') scrollColsToEnd(true); });
+
+/* ---------------------------------------------------------------- theme */
+function setTheme(choice) {
+  if (choice === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', choice);
+  document.querySelectorAll('#themeSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.themeChoice === choice)));
+  try { localStorage.setItem('docsort-picker-theme', choice); } catch (err) { /* storage unavailable: keep the choice for this visit only */ }
+}
+
+/* ---------------------------------------------------------------- start */
+(function start() {
+  let theme = 'auto';
+  try { theme = localStorage.getItem('docsort-picker-theme') || 'auto'; } catch (err) { /* storage unavailable: default to auto */ }
+  setTheme(['auto', 'light', 'dark'].includes(theme) ? theme : 'auto');
+  renderTasks();
+  resetState();
+  renderAll();
+  $('filterInput').focus({ preventScroll: true });
+})();
+</script>
