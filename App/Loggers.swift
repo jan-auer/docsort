@@ -10,4 +10,7 @@ extension Logger {
 
   /// Loading and showing file previews.
   nonisolated static let preview = Logger(subsystem: subsystem, category: "preview")
+
+  /// Opening files in other apps and revealing them in Finder.
+  nonisolated static let fileActions = Logger(subsystem: subsystem, category: "file-actions")
 }
