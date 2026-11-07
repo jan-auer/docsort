@@ -81,7 +81,7 @@ public struct InboxScanner: Sendable {
   }
 }
 
-/// The sort key for inbox rows: newest date first, then Finder name order, then the inbox-relative path so that
+/// The sort key for inbox rows: oldest date first, then Finder name order, then the inbox-relative path so that
 /// equal names in different subfolders still sort the same way every time.
 private struct DisplayOrder: Comparable {
   let date: Date
@@ -110,7 +110,7 @@ private struct DisplayOrder: Comparable {
   }
 
   static func < (lhs: DisplayOrder, rhs: DisplayOrder) -> Bool {
-    if lhs.date != rhs.date { return lhs.date > rhs.date }
+    if lhs.date != rhs.date { return lhs.date < rhs.date }
     let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
     if nameOrder != .orderedSame { return nameOrder == .orderedAscending }
     return lhs.path.localizedStandardCompare(rhs.path) == .orderedAscending

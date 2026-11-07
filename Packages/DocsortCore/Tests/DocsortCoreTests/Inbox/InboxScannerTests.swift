@@ -7,8 +7,8 @@ import Testing
 struct InboxScannerTests {
   let scanner = InboxScanner()
 
-  @Test("lists top-level files newest first")
-  func listsTopLevelFilesNewestFirst() throws {
+  @Test("lists top-level files oldest first")
+  func listsTopLevelFilesOldestFirst() throws {
     let inbox = try TemporaryDirectory()
     try inbox.createFile("alt.pdf", modified: testDate(10))
     try inbox.createFile("neu.pdf", modified: testDate(30))
@@ -16,7 +16,7 @@ struct InboxScannerTests {
 
     let listing = try scanner.scan(inbox.url)
 
-    #expect(outline(listing) == ["neu.pdf", "mittel.pdf", "alt.pdf"])
+    #expect(outline(listing) == ["alt.pdf", "mittel.pdf", "neu.pdf"])
     #expect(listing.items.map(\.subfolderPath) == [nil, nil, nil])
     #expect(listing.problems.isEmpty)
   }
@@ -32,8 +32,8 @@ struct InboxScannerTests {
 
     let listing = try scanner.scan(inbox.url)
 
-    #expect(outline(listing) == ["datei.pdf", "Ordner/[innen.pdf]"])
-    #expect(listing.items.map(\.name) == ["datei.pdf", "innen.pdf"])
+    #expect(outline(listing) == ["Ordner/[innen.pdf]", "datei.pdf"])
+    #expect(listing.items.map(\.name) == ["innen.pdf", "datei.pdf"])
   }
 
   @Test("skips hidden files, hidden folders and their contents")
@@ -80,21 +80,21 @@ struct InboxScannerTests {
 
     let listing = try scanner.scan(inbox.url)
 
-    #expect(outline(listing) == ["neu.pdf", "Ordner/[innen.pdf]", "alt.pdf"])
+    #expect(outline(listing) == ["alt.pdf", "Ordner/[innen.pdf]", "neu.pdf"])
   }
 
-  @Test("keeps a group's files together, newest first")
-  func keepsGroupFilesTogetherNewestFirst() throws {
+  @Test("keeps a group's files together, oldest first")
+  func keepsGroupFilesTogetherOldestFirst() throws {
     let inbox = try TemporaryDirectory()
     try inbox.createFile("Gruppe/erste.pdf", modified: testDate(10))
     try inbox.createFile("Gruppe/Tief/zweite.pdf", modified: testDate(30))
     try inbox.createFile("dazwischen.pdf", modified: testDate(20))
-    try inbox.setModificationDate(testDate(15), of: inbox.url.appending(path: "Gruppe"))
+    try inbox.setModificationDate(testDate(25), of: inbox.url.appending(path: "Gruppe"))
 
     let listing = try scanner.scan(inbox.url)
 
-    #expect(outline(listing) == ["dazwischen.pdf", "Gruppe/[zweite.pdf, erste.pdf]"])
-    #expect(listing.items.map(\.name) == ["dazwischen.pdf", "zweite.pdf", "erste.pdf"])
+    #expect(outline(listing) == ["dazwischen.pdf", "Gruppe/[erste.pdf, zweite.pdf]"])
+    #expect(listing.items.map(\.name) == ["dazwischen.pdf", "erste.pdf", "zweite.pdf"])
   }
 
   @Test("breaks ties on equal dates by name")

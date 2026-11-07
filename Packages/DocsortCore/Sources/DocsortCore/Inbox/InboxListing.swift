@@ -34,7 +34,7 @@ public struct InboxSubfolder: Hashable, Sendable, Identifiable {
   public let name: String
   /// The folder's own modification date, falling back to its creation date. Orders the folder among its siblings.
   public let date: Date
-  /// Every visible item below the folder, newest first by modification date, ties by name. Never empty.
+  /// Every visible item below the folder, oldest first by modification date, ties by name. Never empty.
   public let items: [InboxItem]
 }
 
@@ -58,7 +58,7 @@ public enum InboxEntry: Hashable, Sendable, Identifiable {
 public struct InboxListing: Sendable {
   /// The scanned inbox folder, as passed to the scanner.
   public let folder: URL
-  /// Top-level items and folders, newest first: an item by its modification date, a folder by its own ``InboxSubfolder/date``;
+  /// Top-level items and folders, oldest first: an item by its modification date, a folder by its own ``InboxSubfolder/date``;
   /// ties by name. Folders without visible items are left out.
   public let entries: [InboxEntry]
   /// Paths below the inbox that could not be read, with reasons. Everything readable is still listed.
