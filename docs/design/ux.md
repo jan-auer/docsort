@@ -68,8 +68,10 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
 - **Centre: preview** (takes the remaining width, at least 420 pt). PDFs render with PDFKit: continuous scroll,
   fit-to-width by default with a margin around each page; zooming (⌘− or pinch) also goes below fit-to-width. Images render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A
   thin footer shows page count, size, kind and dates.
-- **Right: filing panel** (340 pt, 300–480, resizable against the preview by the split's divider, toggled with ⌥⌘I
-  and the trailing toolbar button). Laid out list first, like the save panel (see "Filing panel look"). Top to
+- **Right: filing panel** (340 pt, 300–480, resizable against the preview by the divider between them, toggled with
+  ⌥⌘I and the trailing toolbar button, `sidebar.trailing`; it slides in and out at the trailing edge as an inspector
+  does). SwiftUI offers no system toggle for a trailing pane, the inspector included, so the toggle is the app's own
+  button. Laid out list first, like the save panel (see "Filing panel look"). Top to
   bottom:
   1. **Suggestions slot.** Reserved, empty and hidden for now. Later work (PDF text, OCR, download source) puts up to
      three suggested destinations and a suggested name here as clickable chips, above the picker.

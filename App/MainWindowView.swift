@@ -40,15 +40,21 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         if model.isFilingPanelShown {
-          PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
-          FilingPanel(
-            model: model,
-            locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
-          )
-          .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
-          .frame(maxHeight: .infinity)
+          HStack(spacing: 0) {
+            PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
+            FilingPanel(
+              model: model,
+              locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
+            )
+            .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
+            .frame(maxHeight: .infinity)
+          }
+          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
+          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
+          .transition(.move(edge: .trailing))
         }
       }
+      .animation(.smooth(duration: 0.3), value: model.isFilingPanelShown)
       .toolbar { fileToolbar }
       .navigationTitle(windowTitle)
       .navigationSubtitle(windowSubtitle)
