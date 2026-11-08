@@ -59,15 +59,22 @@ struct SidebarDateTextTests {
     #expect(nextYear == "1 Feb 2035")
   }
 
-  @Test("The order of day and month follows the locale")
+  @Test("Order, month names and punctuation follow the locale")
   func localeOrder() throws {
     let now = try date(year: 2034, month: 11, day: 8)
+    let thisYear = try date(year: 2034, month: 10, day: 12)
+    let lastYear = try date(year: 2033, month: 10, day: 12)
+    let austrian = Locale(identifier: "de_AT")
+    let american = Locale(identifier: "en_US")
 
-    let american = SidebarDateText.text(
-      for: try date(year: 2034, month: 10, day: 12), relativeTo: now, calendar: calendar,
-      locale: Locale(identifier: "en_US"))
+    func text(_ date: Date, _ locale: Locale) -> String {
+      SidebarDateText.text(for: date, relativeTo: now, calendar: calendar, locale: locale)
+    }
 
-    #expect(american == "Oct 12")
+    #expect(text(thisYear, austrian) == "12. Okt.")
+    #expect(text(lastYear, austrian) == "12. Okt. 2033")
+    #expect(text(thisYear, american) == "Oct 12")
+    #expect(text(lastYear, american) == "Oct 12, 2033")
   }
 
   @Test("The year is decided in the calendar's time zone")
