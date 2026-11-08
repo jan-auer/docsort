@@ -22,4 +22,13 @@ extension Logger {
 
   /// The app's own preferences other than the folders, such as the search ranking.
   nonisolated static let preferences = Logger(subsystem: subsystem, category: "preferences")
+
+  /// Scanning the inbox folders and marking the files handled in this session.
+  nonisolated static let inbox = Logger(subsystem: subsystem, category: "inbox")
+
+  /// Moving, trashing and undoing files, and loading and saving the filing history.
+  nonisolated static let filing = Logger(subsystem: subsystem, category: "filing")
+
+  /// Building the UI-test fixture (debug builds only).
+  nonisolated static let fixture = Logger(subsystem: subsystem, category: "fixture")
 }

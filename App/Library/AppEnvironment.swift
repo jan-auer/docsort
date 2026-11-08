@@ -11,8 +11,10 @@ import OSLog
 ///   the user's settings, bookmarks or filing history. The app then starts with no folders configured. Tests build
 ///   their own environments (with fake bookmarks) for the models they test.
 ///
-/// A further launch mode, for example a UI-test fixture, gets its own case in `AppLaunchMode` and its own factory
-/// here; the models only ever see the environment.
+/// - `.uiTestFixture` (debug builds only): `UITestFixture.makeEnvironment()`, a freshly built invented archive and
+///   inboxes in the app's temporary directory, for the UI tests.
+///
+/// The models only ever see the environment.
 struct AppEnvironment {
   /// Where the folder settings and the other preferences are stored.
   let defaults: UserDefaults
@@ -20,6 +22,8 @@ struct AppEnvironment {
   let folderResolver: FolderResolver
   /// The JSON file the filing history is loaded from and saved to.
   let filingHistoryURL: URL
+  /// Where Move to Trash sends files: the user's Trash, except in the UI-test fixture.
+  var fileTrash: any FileTrash = SystemTrash()
 
   /// The environment of a normal launch: standard user defaults, security-scoped bookmarks with the system's scope
   /// access, and the history file in Application Support.
@@ -61,6 +65,14 @@ struct AppEnvironment {
       Logger.lifecycle.notice(
         "Running as the unit-test host: using an inert environment, not the user's settings")
       return inert(named: "unit-test-host")
+    case .uiTestFixture:
+      #if DEBUG
+        Logger.lifecycle.notice("Running with the UI-test fixture, not the user's settings")
+        return UITestFixture.makeEnvironment()
+      #else
+        // `current()` returns this mode only in debug builds.
+        return live()
+      #endif
     }
   }
 }
@@ -71,11 +83,21 @@ nonisolated enum AppLaunchMode: Equatable, Sendable {
   case standard
   /// The app hosts the `DocsortTests` unit tests: XCTest has set `XCTestConfigurationFilePath` in its environment.
   case unitTestHost
+  /// A UI test launched the app with `uiTestFixtureArgument` (debug builds only).
+  case uiTestFixture
 
-  /// The launch mode that `processEnvironment` (by default this process's environment variables) describes.
+  /// The launch argument with which UI tests ask for the UI-test fixture.
+  static let uiTestFixtureArgument = "-docsort-ui-test-fixture"
+
+  /// The launch mode that `processEnvironment` and `arguments` (by default this process's environment variables and
+  /// launch arguments) describe.
   static func current(
-    processEnvironment: [String: String] = ProcessInfo.processInfo.environment
+    processEnvironment: [String: String] = ProcessInfo.processInfo.environment,
+    arguments: [String] = ProcessInfo.processInfo.arguments
   ) -> AppLaunchMode {
-    processEnvironment["XCTestConfigurationFilePath"] == nil ? .standard : .unitTestHost
+    #if DEBUG
+      if arguments.contains(uiTestFixtureArgument) { return .uiTestFixture }
+    #endif
+    return processEnvironment["XCTestConfigurationFilePath"] == nil ? .standard : .unitTestHost
   }
 }

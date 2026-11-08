@@ -1,0 +1,479 @@
+import DocsortCore
+import Foundation
+import OSLog
+import Observation
+
+/// What happened to an inbox file in this session.
+nonisolated enum InboxItemMark: Hashable, Sendable {
+  /// The file was filed to `destinationPath` (archive-relative) and now lies at `newURL`.
+  case filed(newURL: URL, destinationPath: String)
+  /// The file was moved to the Trash.
+  case trashed
+}
+
+/// One file row of an inbox section: the file as it was listed and what happened to it in this session.
+nonisolated struct InboxRow: Hashable, Sendable, Identifiable {
+  /// The file as the inbox scan listed it.
+  let item: InboxItem
+  /// What happened to the file in this session; `nil` while it is unhandled.
+  let mark: InboxItemMark?
+
+  /// The file's identity.
+  var id: InboxItemID { InboxItemID(item) }
+
+  /// Where the file is now: its archive location once filed, otherwise its inbox location.
+  var currentURL: URL {
+    if case .filed(let newURL, _) = mark { return newURL }
+    return item.url
+  }
+
+  /// Whether the file is still waiting to be filed.
+  var isUnhandled: Bool { mark == nil }
+}
+
+/// A subfolder of an inbox with the file rows below it, shown as a disclosure row.
+nonisolated struct InboxGroup: Hashable, Sendable, Identifiable {
+  /// The subfolder's location, which identifies the group.
+  let url: URL
+  /// The subfolder's name.
+  let name: String
+  /// The date that places the group among its siblings.
+  let date: Date
+  /// The files below the subfolder, in display order.
+  var rows: [InboxRow]
+
+  var id: URL { url }
+}
+
+/// One top-level entry of an inbox section.
+nonisolated enum InboxSectionEntry: Hashable, Sendable, Identifiable {
+  /// A file directly in the inbox.
+  case row(InboxRow)
+  /// A subfolder with its files.
+  case group(InboxGroup)
+
+  /// The entry's identity: the file's for a row, the folder's URL for a group.
+  var id: String {
+    switch self {
+    case .row(let row): "row:\(row.id)"
+    case .group(let group): "group:\(group.url.path(percentEncoded: false))"
+    }
+  }
+
+  /// The entry's rows: the file itself, or the group's files.
+  var rows: [InboxRow] {
+    switch self {
+    case .row(let row): [row]
+    case .group(let group): group.rows
+    }
+  }
+}
+
+/// Why an inbox cannot be listed.
+nonisolated enum InboxProblem: Hashable, Sendable {
+  /// Nothing is at the inbox's folder path.
+  case folderNotFound(path: String)
+  /// The inbox's path names something that is not a folder.
+  case notAFolder(path: String)
+  /// The folder exists but cannot be read; `reason` is the system's explanation.
+  case unreadable(path: String, reason: String)
+}
+
+/// What an inbox section shows.
+nonisolated enum InboxSectionContent: Hashable, Sendable {
+  /// The first scan of the inbox has not finished yet.
+  case scanning
+  /// The inbox's entries in display order; `problems` lists what the scan could not read.
+  case listing([InboxSectionEntry], problems: [ScanProblem])
+  /// The inbox cannot be listed.
+  case unreachable(InboxProblem)
+}
+
+/// One configured inbox as the sidebar shows it.
+nonisolated struct InboxSection: Hashable, Sendable, Identifiable {
+  /// The inbox's identity in the folder settings.
+  let id: InboxFolder.ID
+  /// The inbox's display label.
+  let label: String
+  /// What the section shows.
+  let content: InboxSectionContent
+
+  /// The section's file rows, flattened in display order.
+  var rows: [InboxRow] {
+    guard case .listing(let entries, _) = content else { return [] }
+    return entries.flatMap(\.rows)
+  }
+}
+
+/// The one owner of the inbox rows the sidebar shows: lists every configured inbox and merges in what happened to
+/// its files in this session.
+///
+/// One per app. It follows a `FolderLibrary`'s inboxes and scans them with `InboxScanner` in a `@concurrent`
+/// function, off the main actor: at launch, whenever the inboxes change, and on `refresh()`. A scan whose inboxes
+/// have been superseded is ignored.
+///
+/// Files filed or trashed in this session are marked (`markFiled`, `markTrashed`) by `InboxItemID`. A marked file
+/// that is no longer on disk keeps its row, in its old place, across rescans (decision `inbox-and-history-behaviour`:
+/// the list never shuffles). `unmark` (for undo) keeps the row until the next scan finds the file back on disk.
+///
+/// Like the other libraries it uses only Foundation, Observation and DocsortCore.
+@Observable
+final class InboxLibrary {
+  /// One section per configured inbox, in the settings' order.
+  private(set) var sections: [InboxSection] = []
+
+  /// The configured inboxes the sections belong to.
+  @ObservationIgnored private var inboxes: [ConfiguredInbox] = []
+  /// The latest scan result per inbox.
+  @ObservationIgnored private var scans: [InboxFolder.ID: ScanResult] = [:]
+  /// Rows to keep showing: marked files, and unmarked ones until the next scan of their inbox.
+  @ObservationIgnored private var keptRows: [InboxItemID: KeptRow] = [:]
+  /// The rows of `sections` by identity, with the label of their section.
+  @ObservationIgnored private var rowsByID: [InboxItemID: (row: InboxRow, sectionLabel: String)] =
+    [:]
+  /// Counts scans, so a superseded scan's result is ignored.
+  @ObservationIgnored private var scanGeneration = 0
+  @ObservationIgnored private var scanTask: Task<Void, Never>?
+  @ObservationIgnored private var observationTask: Task<Void, Never>?
+
+  /// An inbox library that is told its inboxes through `update(inboxes:)`.
+  init() {}
+
+  /// An inbox library listing `folders`' inboxes, rescanning whenever they change.
+  convenience init(folders: FolderLibrary) {
+    self.init()
+    observationTask = Task { [weak self] in
+      for await inboxes in Observations({ folders.inboxes }) {
+        guard let self else { return }
+        update(inboxes: inboxes)
+      }
+    }
+  }
+
+  isolated deinit {
+    observationTask?.cancel()
+    scanTask?.cancel()
+  }
+
+  // MARK: Scanning
+
+  /// Lists `inboxes` from now on and scans them, unless they are the inboxes already listed.
+  func update(inboxes: [ConfiguredInbox]) {
+    guard inboxes != self.inboxes else { return }
+    self.inboxes = inboxes
+    let ids = Set(inboxes.map(\.id))
+    scans = scans.filter { ids.contains($0.key) }
+    rescan()
+  }
+
+  /// Scans every inbox again, for example on View › Refresh.
+  func refresh() {
+    rescan()
+  }
+
+  /// Waits until the scan in progress, if any, has finished and been applied.
+  func waitForScan() async {
+    await scanTask?.value
+  }
+
+  private func rescan() {
+    scanGeneration += 1
+    let generation = scanGeneration
+    var folders: [(InboxFolder.ID, URL)] = []
+    for inbox in inboxes {
+      if let url = inbox.url, inbox.folder.isUsable {
+        folders.append((inbox.id, url))
+      } else {
+        scans[inbox.id] = .failed(Self.problem(for: inbox.folder))
+      }
+    }
+    rebuildSections()
+    scanTask?.cancel()
+    scanTask = Task { [weak self] in
+      let results = await Self.scan(folders)
+      self?.apply(results, generation: generation)
+    }
+  }
+
+  /// Applies a finished scan, unless a newer one has started meanwhile.
+  private func apply(_ results: [InboxFolder.ID: ScanResult], generation: Int) {
+    guard generation == scanGeneration, !Task.isCancelled else {
+      Logger.inbox.debug("Ignoring an inbox scan superseded by a newer one")
+      return
+    }
+    for (id, result) in results {
+      scans[id] = result
+      // The scan shows what is on disk now; rows kept only for an undo are no longer needed.
+      keptRows = keptRows.filter { $0.value.sectionID != id || $0.value.mark != nil }
+    }
+    rebuildSections()
+    let itemCount = sections.reduce(0) { $0 + $1.rows.count }
+    Logger.inbox.notice(
+      "Scanned \(results.count, privacy: .public) inbox(es): \(itemCount, privacy: .public) row(s)")
+  }
+
+  /// The outcome of scanning one inbox.
+  private enum ScanResult: Sendable {
+    case listed(InboxListing)
+    case failed(InboxProblem)
+  }
+
+  /// Scans each of `folders`, off the main actor.
+  @concurrent private static func scan(
+    _ folders: [(InboxFolder.ID, URL)]
+  ) async -> [InboxFolder.ID: ScanResult] {
+    var results: [InboxFolder.ID: ScanResult] = [:]
+    let scanner = InboxScanner()
+    for (id, url) in folders {
+      do {
+        results[id] = .listed(try scanner.scan(url))
+      } catch {
+        results[id] = .failed(problem(for: error))
+      }
+    }
+    return results
+  }
+
+  // MARK: Marks
+
+  /// Marks the file `id` as filed to `destinationPath`, where it now lies at `newURL`.
+  func markFiled(_ id: InboxItemID, newURL: URL, destinationPath: String) {
+    mark(id, as: .filed(newURL: newURL, destinationPath: destinationPath))
+  }
+
+  /// Marks the file `id` as moved to the Trash.
+  func markTrashed(_ id: InboxItemID) {
+    mark(id, as: .trashed)
+  }
+
+  /// Removes the mark of the file `id`, after an undo put it back. Its row stays until the next scan of its inbox.
+  func unmark(_ id: InboxItemID) {
+    guard keptRows[id] != nil else { return }
+    keptRows[id]?.mark = nil
+    rebuildSections()
+  }
+
+  private func mark(_ id: InboxItemID, as mark: InboxItemMark) {
+    if keptRows[id] == nil {
+      guard let kept = keptRow(for: id) else {
+        Logger.inbox.error("Cannot mark \(id, privacy: .private): no such row")
+        return
+      }
+      keptRows[id] = kept
+    }
+    keptRows[id]?.mark = mark
+    rebuildSections()
+  }
+
+  // MARK: Lookup
+
+  /// The row of the file `id`, or `nil` when no section lists it.
+  func row(for id: InboxItemID) -> InboxRow? {
+    rowsByID[id]?.row
+  }
+
+  /// The label of the section listing the file `id`.
+  func sectionLabel(of id: InboxItemID) -> String? {
+    rowsByID[id]?.sectionLabel
+  }
+
+  /// Every row of every section, in display order.
+  var orderedRows: [InboxRow] {
+    sections.flatMap(\.rows)
+  }
+
+  /// The next unhandled row after the file `id` in display order, wrapping from the last section to the first;
+  /// `nil` when there is none other than `id`.
+  func nextUnhandledRow(after id: InboxItemID) -> InboxRow? {
+    let rows = orderedRows
+    guard let index = rows.firstIndex(where: { $0.id == id }) else {
+      return rows.first(where: \.isUnhandled)
+    }
+    let following = rows[(index + 1)...] + rows[..<index]
+    return following.first(where: \.isUnhandled)
+  }
+
+  /// The first row of the section at `index` (0-based), or `nil` when there is no such section or it has no rows.
+  func firstRow(inSection index: Int) -> InboxRow? {
+    guard sections.indices.contains(index) else { return nil }
+    return sections[index].rows.first
+  }
+
+  // MARK: Building the sections
+
+  /// A row kept across scans, with where it was listed.
+  private struct KeptRow {
+    let sectionID: InboxFolder.ID
+    let item: InboxItem
+    /// The group the row was listed in, without its rows.
+    let group: InboxGroup?
+    var mark: InboxItemMark?
+  }
+
+  /// The kept-row record for the row `id` as currently listed.
+  private func keptRow(for id: InboxItemID) -> KeptRow? {
+    for section in sections {
+      guard case .listing(let entries, _) = section.content else { continue }
+      for entry in entries {
+        switch entry {
+        case .row(let row) where row.id == id:
+          return KeptRow(sectionID: section.id, item: row.item, group: nil, mark: row.mark)
+        case .group(let group):
+          if let row = group.rows.first(where: { $0.id == id }) {
+            var emptyGroup = group
+            emptyGroup.rows = []
+            return KeptRow(
+              sectionID: section.id, item: row.item, group: emptyGroup, mark: row.mark)
+          }
+        case .row:
+          continue
+        }
+      }
+    }
+    return nil
+  }
+
+  private func rebuildSections() {
+    sections = inboxes.map { inbox in
+      InboxSection(id: inbox.id, label: inbox.displayLabel, content: content(of: inbox.id))
+    }
+    var index: [InboxItemID: (row: InboxRow, sectionLabel: String)] = [:]
+    for section in sections {
+      for row in section.rows {
+        index[row.id] = (row, section.label)
+      }
+    }
+    rowsByID = index
+  }
+
+  /// The content of the section for inbox `id`: its latest scan with the kept rows merged in.
+  private func content(of id: InboxFolder.ID) -> InboxSectionContent {
+    switch scans[id] {
+    case nil:
+      return .scanning
+    case .failed(let problem):
+      return .unreachable(problem)
+    case .listed(let listing):
+      var entries = listing.entries.map(entry(for:))
+      let listedIDs = Set(listing.items.map(InboxItemID.init))
+      let missing = keptRows.values
+        .filter { $0.sectionID == id && !listedIDs.contains(InboxItemID($0.item)) }
+        .sorted { Self.precedes($0.item, $1.item) }
+      for kept in missing {
+        insert(kept, into: &entries)
+      }
+      return .listing(entries, problems: listing.problems)
+    }
+  }
+
+  private func entry(for entry: InboxEntry) -> InboxSectionEntry {
+    switch entry {
+    case .item(let item):
+      return .row(row(for: item))
+    case .subfolder(let subfolder):
+      return .group(
+        InboxGroup(
+          url: subfolder.url, name: subfolder.name, date: subfolder.date,
+          rows: subfolder.items.map(row(for:))))
+    }
+  }
+
+  private func row(for item: InboxItem) -> InboxRow {
+    InboxRow(item: item, mark: keptRows[InboxItemID(item)]?.mark)
+  }
+
+  /// Puts a kept row that the scan no longer lists back where it was: into its group (recreating the group when the
+  /// scan no longer lists it), placed by date and name as the scan orders entries.
+  private func insert(_ kept: KeptRow, into entries: inout [InboxSectionEntry]) {
+    let row = InboxRow(item: kept.item, mark: kept.mark)
+    guard let group = kept.group else {
+      let position =
+        entries.firstIndex { Self.precedes(row.item, $0) } ?? entries.endIndex
+      entries.insert(.row(row), at: position)
+      return
+    }
+    if let groupIndex = entries.firstIndex(where: {
+      if case .group(let listed) = $0 { listed.url == group.url } else { false }
+    }), case .group(var listed) = entries[groupIndex] {
+      let position =
+        listed.rows.firstIndex { Self.precedes(row.item, $0.item) } ?? listed.rows.endIndex
+      listed.rows.insert(row, at: position)
+      entries[groupIndex] = .group(listed)
+      return
+    }
+    var recreated = group
+    recreated.rows = [row]
+    let position =
+      entries.firstIndex { Self.precedes(date: group.date, name: group.name, $0) }
+      ?? entries.endIndex
+    entries.insert(.group(recreated), at: position)
+  }
+
+  /// Whether `item` sorts before `other`: older first, then in Finder name order, as the inbox scan orders items.
+  private static func precedes(_ item: InboxItem, _ other: InboxItem) -> Bool {
+    precedes(
+      date: item.modificationDate, name: item.name, otherDate: other.modificationDate,
+      otherName: other.name)
+  }
+
+  /// Whether `item` sorts before the entry `entry`.
+  private static func precedes(_ item: InboxItem, _ entry: InboxSectionEntry) -> Bool {
+    precedes(date: item.modificationDate, name: item.name, entry)
+  }
+
+  /// Whether an entry dated `date` and named `name` sorts before `entry`.
+  private static func precedes(date: Date, name: String, _ entry: InboxSectionEntry) -> Bool {
+    switch entry {
+    case .row(let row):
+      precedes(
+        date: date, name: name, otherDate: row.item.modificationDate, otherName: row.item.name)
+    case .group(let group):
+      precedes(date: date, name: name, otherDate: group.date, otherName: group.name)
+    }
+  }
+
+  private static func precedes(date: Date, name: String, otherDate: Date, otherName: String)
+    -> Bool
+  {
+    if date != otherDate { return date < otherDate }
+    return name.localizedStandardCompare(otherName) == .orderedAscending
+  }
+
+  // MARK: Problems
+
+  /// Why the configured `folder` cannot be scanned.
+  private static func problem(for folder: ResolvedFolder) -> InboxProblem {
+    switch folder.availability {
+    case .unreachable(let reason):
+      .unreadable(path: folder.displayPath, reason: reason)
+    case .available, .stale, .missing:
+      .folderNotFound(path: folder.displayPath)
+    }
+  }
+
+  /// Why a scan failed.
+  nonisolated private static func problem(for error: FolderAccessError) -> InboxProblem {
+    switch error {
+    case .notFound(let url):
+      .folderNotFound(path: DisplayPath.abbreviating(url.path(percentEncoded: false)))
+    case .notAFolder(let url):
+      .notAFolder(path: DisplayPath.abbreviating(url.path(percentEncoded: false)))
+    case .unreadable(let url, let reason):
+      .unreadable(path: DisplayPath.abbreviating(url.path(percentEncoded: false)), reason: reason)
+    }
+  }
+
+  #if DEBUG
+    /// A library showing `sections` as given, for SwiftUI previews; nothing is scanned.
+    static func preview(sections: [InboxSection]) -> InboxLibrary {
+      let library = InboxLibrary()
+      library.sections = sections
+      for section in sections {
+        for row in section.rows {
+          library.rowsByID[row.id] = (row, section.label)
+        }
+      }
+      return library
+    }
+  #endif
+}
