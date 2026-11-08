@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 Published: jan-auer/docsort (public)
+- What happened: history rewritten after the first three commits to replace a real folder name and a real path
+  (`screenshots-stay-private`); private links, a machine path and the open-questions file removed; old unreachable
+  objects purged. GitHub `jan-auer/docsort` renamed to `docsort-llm` (old LLM-based attempt; checkout now
+  `~/Coding/docsort-llm`). `jan-auer/docsort-ui` renamed to `docsort`, given a description and made public; this
+  checkout moved to `~/Coding/docsort`.
+- Divergence: commits after `d1cf540` lost their signatures in the rewrite.
+- Follow-ups: the user disables password-free automation mode and clears the Xcode MCP permissions.
+
 ## 2026-11-08 claude/hopeful-hamilton-b85e63: README
 - What landed: `README.md` (purpose, short usage, development: build, install, Xcode) with the user's own screenshot
   of the app in sample-data mode (`docs/images/docsort-main-window.png`).
