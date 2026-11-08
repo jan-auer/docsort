@@ -2,6 +2,12 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/hopeful-hamilton-b85e63: README
+- What landed: `README.md` (purpose, short usage, development: build, install, Xcode) with the user's own screenshot
+  of the app in sample-data mode (`docs/images/docsort-main-window.png`).
+- Divergence: the screenshot is the user's own, not a rendered preview (the rendering didn't match the app).
+- Follow-ups: repo renames and making the repo public.
+
 ## 2026-11-08 claude/nostalgic-jennings-7664e3: open destination folder in Finder
 - What landed: Open / Reveal in Finder in the right-click menu of picker folder rows, and File › Open Destination in
   Finder (⇧⌘O) for the highlighted or chosen folder; existing folders only.
