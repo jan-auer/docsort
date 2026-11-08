@@ -2,6 +2,20 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/ui-main-window, ui-filing-panel, ui-history: UI polish from the first review
+- What landed:
+  - Toolbar: the panel toggle at the far right, with Open, Reveal and Trash as their own group; a plain
+    Finder-style title.
+  - Preview: zooms out below fit-width, with page margins.
+  - Filing panel: plain background, outlined picker and folder-contents boxes, key hints in the picker footer,
+    Revert and the extension inside the name field, the Return toast below the field, a standard-size Move button.
+  - History: table plus inspector without overlap, a preview filling the free height, equal-width actions with
+    Open prominent.
+- Divergence: the History overlap was fixed in the shared `PreviewView` (main-window branch). Landed after lint,
+  build and rendered previews only; behaviour in the running app (pinch zoom, clicking ↺ inside the field) is
+  unchecked.
+- Follow-ups: the user's pick between the History action patterns; the app icon.
+
 ## 2026-11-08 claude/folder-watch-de5f8d (d347ce3): live inbox watching in the app
 - What landed:
   - `InboxLibrary` subscribes to `InboxWatcher`; external arrivals get the new dot, external removals disappear and
