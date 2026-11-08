@@ -111,7 +111,9 @@ concept C's structure (`filing-panel-redesign`).
   and the panel toggle sit in the toolbar's trailing area above the panel. The panel's backgrounds stop at the
   toolbar instead of running under it. PDF pages scroll under the translucent toolbar (AppKit insets them and draws
   the scroll edge effect); Quick Look content stays below it. The window's titlebar separator (`NSWindow.titlebarSeparatorStyle =
-  .line`), the system hairline, separates the toolbar from the content, as in Finder.
+  .line`), the system hairline, separates the toolbar from the content, as in Finder. The system draws
+  it only where content scrolls under the toolbar (the PDF preview); the panel, which starts below the toolbar so
+  nothing shows through it there, continues it with the same one-pixel separator-colour line at its top edge.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
