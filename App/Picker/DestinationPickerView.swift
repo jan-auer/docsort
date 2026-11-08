@@ -1,9 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The destination picker: filter field with the chosen token, path bar, the folder list and the New
-/// Folder button (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds
-/// it.
+/// The destination picker: the search field above an edge-to-edge folder list, with the New Folder button under the
+/// list (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds it.
 ///
 /// The panel owns focus: it passes its focus binding and maps ``PickerField`` into its own focus values with
 /// `field`. The picker moves focus only between its own two fields (the filter and the new-folder name); everything
@@ -18,12 +17,13 @@ import SwiftUI
 ///
 /// ## Accessibility
 ///
-/// Identifiers: `picker` (the whole picker), `picker-filter`, `picker-chosen-token`, `picker-path-bar` with
-/// `picker-path-segment-<n>` (0 is Archive), `picker-list`, `picker-new-folder-button`, `picker-refresh-button`
-/// (value `refreshing` while the index is rebuilt), `picker-new-folder-name`, `picker-new-folder-notice`. Every list row is one element: folder rows have the identifier `picker-row` and their
-/// display path as label (`Konrad/Physiotherapie`); the "this folder" row is `picker-this-folder` labelled
-/// "<name>, this folder"; the create row is `picker-create-row` labelled "New Folder “…” in …". A highlighted row has
-/// the value `highlighted` and the selected trait; other rows have an empty value. Activating a row (VoiceOver's
+/// Identifiers: `picker` (the whole picker), `picker-filter`, `picker-filter-clear`, `picker-list`,
+/// `picker-new-folder-button`, `picker-refresh-button` (value `refreshing` while the index is rebuilt),
+/// `picker-new-folder-name`, `picker-new-folder-notice`. Every list row is one element: folder rows have the
+/// identifier `picker-row` and their display path as label (`Konrad/Physiotherapie`); the "this folder" row is
+/// `picker-this-folder` labelled "<name>, this folder"; the create row is `picker-create-row` labelled "New Folder “…”
+/// in …". A highlighted row has the value `highlighted` (`chosen` when it is the chosen destination) and the
+/// selected trait; other rows have an empty value. Activating a row (VoiceOver's
 /// default action) does what a double click does; folders with subfolders also offer "Show subfolders".
 struct DestinationPickerView<FocusValue: Hashable>: View {
   @Bindable var model: DestinationPickerModel
@@ -44,9 +44,8 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(spacing: 0) {
       PickerFilterField(
-        chosenToken: model.chosenToken,
         focusState: focusedField == .filter ? .focused : .unfocused,
         hasText: !model.filterText.isEmpty,
         clear: {
@@ -56,22 +55,19 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       ) {
         TextField(
           "Destination filter", text: $model.filterText, selection: $filterSelection,
-          prompt: model.chosenToken == nil ? Text(model.filterPlaceholder) : nil
+          prompt: Text(model.filterPlaceholder)
         )
         .labelsHidden()
         .focused(focus, equals: field(.filter))
         .accessibilityIdentifier("picker-filter")
       }
-      if !model.pathBarSegments.isEmpty {
-        PickerPathBar(segments: model.pathBarSegments) { path in model.jump(to: path) }
-      }
-      VStack(spacing: 0) {
-        folderList
-        Divider()
-        bottomBar
-      }
-      .panelWell()
-      .padding(.top, 2)
+      .padding(.horizontal, FilingPanelStyle.edgeMargin)
+      .padding(.vertical, 10)
+      Divider()
+      folderList
+        .background(FilingPanelStyle.listBackground)
+      Divider()
+      bottomBar
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
@@ -216,7 +212,8 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
               .padding(.horizontal, FilingPanelStyle.rowPadding)
           }
         }
-        .padding(FilingPanelStyle.wellInset)
+        .padding(.horizontal, FilingPanelStyle.listInset)
+        .padding(.vertical, 4)
       }
       .onChange(of: model.highlightedRowID) { _, id in
         guard let id else { return }
@@ -228,7 +225,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         proxy.scrollTo(draftRow.id)
       }
     }
-    .frame(minHeight: 120)
+    .frame(minHeight: 96)
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Folders")
     .accessibilityIdentifier("picker-list")
@@ -247,19 +244,22 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     case .currentFolder(let path):
       let title = ArchivePath.title(of: path)
       PickerCurrentFolderRow(
-        title: title, isNew: model.pendingFolders.contains(path), highlight: highlight
+        title: title, isNew: model.pendingFolders.contains(path), isChosen: model.isChosen(row),
+        highlight: highlight
       )
       .modifier(
         PickerRowChrome(
           identifier: "picker-this-folder", label: "\(title), this folder", highlight: highlight,
-          click: { click(row) }, open: { open(row) }))
+          isChosen: model.isChosen(row), click: { click(row) }, open: { open(row) }))
     case .folder(let folder):
-      PickerFolderRow(folder: folder, highlight: highlight) { stepIn(row) }
-        .modifier(
-          PickerRowChrome(
-            identifier: "picker-row", label: folder.displayPath, highlight: highlight,
-            click: { click(row) }, open: { open(row) },
-            namedActions: folder.hasSubfolders ? [("Show subfolders", { stepIn(row) })] : []))
+      PickerFolderRow(folder: folder, isChosen: model.isChosen(row), highlight: highlight) {
+        stepIn(row)
+      }
+      .modifier(
+        PickerRowChrome(
+          identifier: "picker-row", label: folder.displayPath, highlight: highlight,
+          isChosen: model.isChosen(row), click: { click(row) }, open: { open(row) },
+          namedActions: folder.hasSubfolders ? [("Show subfolders", { stepIn(row) })] : []))
     case .createFolder(let name, let parent, let problem):
       let createRow = PickerCreateFolderRow(
         name: name, parent: parent, problem: problem, highlight: highlight)
@@ -273,6 +273,10 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     case .indexing:
       PickerInfoRow(text: "Indexing archive…")
         .padding(.horizontal, FilingPanelStyle.rowPadding)
+    case .nothingInScope(let scope):
+      PickerInfoRow(text: "Nothing in \(ArchivePath.title(of: scope)) matches.")
+        .padding(.horizontal, FilingPanelStyle.rowPadding)
+        .accessibilityIdentifier("picker-nothing-in-scope")
     }
   }
 
@@ -326,7 +330,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         .lineLimit(1)
         .accessibilityIdentifier("picker-navigation-hint")
     }
-    .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.wellInset - 2)
+    .padding(.horizontal, FilingPanelStyle.edgeMargin - 2)
     .frame(height: 28)
   }
 
@@ -367,7 +371,6 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
     var body: some View {
       DestinationPickerView(model: model, focus: $focus) { $0 }
-        .padding()
         .frame(width: 340, height: 360)
         .onAppear { focus = .filter }
     }

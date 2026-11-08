@@ -76,8 +76,9 @@
           }
           DestinationPickerView(model: model, focus: $focus) { .picker($0) }
             .frame(height: 300)
-          FolderContentsView(model: model, conflictingName: name.isEmpty ? nil : "\(name).pdf")
-            .frame(height: 140)
+          FolderContentsView(
+            model: model, conflictingName: name.isEmpty ? nil : "\(name).pdf",
+            listHeight: .constant(110), isCollapsed: .constant(false), maxListHeight: 110)
           TextField("Name", text: $name)
             .focused($focus, equals: .name)
             .accessibilityIdentifier("picker-test-name")

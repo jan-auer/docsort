@@ -3,16 +3,17 @@ import SwiftUI
 
 /// The filing panel, the main window's trailing pane: where the selected file gets its destination and name.
 ///
-/// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the destination
-/// picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents, the name field
-/// with the extension as a fixed label, and the Move button (⌘Return, also File › Move). The file's name is in the
-/// window's toolbar title, not repeated here.
+/// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
+/// panel: the search field at the top, the folder list edge to edge with New Folder under it, Folder contents as a
+/// drawer the user resizes by dragging its header, and a bottom bar with the destination line (the full path, shown
+/// once), the name field (extension and Revert inside it) and the Move button (⌘Return, also File › Move). The file's
+/// name is in the window's title, not repeated here.
 ///
-/// A filed file opens with a status strip ("Filed to … · today 09:41", **Move Back**) above the same sections, with
+/// A filed file opens with a status banner ("Filed to … · today 09:41", **Move Back**) above the same parts, with
 /// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
-/// changed and is disabled while nothing did. A trashed file shows the strip ("Moved to Trash", **Put Back**) above
-/// the sections shown inactive. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the
-/// filing history can't be read (with **Start New History** and **Show in Finder**).
+/// changed and is disabled while nothing did. A trashed file shows the banner ("Moved to Trash", **Put Back**) above
+/// the parts shown inactive. Failure banners sit at the top: the archive folder is unreachable (with **Locate…**), or
+/// the filing history can't be read (with **Start New History** and **Show in Finder**).
 struct FilingPanel: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
@@ -27,8 +28,18 @@ struct FilingPanel: View {
 
   @FocusState private var focusedField: PanelField?
 
+  /// The height of Folder contents' list, kept with the window.
+  @SceneStorage("filing-panel.contents-height") private var contentsHeight = 150.0
+  /// Whether Folder contents is collapsed to its header, kept with the window.
+  @SceneStorage("filing-panel.contents-collapsed") private var isContentsCollapsed = false
+  /// The height the folder list and Folder contents share.
+  @State private var listsHeight = 0.0
+
+  /// The least height the search field and the folder list keep when Folder contents grows.
+  private static let pickerMinHeight = 200.0
+
   var body: some View {
-    VStack(alignment: .leading, spacing: FilingPanelStyle.sectionSpacing) {
+    VStack(spacing: 0) {
       if case .unreachable(let displayPath) = model.archiveAvailability {
         archiveUnreachableNotice(displayPath: displayPath)
       }
@@ -41,12 +52,8 @@ struct FilingPanel: View {
         inactiveMessage
       }
     }
-    .padding(.horizontal, FilingPanelStyle.margin)
-    .padding(.top, 16)
-    .padding(.bottom, FilingPanelStyle.margin)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    // The window colour, so the lists' white wells and the fields stand out from the panel (in dark mode: the
-    // wells are darker than the panel).
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    // The window colour for the bars, so the edge-to-edge lists (content colour) stand apart from them.
     .background(FilingPanelStyle.background)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
@@ -59,6 +66,7 @@ struct FilingPanel: View {
         status: status, inboxName: file.inboxName,
         canReturnToInbox: model.canReturnSelectedFileToInbox,
         returnToInbox: { model.returnSelectedFileToInbox() })
+      Divider()
     }
 
     if file.mark == nil, file.completeness == .downloading {
@@ -84,50 +92,71 @@ struct FilingPanel: View {
   }
 
   private func filingSections(for file: SelectedFile) -> some View {
-    VStack(alignment: .leading, spacing: FilingPanelStyle.sectionSpacing) {
-      destinationSection
-      FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
-        .frame(minHeight: 100, maxHeight: 200)
-      nameSection(for: file)
+    VStack(spacing: 0) {
+      VStack(spacing: 0) {
+        picker
+          .frame(maxHeight: .infinity)
+        FolderContentsView(
+          model: model.picker, conflictingName: model.nameToCheckForConflicts,
+          listHeight: $contentsHeight, isCollapsed: $isContentsCollapsed,
+          maxListHeight: max(
+            listsHeight - Self.pickerMinHeight, FolderContentsListing.minListHeight))
+      }
+      .onGeometryChange(for: Double.self) { geometry in
+        geometry.size.height
+      } action: { height in
+        listsHeight = height
+      }
+      Divider()
+      bottomBar(for: file)
     }
   }
 
-  private var destinationSection: some View {
-    VStack(alignment: .leading, spacing: FilingPanelStyle.titleSpacing) {
-      Text("Destination")
-        .panelSectionTitle()
-      DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
-        .frame(minHeight: 180, maxHeight: .infinity)
-        .task(id: model.focusRequest) {
-          // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
-          // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
-          // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
-          guard model.focusRequest?.target == .destinationFilter else { return }
-          if focusedField != nil {
-            focusedField = nil
-            await Task.yield()
-          }
-          focusedField = .picker(.filter)
+  private var picker: some View {
+    DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
+      .task(id: model.focusRequest) {
+        // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
+        // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
+        // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
+        guard model.focusRequest?.target == .destinationFilter else { return }
+        if focusedField != nil {
+          focusedField = nil
+          await Task.yield()
         }
-        .onChange(of: focusedField, initial: true) { _, field in
-          if field != nil {
-            model.focus = .destinationFilter
-            model.panel.isFilterFocusPending = false
-          } else if model.focus == .destinationFilter {
-            model.focus = nil
-          }
+        focusedField = .picker(.filter)
+      }
+      .onChange(of: focusedField, initial: true) { _, field in
+        if field != nil {
+          model.focus = .destinationFilter
+          model.panel.isFilterFocusPending = false
+        } else if model.focus == .destinationFilter {
+          model.focus = nil
         }
-    }
+      }
   }
 
-  /// The name field with its notice, and the Move button at the trailing end of the panel's bottom.
-  private func nameSection(for file: SelectedFile) -> some View {
-    VStack(alignment: .leading, spacing: FilingPanelStyle.titleSpacing) {
-      Text("Name")
-        .panelSectionTitle()
-      NameField(model: model, file: file)
+  /// The bottom bar, laid out like the save panel: "Folder" with the destination line, "Name" with the name field,
+  /// a notice if moving failed, and the Move button at the trailing end.
+  private func bottomBar(for file: SelectedFile) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
+        GridRow(alignment: .firstTextBaseline) {
+          Text("Folder:")
+            .foregroundStyle(.secondary)
+            .gridColumnAlignment(.trailing)
+          DestinationLine(destination: model.picker.destinationPath) { path in
+            model.picker.jump(to: path)
+            model.requestFocus(.destinationFilter)
+          }
+        }
+        GridRow {
+          Text("Name:")
+            .foregroundStyle(.secondary)
+          NameField(model: model, file: file)
+        }
         // The Return toast floats below the field, over the notice and the Move button.
         .zIndex(1)
+      }
 
       if let notice = model.panel.notice {
         Label(notice, systemImage: "exclamationmark.octagon.fill")
@@ -140,8 +169,10 @@ struct FilingPanel: View {
         Spacer()
         moveButton
       }
-      .padding(.top, 12)
     }
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
+    .padding(.top, 12)
+    .padding(.bottom, 14)
   }
 
   /// Move (or Rename), prominent and large, with its shortcut as a key-cap badge inside, as the user chose.
@@ -208,15 +239,14 @@ struct FilingPanel: View {
   }
 }
 
-/// A failure at the top of the panel (archive unreachable, history unreadable): an orange warning symbol and an
-/// orange-tinted box, so it never reads like the neutral filed/trashed status strip.
+/// A failure banner across the top of the panel (archive unreachable, history unreadable): an orange warning symbol
+/// on an orange tint, so it never reads like the neutral filed/trashed status banner.
 private struct FailureNotice<Actions: View>: View {
   let message: String
   let identifier: String
   @ViewBuilder let actions: () -> Actions
 
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: FilingPanelStyle.wellRadius)
     VStack(alignment: .leading, spacing: 8) {
       Label {
         Text(message)
@@ -228,11 +258,11 @@ private struct FailureNotice<Actions: View>: View {
       actions()
         .controlSize(.small)
     }
-    .padding(.horizontal, 12)
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
     .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.orange.opacity(0.12), in: shape)
-    .overlay { shape.strokeBorder(Color.orange.opacity(0.35), lineWidth: 0.5) }
+    .background(Color.orange.opacity(0.14))
+    .overlay(alignment: .bottom) { Divider() }
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier(identifier)
   }

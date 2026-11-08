@@ -5,6 +5,8 @@ import SwiftUI
 /// a pending folder and a chevron when the folder has subfolders.
 struct PickerFolderRow: View {
   let folder: PickerFolder
+  /// Whether the folder is the chosen destination (a check mark at the trailing end).
+  let isChosen: Bool
   let highlight: RowHighlight
   /// Steps into the folder (the chevron's action).
   let stepIn: () -> Void
@@ -20,6 +22,9 @@ struct PickerFolderRow: View {
         NewBadge(tone: tone)
       }
       Spacer(minLength: 0)
+      if isChosen {
+        ChosenMark(tone: tone)
+      }
       if folder.hasSubfolders {
         Button(action: stepIn) {
           Image(systemName: "chevron.right")
@@ -42,6 +47,8 @@ struct PickerCurrentFolderRow: View {
   let title: String
   /// Whether the folder is a pending new folder.
   let isNew: Bool
+  /// Whether the folder is the chosen destination (a check mark at the trailing end).
+  let isChosen: Bool
   let highlight: RowHighlight
 
   var body: some View {
@@ -60,7 +67,22 @@ struct PickerCurrentFolderRow: View {
         NewBadge(tone: tone)
       }
       Spacer(minLength: 0)
+      if isChosen {
+        ChosenMark(tone: tone)
+      }
     }
+  }
+}
+
+/// The check mark on the chosen destination's row.
+struct ChosenMark: View {
+  let tone: RowTextTone
+
+  var body: some View {
+    Image(systemName: "checkmark")
+      .font(.body.weight(.semibold))
+      .foregroundStyle(tone == .onAccent ? tone.primary : Color.accentColor)
+      .accessibilityHidden(true)
   }
 }
 
@@ -149,6 +171,8 @@ struct PickerRowChrome: ViewModifier {
   /// The row's text as the user reads it.
   let label: String
   let highlight: RowHighlight
+  /// Whether the row is the chosen destination.
+  var isChosen = false
   /// A single click.
   let click: () -> Void
   /// A double click.
@@ -176,7 +200,7 @@ struct PickerRowChrome: ViewModifier {
       }
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(label)
-      .accessibilityValue(highlight.isHighlighted ? "highlighted" : "")
+      .accessibilityValue(isChosen ? "chosen" : highlight.isHighlighted ? "highlighted" : "")
       .accessibilityAddTraits(highlight.isHighlighted ? [.isButton, .isSelected] : .isButton)
       .accessibilityIdentifier(identifier)
       .accessibilityAction(.default, open)

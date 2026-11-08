@@ -6,8 +6,8 @@ import DocsortCore
 /// (`docs/design/ux.md`, "Destination picker", "New folder", "Folder contents", "Keyboard map"). It is three pieces:
 ///
 /// - ``DestinationPickerModel``: `@Observable`, main actor, one per filing panel. All picker state and every intent.
-/// - ``DestinationPickerView``: the filter field (with scope chip), the path bar, the folder list and the New Folder
-///   button. Place it in the panel where the spec puts "Destination picker".
+/// - ``DestinationPickerView``: the search field, the folder list and the New Folder button. Place it in the panel
+///   where the spec puts "Destination picker".
 /// - ``FolderContentsView``: the files in the chosen or highlighted folder. Place it below the picker, where the spec
 ///   puts "Folder contents". Both views read the same model.
 ///
@@ -32,7 +32,9 @@ import DocsortCore
 ///
 /// State the panel reads at any time:
 /// - ``DestinationPickerModel/destination``: the chosen ``PickerDestination``, `nil` until the user chooses one.
-///   Typing in the filter or moving the highlight un-chooses it again (the spec's token turns back into the query).
+///   Typing in the filter or moving the highlight un-chooses it again.
+/// - ``DestinationPickerModel/destinationPath``: the chosen destination, else the highlighted folder, for the panel's
+///   destination line; a click on one of its segments calls ``DestinationPickerModel/jump(to:)``.
 /// - ``DestinationPickerModel/highlightedDestination``: the folder under the highlight, for ⌘Return from the picker.
 /// - ``DestinationPickerModel/contents``: the files listed in Folder contents, alphabetical, so the name field's
 ///   ⌥↑ / ⌥↓ can walk them.
@@ -88,6 +90,12 @@ enum PickerDestination: Hashable, Sendable {
     switch self {
     case .folder(let path), .newFolder(let path): path
     }
+  }
+
+  /// Whether the folder does not exist yet.
+  var isNew: Bool {
+    if case .newFolder = self { return true }
+    return false
   }
 }
 

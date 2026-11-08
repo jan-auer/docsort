@@ -42,7 +42,6 @@ struct DestinationPickerModelTests {
         "Gesundheit", "Kommunikation", "Mobilität", "Reisen",
       ])
     #expect(model.highlightedPath == "Kommunikation/Ilmnet Internet/Rechnungen")
-    #expect(model.pathBarSegments.isEmpty)
     #expect(model.filterPlaceholder == "Search archive")
   }
 
@@ -71,9 +70,8 @@ struct DestinationPickerModelTests {
         "this:Gesundheit", "Impfpässe", "Konrad", "Margit", "Patientenverfügung",
       ])
     #expect(model.highlightedRow?.kind == .currentFolder(path: "Gesundheit"))
-    #expect(model.pathBarSegments.map(\.title) == ["Archive", "Gesundheit"])
     #expect(model.scopeTitle == "Gesundheit")
-    #expect(model.filterPlaceholder == "Search in Gesundheit")
+    #expect(model.filterPlaceholder == "Search, Gesundheit first")
   }
 
   @Test("Search lists matches inside the scope with paths relative to it and matched ranges")
@@ -110,7 +108,7 @@ struct DestinationPickerModelTests {
 
   // MARK: Choosing
 
-  @Test("Choosing clears the field, shows a token, and moving the highlight restores the filter")
+  @Test("Choosing keeps the filter, and moving the highlight un-chooses from the chosen row")
   func chooseAndUnchoose() throws {
     let model = try makeModel()
     model.jump(to: "Gesundheit")
@@ -120,9 +118,7 @@ struct DestinationPickerModelTests {
 
     #expect(events.events == [.chose(.folder("Gesundheit/Margit/Physiotherapie"))])
     #expect(model.destination == .folder("Gesundheit/Margit/Physiotherapie"))
-    #expect(model.filterText == "")
-    #expect(
-      model.chosenToken == ChosenToken(text: "Gesundheit › Margit › Physiotherapie", isNew: false))
+    #expect(model.filterText == "physio")
 
     model.moveHighlight(by: -1)
     #expect(model.destination == nil)
@@ -130,7 +126,7 @@ struct DestinationPickerModelTests {
     #expect(model.highlightedPath == "Gesundheit/Konrad/Physiotherapie")
   }
 
-  @Test("\"This folder\" chooses the scope; ⌫ un-chooses it again")
+  @Test("\"This folder\" chooses the scope; ⌫ in the empty filter steps out and un-chooses it")
   func chooseCurrentFolder() throws {
     let model = try makeModel()
     model.jump(to: "Gesundheit")
@@ -139,8 +135,8 @@ struct DestinationPickerModelTests {
 
     model.deleteBackward()
     #expect(model.destination == nil)
-    #expect(model.scope == "Gesundheit")
-    #expect(model.highlightedRow?.kind == .currentFolder(path: "Gesundheit"))
+    #expect(model.scope == "")
+    #expect(model.highlightedPath == "Gesundheit")
   }
 
   @Test("Typing while chosen drops the destination and filters with the new text")
@@ -149,7 +145,7 @@ struct DestinationPickerModelTests {
     model.filterText = "physio"
     model.chooseHighlighted()
 
-    model.filterText = ""
+    model.filterText = "physio"
     #expect(model.destination != nil)
 
     model.filterText = "z"
