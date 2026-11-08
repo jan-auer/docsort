@@ -28,6 +28,7 @@ struct InboxRowView: View {
     }
     .help(tooltip)
     .accessibilityElement(children: .ignore)
+    .accessibilityAddTraits(.isStaticText)
     .accessibilityLabel(row.item.name)
     .accessibilityValue(state)
     .accessibilityIdentifier("sidebar-row")
