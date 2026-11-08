@@ -6,14 +6,20 @@ import Observation
 /// What happened to an inbox file in this session, with what the filing panel's status strip shows about it.
 nonisolated enum InboxItemMark: Hashable, Sendable {
   /// The file was filed (or later renamed or moved on) to `destinationPath` (archive-relative) at `date` and now lies
-  /// at `newURL`.
-  case filed(newURL: URL, destinationPath: String, date: Date)
+  /// at `newURL`, as the filing history's document `documentID`. Moving it again requires that document to still be
+  /// the one at `newURL`, so the row never acts on a file that took its place.
+  case filed(newURL: URL, destinationPath: String, date: Date, documentID: UUID)
   /// The file was moved to the Trash at `date` and lies at `trashedURL` there.
   case trashed(trashedURL: URL, date: Date)
 
   /// Whether the file was moved to the Trash.
   var isTrashed: Bool {
     if case .trashed = self { true } else { false }
+  }
+
+  /// The filing history's document of a filed file; `nil` for a trashed one.
+  var filedDocumentID: UUID? {
+    if case .filed(_, _, _, let documentID) = self { documentID } else { nil }
   }
 }
 
@@ -29,7 +35,7 @@ nonisolated struct InboxRow: Hashable, Sendable, Identifiable {
 
   /// Where the file is now: its archive location once filed, otherwise its inbox location.
   var currentURL: URL {
-    if case .filed(let newURL, _, _) = mark { return newURL }
+    if case .filed(let newURL, _, _, _) = mark { return newURL }
     return item.url
   }
 
@@ -275,6 +281,17 @@ final class InboxLibrary {
   /// The row of the file `id`, or `nil` when no section lists it.
   func row(for id: InboxItemID) -> InboxRow? {
     rowsByID[id]?.row
+  }
+
+  /// The rows marked as filed as the filing history's document `documentID`, in display order.
+  func rowIDs(filedAs documentID: UUID) -> [InboxItemID] {
+    orderedRows.filter { $0.mark?.filedDocumentID == documentID }.map(\.id)
+  }
+
+  /// The row listing the inbox file at `url`, or `nil` when no section lists one there.
+  func row(listing url: URL) -> InboxRow? {
+    let path = url.standardizedFileURL.path(percentEncoded: false)
+    return orderedRows.first { $0.item.url.standardizedFileURL.path(percentEncoded: false) == path }
   }
 
   /// The label of the section listing the file `id`.

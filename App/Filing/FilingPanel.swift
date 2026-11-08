@@ -76,7 +76,7 @@ struct FilingPanel: View {
   /// What the status strip shows for `file`; `nil` while it is unhandled.
   private func stripStatus(for file: SelectedFile) -> FilingStatusStrip.Status? {
     switch file.mark {
-    case .filed(_, let destinationPath, let date):
+    case .filed(_, let destinationPath, let date, _):
       .filed(destinationPath: destinationPath, date: date)
     case .trashed(_, let date): .trashed(date: date)
     case nil: nil

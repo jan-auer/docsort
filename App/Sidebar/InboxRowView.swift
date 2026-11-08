@@ -59,7 +59,7 @@ struct InboxRowView: View {
 
   private var tooltip: String {
     switch row.mark {
-    case .filed(_, let destinationPath, _): "→ \(destinationPath)/\(shownName)"
+    case .filed(_, let destinationPath, _, _): "→ \(destinationPath)/\(shownName)"
     case .trashed: "\(row.item.name) (moved to the Trash)"
     case nil: row.item.name
     }

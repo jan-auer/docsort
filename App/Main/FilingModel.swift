@@ -50,6 +50,23 @@ final class FilingModel {
     }
   }
 
+  /// Renames or moves on the filed document `documentID` at `source`; see `FilingService.refile`.
+  func refile(
+    document documentID: UUID, at source: URL, into folder: URL, archivePath: String,
+    named name: String, resolution: ConflictResolution
+  ) async throws(FilingError) -> MoveOutcome {
+    do {
+      let outcome = try await service.refile(
+        document: documentID, at: source, into: folder, archivePath: archivePath, named: name,
+        resolution: resolution)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
   /// Moves `url` to the Trash; see `FilingService.trash`.
   func trash(_ url: URL) async throws(FilingError) -> TrashOutcome {
     do {
@@ -74,12 +91,13 @@ final class FilingModel {
     }
   }
 
-  /// Moves the filed file at `currentURL` back to its inbox; see `FilingService.moveBack`.
-  func moveBack(_ currentURL: URL, resolution: ConflictResolution) async throws(FilingError)
-    -> MoveOutcome
-  {
+  /// Moves the filed document `documentID` at `currentURL` back to its inbox; see `FilingService.moveBack`.
+  func moveBack(
+    document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
+  ) async throws(FilingError) -> MoveOutcome {
     do {
-      let outcome = try await service.moveBack(currentURL, resolution: resolution)
+      let outcome = try await service.moveBack(
+        document: documentID, at: currentURL, resolution: resolution)
       apply(outcome.status)
       return outcome
     } catch {

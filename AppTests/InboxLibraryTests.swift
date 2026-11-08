@@ -53,7 +53,8 @@ struct InboxLibraryTests {
       at: environment.webDownloads.appending(path: "Uni Westerholm"))
     let filedMark = InboxItemMark.filed(
       newURL: archived.appending(path: renewal.lastPathComponent),
-      destinationPath: "Mobilität/Jahreskarte Regio Plus", date: october2033(21))
+      destinationPath: "Mobilität/Jahreskarte Regio Plus", date: october2033(21),
+      documentID: UUID())
     let trashedMark = InboxItemMark.trashed(
       trashedURL: environment.root.appending(path: "Trash/Rechnung_Collegegeld_1e-termijn.pdf"),
       date: october2033(21))
@@ -91,7 +92,8 @@ struct InboxLibraryTests {
       invoiceRow.id,
       .filed(
         newURL: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"),
-        destinationPath: "Musik Margit/Noten & Bücher", date: october2033(13)))
+        destinationPath: "Musik Margit/Noten & Bücher", date: october2033(13),
+        documentID: UUID()))
     _ = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(20))
 

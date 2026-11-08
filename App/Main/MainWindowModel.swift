@@ -194,7 +194,7 @@ final class MainWindowModel {
   func resetPanel() {
     let file = selectedFile
     panel.reset(currentName: file?.name)
-    if case .filed(_, let destinationPath, _) = file?.mark {
+    if case .filed(_, let destinationPath, _, _) = file?.mark {
       picker.reset(choosing: .folder(destinationPath))
     } else {
       picker.reset()

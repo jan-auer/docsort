@@ -127,12 +127,13 @@ struct FilingServiceTests {
     let filed = try await service.file(
       invoice, into: folder, archivePath: notenPath,
       named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
-    let renamed = try await service.file(
-      filed.movedURL, into: folder, archivePath: notenPath,
+    let renamed = try await service.refile(
+      document: filed.event.documentID, at: filed.movedURL, into: folder, archivePath: notenPath,
       named: "2033-10-13 Notenhaus Allegretto Advent.pdf", resolution: .refuse)
     #expect(renamed.event.documentID == filed.event.documentID)
 
-    let movedBack = try await service.moveBack(renamed.movedURL, resolution: .refuse)
+    let movedBack = try await service.moveBack(
+      document: filed.event.documentID, at: renamed.movedURL, resolution: .refuse)
 
     #expect(movedBack.movedURL.path(percentEncoded: false) == invoice.path(percentEncoded: false))
     #expect(FileManager.default.fileExists(atPath: invoice.path(percentEncoded: false)))
@@ -165,7 +166,8 @@ struct FilingServiceTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(20))
 
     do {
-      _ = try await service.moveBack(filed.movedURL, resolution: .refuse)
+      _ = try await service.moveBack(
+        document: filed.event.documentID, at: filed.movedURL, resolution: .refuse)
       Issue.record("Expected a name conflict")
     } catch .fileOperation(.nameConflict(let existing)) {
       #expect(existing.lastPathComponent == "Rechnung_NA-33-08812.pdf")
@@ -174,7 +176,8 @@ struct FilingServiceTests {
     }
     #expect(FileManager.default.fileExists(atPath: filed.movedURL.path(percentEncoded: false)))
 
-    let movedBack = try await service.moveBack(filed.movedURL, resolution: .keepBoth)
+    let movedBack = try await service.moveBack(
+      document: filed.event.documentID, at: filed.movedURL, resolution: .keepBoth)
     #expect(movedBack.movedURL.lastPathComponent == "Rechnung_NA-33-08812 2.pdf")
     #expect(
       movedBack.movedURL.deletingLastPathComponent().path(percentEncoded: false)
@@ -191,7 +194,7 @@ struct FilingServiceTests {
     let service = makeService(environment)
 
     do {
-      _ = try await service.moveBack(filedOutside, resolution: .refuse)
+      _ = try await service.moveBack(document: UUID(), at: filedOutside, resolution: .refuse)
       Issue.record("Expected no history record")
     } catch .noHistoryRecord(let url) {
       #expect(url == filedOutside)
@@ -199,6 +202,97 @@ struct FilingServiceTests {
       Issue.record("Expected no history record, got \(error)")
     }
     #expect(FileManager.default.fileExists(atPath: filedOutside.path(percentEncoded: false)))
+  }
+
+  @Test(
+    "After a Replace, Move Back and renaming of the replaced file are refused and leave the replacing file in place"
+  )
+  func replacedDocumentIsRefused() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let scan = try writeInboxFile(
+      named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
+    let folder = environment.archive.appending(path: notenPath)
+    let service = makeService(environment)
+    let filedInvoice = try await service.file(
+      invoice, into: folder, archivePath: notenPath,
+      named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
+    let replacing = try await service.file(
+      scan, into: folder, archivePath: notenPath, named: "2033-10-13 Notenhaus Allegretto.pdf",
+      resolution: .replace)
+    #expect(filedInvoice.replacedEvent == nil)
+    let replacedEvent = try #require(replacing.replacedEvent)
+    #expect(replacedEvent.documentID == filedInvoice.event.documentID)
+    #expect(replacedEvent.causedBy == replacing.event.id)
+    let archived = replacing.movedURL
+
+    do {
+      _ = try await service.moveBack(
+        document: filedInvoice.event.documentID, at: archived, resolution: .refuse)
+      Issue.record("Expected the Move Back to be refused")
+    } catch .fileChangedSinceFiling(let url) {
+      #expect(url == archived)
+    } catch {
+      Issue.record("Expected fileChangedSinceFiling, got \(error)")
+    }
+    do {
+      _ = try await service.refile(
+        document: filedInvoice.event.documentID, at: archived, into: folder,
+        archivePath: notenPath, named: "2033-10-13 Notenhaus Allegretto Advent.pdf",
+        resolution: .refuse)
+      Issue.record("Expected the rename to be refused")
+    } catch .fileChangedSinceFiling(let url) {
+      #expect(url == archived)
+    } catch {
+      Issue.record("Expected fileChangedSinceFiling, got \(error)")
+    }
+
+    // The replacing scan stays filed; nothing came back to either inbox.
+    #expect(FileManager.default.fileExists(atPath: archived.path(percentEncoded: false)))
+    #expect(!FileManager.default.fileExists(atPath: scan.path(percentEncoded: false)))
+    #expect(!FileManager.default.fileExists(atPath: invoice.path(percentEncoded: false)))
+    #expect(
+      !FileManager.default.fileExists(
+        atPath: folder.appending(path: "2033-10-13 Notenhaus Allegretto Advent.pdf")
+          .path(percentEncoded: false)))
+    // The scan's own document can still be moved back.
+    let movedBack = try await service.moveBack(
+      document: replacing.event.documentID, at: archived, resolution: .refuse)
+    #expect(movedBack.movedURL.path(percentEncoded: false) == scan.path(percentEncoded: false))
+  }
+
+  @Test("Move Back refuses when another item took the filed file's place outside the app")
+  func moveBackRefusesSwappedFile() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let folder = environment.archive.appending(path: notenPath)
+    let service = makeService(environment)
+    let filed = try await service.file(
+      invoice, into: folder, archivePath: notenPath,
+      named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
+    // Outside the app, the filed file is set aside and another one takes its name.
+    let setAside = folder.appending(path: "2033-10-13 Notenhaus Allegretto alt.pdf")
+    try FileManager.default.moveItem(at: filed.movedURL, to: setAside)
+    _ = try writeInboxFile(
+      named: filed.movedURL.lastPathComponent, in: folder, date: october2033(14))
+
+    do {
+      _ = try await service.moveBack(
+        document: filed.event.documentID, at: filed.movedURL, resolution: .refuse)
+      Issue.record("Expected the Move Back to be refused")
+    } catch .fileOperation(.differentItem), .fileOperation(.sourceMissing) {
+      // Refused: the item there is not the one filed.
+    } catch {
+      Issue.record("Expected differentItem or sourceMissing, got \(error)")
+    }
+
+    #expect(FileManager.default.fileExists(atPath: filed.movedURL.path(percentEncoded: false)))
+    #expect(FileManager.default.fileExists(atPath: setAside.path(percentEncoded: false)))
+    #expect(!FileManager.default.fileExists(atPath: invoice.path(percentEncoded: false)))
   }
 
   @Test("Put Back restores a trashed file, also in a later session")

@@ -15,7 +15,7 @@
           case 1:
             .filed(
               newURL: item.url.deletingLastPathComponent().appending(path: item.name),
-              destinationPath: "Musik Margit/Noten & Bücher", date: handledDate)
+              destinationPath: "Musik Margit/Noten & Bücher", date: handledDate, documentID: UUID())
           case 2:
             .trashed(
               trashedURL: item.url.deletingLastPathComponent().appending(
@@ -59,7 +59,8 @@
         id: invoice.id, url: newURL, originalName: invoice.originalName,
         inboxName: invoice.inboxName, completeness: .complete,
         mark: .filed(
-          newURL: newURL, destinationPath: "Musik Margit/Noten & Bücher", date: handledDate))
+          newURL: newURL, destinationPath: "Musik Margit/Noten & Bücher", date: handledDate,
+          documentID: UUID()))
     }
 
     /// The sample invoice, moved to the Trash.

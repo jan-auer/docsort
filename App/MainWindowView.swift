@@ -129,7 +129,7 @@ struct MainWindowView: View {
 
   /// The toolbar title's tooltip: the inbox and name, and where a filed file went.
   private func toolbarHelp(for file: SelectedFile) -> String {
-    guard case .filed(_, let destinationPath, _) = file.mark else {
+    guard case .filed(_, let destinationPath, _, _) = file.mark else {
       return "\(file.inboxName) › \(file.originalName)"
     }
     return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"
