@@ -20,7 +20,7 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 
 ## Deferred features
 
-- Live folder watching wired into the sidebar (core work in progress on `claude/folder-watch-*`).
+- (Done 2026-11-08: live folder watching in the app.)
 - (Done 2026-11-08: History window, status strips, Move Back / Put Back, revert name.)
 - Date shortcuts in the name field (`deferred-and-wanted-features`).
 - Ideas from the layout research (see `docs/open-questions.md`).

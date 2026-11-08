@@ -2,6 +2,17 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/folder-watch-de5f8d (d347ce3): live inbox watching in the app
+- What landed:
+  - `InboxLibrary` subscribes to `InboxWatcher`; external arrivals get the new dot, external removals disappear and
+    move the selection, Finder renames keep row and selection;
+  - `FilingService` wraps every operation in `ExpectedChanges`; ⌘R restarts the subscription;
+  - rows are pinned while their file is being filed, so a watcher update can't drop the mark (review blocker);
+  - a finishing download keeps the typed name.
+- Divergence: an external arrival of a handled file clears its mark; a new file under a filed name gets its own row.
+- Follow-ups: scroll anchoring for arrivals above the viewport, ID collisions on hard links and UUID-less volumes,
+  and further tests (`docs/backlog.md`).
+
 ## 2026-11-08 claude/test-fixes-824ce4: hosted test fixes
 - What landed: the first passing run of the full app test suite (all `DocsortTests`, UI tests 20/20 in run 4). App
   fixes: stale SwiftUI focus values resigned the focused field; the selected file didn't follow its mark after a
