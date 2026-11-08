@@ -54,6 +54,9 @@ struct DocsortApp: App {
     Window("docsort", id: SceneID.main) {
       MainWindowView(model: mainWindowModel)
         .onAppear { quitSaveDelegate.filing = filing }
+        #if DEBUG
+          .modifier(PickerTestHostLauncher())
+        #endif
     }
     .defaultSize(width: 1280, height: 800)
     .commands {

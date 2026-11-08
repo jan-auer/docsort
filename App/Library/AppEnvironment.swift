@@ -15,6 +15,8 @@ import OSLog
 ///   resolve the user's bookmarks, scan their inboxes, index their archive or save renewed bookmarks.
 /// - `.uiTestFixture` (debug builds only): `UITestFixture.makeEnvironment()`, a freshly built invented archive and
 ///   inboxes in the app's temporary directory, for the UI tests.
+/// - `.pickerTestHost` (debug builds only): `inert(named:)`. The picker's UI tests drive its own test window
+///   (`PickerTestHost`), which builds its own sample archive; the main window beside it shows no folders.
 ///
 /// The models only ever see the environment.
 struct AppEnvironment {
@@ -79,6 +81,10 @@ struct AppEnvironment {
         // `current()` returns this mode only in debug builds.
         return live()
       #endif
+    case .pickerTestHost:
+      Logger.lifecycle.notice(
+        "Running as the picker test host: using an inert environment, not the user's settings")
+      return inert(named: "picker-test-host")
     }
   }
 }
@@ -93,9 +99,13 @@ nonisolated enum AppLaunchMode: Equatable, Sendable {
   case swiftUIPreviews
   /// A UI test launched the app with `uiTestFixtureArgument` (debug builds only).
   case uiTestFixture
+  /// A picker UI test launched the app with `pickerTestHostArgument` (debug builds only).
+  case pickerTestHost
 
   /// The launch argument with which UI tests ask for the UI-test fixture.
   static let uiTestFixtureArgument = "-docsort-ui-test-fixture"
+  /// The launch argument with which the picker's UI tests ask for its test host window.
+  static let pickerTestHostArgument = "-docsort-picker-test-host"
 
   /// The launch mode that `processEnvironment` and `arguments` (by default this process's environment variables and
   /// launch arguments) describe.
@@ -105,6 +115,7 @@ nonisolated enum AppLaunchMode: Equatable, Sendable {
   ) -> AppLaunchMode {
     #if DEBUG
       if arguments.contains(uiTestFixtureArgument) { return .uiTestFixture }
+      if arguments.contains(pickerTestHostArgument) { return .pickerTestHost }
     #endif
     if processEnvironment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return .swiftUIPreviews }
     return processEnvironment["XCTestConfigurationFilePath"] == nil ? .standard : .unitTestHost
