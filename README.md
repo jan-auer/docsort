@@ -46,8 +46,7 @@ decides what comes first when several folders match.
 4. Press **⌘Return** to move the file.
 
 Files can also be trashed, new folders can be created while you choose, every action can be undone, filed files can
-be moved back to their inbox, and a History window lists everything you filed. New files in your inboxes show up on
-their own.
+be moved back to their inbox, and a History window lists everything you filed.
 
 Almost everything works from the keyboard. Every command and its shortcut is in the app's menu bar.
 
