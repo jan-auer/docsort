@@ -47,3 +47,10 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - Old History entries whose document moved on show the confusing `.noHistoryRecord` alert.
 - After a Move Back from History, the selection can point at an entry the search hides.
 - History actions aren't undoable from the main window; History doesn't update live.
+
+## From the folder-watch review (2026-11-08)
+
+- Test helpers `ManualClock` and `FakeFolderEventSource` ignore cancellation; a regression hangs instead of failing.
+- The core's `testDate()` base is around May 2026; move it into 2031–2039 (`no-real-data-in-repo`).
+- `ExpectedChanges` keeps recorded changes under paths no inbox covers for the whole session (harmless).
+- Every filing operation discards in-flight scans of all inboxes, not only the touched one (costs time only).
