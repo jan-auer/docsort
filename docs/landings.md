@@ -2,6 +2,23 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/app-ui-b54b29 (9d757fc) + Move Back fix + History window (a113978)
+- What landed:
+  - filed and trashed status strips with Move Back and Put Back (⌥⌘Z);
+  - renaming or moving a filed file again; Revert Name (⇧⌘R); menu and context-menu items, all undoable;
+  - the History window (⌘Y): a day-grouped table with search, preview, Open, Reveal, Move Back, Put Back and Show in
+    Main Window;
+  - `FilingService.events()`, `moveBack(document:at:resolution:)`, `refile(...)` and `putBack(_:)`.
+  Filed marks now carry the document ID, and Move Back, rename and move-on refuse when another file took the path.
+- Divergence:
+  - The Move Back fix and History were built by hub subagents (the session message cap and the no-new-sessions rule
+    applied while the user was away).
+  - History actions aren't undoable from the main window.
+  - History has no live updates; it refreshes when its window becomes active.
+  - "Replaced" is a History entry kind.
+  - The time sits on its own line in the strips.
+- Follow-ups: hosted tests unrun (screen locked); `docs/backlog.md`.
+
 ## 2026-11-08 claude/app-ui-b54b29 (fc94b93) + claude/picker-3b43e7: end-to-end app
 - What landed, the first usable app:
   - Settings with security-scoped folders and the ranking option;

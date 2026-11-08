@@ -36,3 +36,14 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - A public "is this still the same item" check in the core would replace `FilingService.moveBack`'s synthetic
   `MoveRecord` workaround.
 - Re-filing a filed file still records a recent destination.
+
+## From the History review (2026-11-08)
+
+- Put Back takes no document ID (main window and History); `.trashed` marks carry none. Add it, like the filed fix.
+- `HistoryListing` marks an entry current when something exists at its path, without checking `document(at:)`.
+- A replaced file's row shows a Put Back that always refuses; hide or disable it.
+- Duplicated logic: `HistoryModel.returned` vs `MainWindowModel.perform(MoveBackRequest)`; standardized-path
+  comparison in four places (`HistoryModel`, `HistoryListing`, `InboxLibrary`, `FilingHistory.locationKey`).
+- Old History entries whose document moved on show the confusing `.noHistoryRecord` alert.
+- After a Move Back from History, the selection can point at an entry the search hides.
+- History actions aren't undoable from the main window; History doesn't update live.
