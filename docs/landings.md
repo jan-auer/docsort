@@ -2,6 +2,20 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/panel-redesign-4b15b5: filing panel redesign
+- What landed:
+  - Soft-scope destination search: whole-archive search, "In <folder>" before "Elsewhere"; the first Elsewhere match
+    is selected; a New Folder row when nothing in the folder matches; a match-quality cut-off against
+    scattered-letter noise; no scope chip (fixes the empty pill).
+  - Tidy look (system text styles, spacing, contrast); edge-to-edge folder list; a resizable folder-contents area
+    with grab-bar cursor; the destination line under the search field; New Folder by the list.
+  - The panel moved off `.inspector`: under the toolbar, animated show and hide.
+  - PDF under the translucent toolbar; system titlebar separator, continued by a 1 px line above the panel.
+- Divergence: the panel's top line is drawn (system separator colour), because the system line only covers content
+  that scrolls under the toolbar. User-tested in the running app before landing; 318 core and 61 targeted app unit
+  tests pass; no UI tests.
+- Follow-ups: README with a screenshot; open the selected folder (context menu and shortcut).
+
 ## 2026-11-08 claude/archive-refresh-3fda5f: archive refresh, stable new-folder row
 - What landed: ⌘R refreshes inboxes and the archive folder index; a subtle ↻ button in the picker footer; a debounced
   rebuild when the app becomes active. The new-folder row stays under its parent with focus kept while its name is
