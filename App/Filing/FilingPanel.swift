@@ -1,18 +1,19 @@
 import DocsortCore
 import SwiftUI
 
-/// The filing panel, the main window's inspector: where the selected file gets its destination and name.
+/// The filing panel, the main window's trailing pane: where the selected file gets its destination and name.
 ///
-/// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the destination
-/// picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents, the name field
-/// with the extension as a fixed label, and the Move button (⌘Return, also File › Move). The file's name is in the
-/// window's toolbar title, not repeated here.
+/// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
+/// panel: the search field at the top, the folder list edge to edge with New Folder under it, Folder contents as a
+/// drawer the user resizes by dragging its header, and a bottom bar with the name field (extension and Revert inside
+/// it) and the Move button (⌘Return, also File › Move). The destination line, the full path shown once, sits under the
+/// search field. The file's name is in the window's title, not repeated here.
 ///
-/// A filed file opens with a status strip ("Filed to … · today 09:41", **Move Back**) above the same sections, with
+/// A filed file opens with a status banner ("Filed to … · today 09:41", **Move Back**) above the same parts, with
 /// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
-/// changed and is disabled while nothing did. A trashed file shows the strip ("Moved to Trash", **Put Back**) above
-/// the sections shown inactive. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the
-/// filing history can't be read (with **Start New History** and **Show in Finder**).
+/// changed and is disabled while nothing did. A trashed file shows the banner ("Moved to Trash", **Put Back**) above
+/// the parts shown inactive. Failure banners sit at the top: the archive folder is unreachable (with **Locate…**), or
+/// the filing history can't be read (with **Start New History** and **Show in Finder**).
 struct FilingPanel: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
@@ -27,8 +28,21 @@ struct FilingPanel: View {
 
   @FocusState private var focusedField: PanelField?
 
+  /// Points per pixel on the current display, for the one-pixel line under the toolbar.
+  @Environment(\.displayScale) private var displayScale
+
+  /// The height of Folder contents' list, kept with the window.
+  @SceneStorage("filing-panel.contents-height") private var contentsHeight = 150.0
+  /// Whether Folder contents is collapsed to its header, kept with the window.
+  @SceneStorage("filing-panel.contents-collapsed") private var isContentsCollapsed = false
+  /// The height the folder list and Folder contents share.
+  @State private var listsHeight = 0.0
+
+  /// The least height the search field and the folder list keep when Folder contents grows.
+  private static let pickerMinHeight = 200.0
+
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(spacing: 0) {
       if case .unreachable(let displayPath) = model.archiveAvailability {
         archiveUnreachableNotice(displayPath: displayPath)
       }
@@ -41,10 +55,20 @@ struct FilingPanel: View {
         inactiveMessage
       }
     }
-    .padding(16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    // A plain content background (white, or the dark window colour) instead of the inspector's tint, as in the mockup.
-    .background(Color(nsColor: .textBackgroundColor))
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    // The bars' colour, so the edge-to-edge lists (content colour) stand apart from them. It stops at the top safe
+    // area: the window's toolbar spans the preview and the panel, and a background reaching under it made the panel
+    // look like a full-height column of its own beside the toolbar.
+    .background(FilingPanelStyle.background, ignoresSafeAreaEdges: [])
+    // The system draws its toolbar line (`titlebarSeparatorStyle = .line`) only where content scrolls under the
+    // toolbar, which is the PDF preview. The panel starts below the toolbar and must not show through it, so it draws
+    // the same one-pixel separator-colour line at its top edge, continuing the system's line.
+    .overlay(alignment: .top) {
+      Rectangle()
+        .fill(Color(nsColor: .separatorColor))
+        .frame(height: 1 / displayScale)
+        .accessibilityHidden(true)
+    }
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }
@@ -56,11 +80,13 @@ struct FilingPanel: View {
         status: status, inboxName: file.inboxName,
         canReturnToInbox: model.canReturnSelectedFileToInbox,
         returnToInbox: { model.returnSelectedFileToInbox() })
+      Divider()
     }
 
     if file.mark == nil, file.completeness == .downloading {
-      Label("This file is still downloading.", systemImage: "icloud.and.arrow.down")
-        .foregroundStyle(.secondary)
+      ContentUnavailableView(
+        "Still Downloading", systemImage: "icloud.and.arrow.down",
+        description: Text("This file can be filed once its download has finished."))
     } else {
       // One branch for unhandled, filed and trashed files, so the picker keeps its identity (and focus handling)
       // when the selected file's state changes; a trashed file's sections are shown inactive.
@@ -80,17 +106,28 @@ struct FilingPanel: View {
   }
 
   private func filingSections(for file: SelectedFile) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      filingControls(for: file)
+    VStack(spacing: 0) {
+      VStack(spacing: 0) {
+        picker
+          .frame(maxHeight: .infinity)
+        FolderContentsView(
+          model: model.picker, conflictingName: model.nameToCheckForConflicts,
+          listHeight: $contentsHeight, isCollapsed: $isContentsCollapsed,
+          maxListHeight: max(
+            listsHeight - Self.pickerMinHeight, FolderContentsListing.minListHeight))
+      }
+      .onGeometryChange(for: Double.self) { geometry in
+        geometry.size.height
+      } action: { height in
+        listsHeight = height
+      }
+      Divider()
+      bottomBar(for: file)
     }
   }
 
-  @ViewBuilder private func filingControls(for file: SelectedFile) -> some View {
-    Text("Destination")
-      .font(.subheadline.weight(.semibold))
-      .foregroundStyle(.secondary)
+  private var picker: some View {
     DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
-      .frame(minHeight: 180, maxHeight: .infinity)
       .task(id: model.focusRequest) {
         // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
         // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
@@ -110,43 +147,61 @@ struct FilingPanel: View {
           model.focus = nil
         }
       }
-    FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
-      .frame(minHeight: 80, maxHeight: 200)
+  }
 
-    Text("Name")
-      .font(.subheadline.weight(.semibold))
-      .foregroundStyle(.secondary)
-    NameField(model: model, file: file)
+  /// The bottom bar: "Name" with the name field, a notice if moving failed, and the Move button at the trailing end.
+  /// The destination is named under the search field, where it is chosen.
+  private func bottomBar(for file: SelectedFile) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 8) {
+        Text("Name:")
+          .foregroundStyle(.secondary)
+        NameField(model: model, file: file)
+      }
       // The Return toast floats below the field, over the notice and the Move button.
       .zIndex(1)
 
-    if let notice = model.panel.notice {
-      Label(notice, systemImage: "exclamationmark.octagon.fill")
-        .foregroundStyle(.red)
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityIdentifier("filing-panel-notice")
-    }
-
-    HStack {
-      Spacer()
-      Button {
-        model.moveSelectedFile()
-      } label: {
-        HStack(spacing: 6) {
-          Text(moveButtonTitle)
-          Text("⌘↩")
-            .font(.caption)
-            .padding(.horizontal, 4)
-            .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
-            .accessibilityHidden(true)
-        }
+      if let notice = model.panel.notice {
+        Label(notice, systemImage: "exclamationmark.octagon.fill")
+          .foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityIdentifier("filing-panel-notice")
       }
-      .buttonStyle(.borderedProminent)
-      .disabled(!model.canMoveSelectedFile)
-      .help("\(moveButtonTitle) (⌘Return)")
-      .accessibilityLabel(moveButtonTitle)
-      .accessibilityIdentifier("move-button")
+
+      HStack {
+        Spacer()
+        moveButton
+      }
     }
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
+    .padding(.top, 12)
+    .padding(.bottom, 14)
+  }
+
+  /// Move (or Rename), prominent and large, with its shortcut as a key-cap badge inside, as the user chose.
+  private var moveButton: some View {
+    Button {
+      model.moveSelectedFile()
+    } label: {
+      HStack(spacing: 8) {
+        Text(moveButtonTitle)
+        Text("⌘↩")
+          .font(.callout)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 1)
+          .background(.white.opacity(0.22), in: Capsule())
+          .fixedSize()
+          .accessibilityHidden(true)
+      }
+      .padding(.horizontal, 4)
+    }
+    .buttonStyle(.borderedProminent)
+    .buttonBorderShape(.capsule)
+    .controlSize(.large)
+    .disabled(!model.canMoveSelectedFile)
+    .help("\(moveButtonTitle) (⌘Return)")
+    .accessibilityLabel(moveButtonTitle)
+    .accessibilityIdentifier("move-button")
   }
 
   /// The bottom button's title: **Rename** when only a filed file's name changed, **Move** otherwise.
@@ -155,37 +210,29 @@ struct FilingPanel: View {
   }
 
   private var inactiveMessage: some View {
-    Text("Select a file to file it")
-      .foregroundStyle(.tertiary)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .accessibilityIdentifier("filing-panel-inactive")
+    ContentUnavailableView(
+      "Nothing to File", systemImage: "tray",
+      description: Text("Select a file in the sidebar to choose its folder and name.")
+    )
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .accessibilityIdentifier("filing-panel-inactive")
   }
 
   private func archiveUnreachableNotice(displayPath: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Label(
-        "Archive folder not available: \(displayPath)",
-        systemImage: "exclamationmark.triangle.fill"
-      )
-      .symbolRenderingMode(.multicolor)
+    FailureNotice(
+      message: "Archive folder not available: \(displayPath)",
+      identifier: "filing-panel-archive-unreachable"
+    ) {
       Button("Locate…", action: locateArchive)
         .accessibilityIdentifier("filing-panel-locate-archive")
     }
-    .padding(10)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-    .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("filing-panel-archive-unreachable")
   }
 
   private func historyUnreadableNotice(reason: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Label(
-        "The filing history can’t be read: \(reason)",
-        systemImage: "exclamationmark.triangle.fill"
-      )
-      .symbolRenderingMode(.multicolor)
-      .fixedSize(horizontal: false, vertical: true)
+    FailureNotice(
+      message: "The filing history can’t be read: \(reason)",
+      identifier: "filing-panel-history-unreadable"
+    ) {
       HStack {
         Button("Start New History") { model.startNewHistory() }
           .accessibilityIdentifier("filing-panel-start-new-history")
@@ -193,11 +240,35 @@ struct FilingPanel: View {
           .accessibilityIdentifier("filing-panel-show-history-file")
       }
     }
-    .padding(10)
+  }
+}
+
+/// A failure banner across the top of the panel (archive unreachable, history unreadable): an orange warning symbol
+/// on an orange tint, so it never reads like the neutral filed/trashed status banner.
+private struct FailureNotice<Actions: View>: View {
+  let message: String
+  let identifier: String
+  @ViewBuilder let actions: () -> Actions
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Label {
+        Text(message)
+          .fixedSize(horizontal: false, vertical: true)
+      } icon: {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.orange)
+      }
+      actions()
+        .controlSize(.small)
+    }
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
+    .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+    .background(Color.orange.opacity(0.14), ignoresSafeAreaEdges: [])
+    .overlay(alignment: .bottom) { Divider() }
     .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("filing-panel-history-unreadable")
+    .accessibilityIdentifier(identifier)
   }
 }
 

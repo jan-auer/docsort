@@ -45,8 +45,8 @@ final class DestinationPickerModel {
   /// The folder the picker is in, `""` for the archive root.
   private(set) var scope = ""
 
-  /// The filter the list is computed from. While a destination is chosen it keeps the filter the destination was
-  /// chosen from (the field shows the token instead), so the list does not change under the token.
+  /// The filter the list is computed from, shown in the filter field. Choosing keeps it, so the list stays as it was
+  /// chosen from.
   private var query = ""
 
   /// The sections the list shows, recomputed whenever an input or the state changes.
@@ -96,10 +96,10 @@ final class DestinationPickerModel {
 
   // MARK: Derived state
 
-  /// The text of the filter field, bound to it. Empty while a destination is chosen (the field shows
-  /// ``chosenToken``); typing then un-chooses the destination without restoring the earlier filter.
+  /// The text of the filter field, bound to it. Choosing a destination leaves it as it is; editing it un-chooses the
+  /// destination.
   var filterText: String {
-    get { destination == nil ? query : "" }
+    get { query }
     set { changeFilter(to: newValue) }
   }
 
@@ -137,31 +137,36 @@ final class DestinationPickerModel {
       under: parent, index: index, pendingFolders: pendingFolders)
   }
 
-  /// The path bar's segments: `Archive`, then each segment of the scope; empty at the root.
-  var pathBarSegments: [PathBarSegment] {
-    guard !scope.isEmpty else { return [] }
-    var segments = [PathBarSegment(title: ArchivePath.rootTitle, path: "")]
-    var path = ""
-    for name in ArchivePath.segments(of: scope) {
-      path = ArchivePath.joining(path, name)
-      segments.append(PathBarSegment(title: name, path: path))
-    }
-    return segments
-  }
-
-  /// The scope's own name, for the chip "in Gesundheit"; `nil` at the root.
+  /// The scope's own name, for the placeholder; `nil` at the root.
   var scopeTitle: String? {
     scope.isEmpty ? nil : ArchivePath.title(of: scope)
+  }
+
+  /// The folder the file would go to, for the destination line: the chosen destination, else the highlighted folder
+  /// (what ⌘Return would choose); `nil` when neither is a folder.
+  var destinationPath: DestinationPath? {
+    if let destination {
+      return DestinationPath(path: destination.path, isChosen: true, isNew: destination.isNew)
+    }
+    guard let highlighted = highlightedDestination else { return nil }
+    return DestinationPath(path: highlighted.path, isChosen: false, isNew: highlighted.isNew)
+  }
+
+  /// Whether `row` is the chosen destination's row (it shows a check mark). Choosing moves the highlight onto the
+  /// chosen row and moving it un-chooses, so that is the highlighted row while a destination is chosen.
+  func isChosen(_ row: PickerRow) -> Bool {
+    destination != nil && row.id == highlightedRowID
   }
 
   /// Whether the archive is still being indexed (``index`` is `nil`).
   var isIndexing: Bool { index == nil }
 
-  /// The filter field's placeholder: "Indexing archive…", "Search archive" or "Search in Gesundheit".
+  /// The filter field's placeholder: "Indexing archive…", "Search archive", or inside a folder "Search, Gesundheit
+  /// first" (a search always covers the whole archive; the folder's matches come first).
   var filterPlaceholder: String {
     if isIndexing { return "Indexing archive…" }
     guard let scopeTitle else { return "Search archive" }
-    return "Search in \(scopeTitle)"
+    return "Search, \(scopeTitle) first"
   }
 
   /// The folder ``beginNewFolder()`` would create a folder in, for the button's tooltip "New Folder in Reisen":
@@ -170,21 +175,13 @@ final class DestinationPickerModel {
     ArchivePath.title(of: newFolderParent)
   }
 
-  /// The chosen destination as the field shows it, `nil` when none is chosen.
-  var chosenToken: ChosenToken? {
-    guard let destination else { return nil }
-    let text = ArchivePath.segments(of: destination.path).joined(separator: " › ")
-    if case .newFolder = destination { return ChosenToken(text: text, isNew: true) }
-    return ChosenToken(text: text, isNew: false)
-  }
-
   // MARK: Highlight
 
   /// Moves the highlight `offset` selectable rows down (negative: up), stopping at the first and last row. A chosen
   /// destination is un-chosen first, which highlights its row.
   func moveHighlight(by offset: Int) {
     cancelNewFolder()
-    unchooseRestoringFilter()
+    unchoose()
     let selectable = rows.filter(\.isSelectable)
     guard !selectable.isEmpty else { return }
     let current = selectable.firstIndex { $0.id == highlightedRowID } ?? 0
@@ -196,7 +193,7 @@ final class DestinationPickerModel {
   /// Highlights the row with `id` (a click), un-choosing a chosen destination first.
   func highlight(_ id: PickerRow.ID) {
     cancelNewFolder()
-    unchooseRestoringFilter()
+    unchoose()
     guard rows.contains(where: { $0.id == id && $0.isSelectable }) else { return }
     highlightedRowID = id
     followContents()
@@ -245,15 +242,9 @@ final class DestinationPickerModel {
     }
   }
 
-  /// ⌫ in the empty filter: un-chooses a chosen destination (its token turns back into the query), otherwise steps
-  /// out.
+  /// ⌫ in the empty filter: steps out, un-choosing a chosen destination.
   func deleteBackward() {
-    cancelNewFolder()
-    if destination != nil {
-      unchooseRestoringFilter()
-    } else {
-      stepOut()
-    }
+    stepOut()
   }
 
   /// Esc: cancels a new folder being named; else clears a chosen destination, the filter and the scope (back to the
@@ -300,11 +291,11 @@ final class DestinationPickerModel {
     }
   }
 
-  /// Entry from the sidebar by typing: cancels a new-folder row, drops a chosen destination without restoring its
-  /// filter and appends `text` to the filter.
+  /// Entry from the sidebar by typing: cancels a new-folder row and appends `text` to the filter. With a destination
+  /// chosen, it starts a new search instead: the chosen destination is dropped and `text` replaces the filter.
   func enter(typing text: String) {
     cancelNewFolder()
-    let base = filterText
+    let base = destination == nil ? query : ""
     destination = nil
     query = base + text
     update(highlight: .first)
@@ -316,7 +307,7 @@ final class DestinationPickerModel {
   /// a chosen destination first.
   func stepIn() {
     cancelNewFolder()
-    unchooseRestoringFilter()
+    unchoose()
     guard case .folder(let folder) = highlightedRow?.kind else { return }
     scope = folder.path
     query = ""
@@ -327,7 +318,7 @@ final class DestinationPickerModel {
   /// recent or a search result) steps out to the folder containing it. Un-chooses a chosen destination first.
   func stepOut() {
     cancelNewFolder()
-    unchooseRestoringFilter()
+    unchoose()
     if !scope.isEmpty {
       let origin = scope
       scope = ArchivePath.parent(of: origin)
@@ -609,7 +600,7 @@ final class DestinationPickerModel {
   private indirect enum HighlightRequest {
     /// The same row id as before, else the first selectable row.
     case keep
-    /// The first selectable row.
+    /// The first selectable row other than the create row, else the create row.
     case first
     /// The "this folder" row, else the first selectable row.
     case currentFolder
@@ -638,7 +629,13 @@ final class DestinationPickerModel {
       }
       return selectable.first?.id
     case .first:
-      return selectable.first?.id
+      // The create row only when nothing else is listed: with matches elsewhere, the first of them (decision
+      // `filing-panel-redesign`); ⌘Return and Tab never create a folder anyway.
+      let firstFolder = selectable.first { row in
+        if case .createFolder = row.kind { return false }
+        return true
+      }
+      return (firstFolder ?? selectable.first)?.id
     case .currentFolder:
       let current = selectable.first { row in
         if case .currentFolder = row.kind { return true }
@@ -657,10 +654,9 @@ final class DestinationPickerModel {
     }
   }
 
-  /// The user edited the filter field. Typing cancels a new-folder row and drops a chosen destination without
-  /// restoring its filter (the field was empty for both).
+  /// The user edited the filter field. Typing cancels a new-folder row and drops a chosen destination.
   private func changeFilter(to text: String) {
-    guard text != filterText else { return }
+    guard text != query else { return }
     cancelNewFolder()
     destination = nil
     query = text
@@ -681,9 +677,8 @@ final class DestinationPickerModel {
     }
   }
 
-  /// Un-chooses the destination and highlights its row in the list it was chosen from. The filter field shows that
-  /// list's filter again.
-  private func unchooseRestoringFilter() {
+  /// Un-chooses the destination and highlights its row in the list it was chosen from.
+  private func unchoose() {
     guard let chosen = destination else { return }
     destination = nil
     update(highlight: .anyRow(chosen.path, otherwise: .keep))

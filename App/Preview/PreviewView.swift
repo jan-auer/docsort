@@ -82,6 +82,10 @@ struct PreviewView: View {
     case .pdf(let pdfDocument, let info):
       VStack(spacing: 0) {
         PDFPreview(document: pdfDocument, controller: controller)
+          // The pages scroll under the window's translucent toolbar, as in Preview. The PDF view's scroll view insets
+          // its content below the toolbar by itself (AppKit's automatic content insets) and AppKit draws the scroll
+          // edge effect. Quick Look stays below the toolbar: it has no inset that would keep a file's top visible.
+          .ignoresSafeArea(.container, edges: .top)
           .accessibilityIdentifier("preview-pdf")
         PreviewFooter(
           info: info,

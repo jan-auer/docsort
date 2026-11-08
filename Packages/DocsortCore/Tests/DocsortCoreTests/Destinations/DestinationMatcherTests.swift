@@ -86,6 +86,31 @@ struct DestinationMatcherTests {
       ])
   }
 
+  @Test("letters scattered one by one over a path are not a match")
+  func scatteredLettersAreNoMatch() {
+    let matcher = DestinationMatcher(paths: [
+      "Ahnenforschung/Stammbaum/Druckfassung", "Hobbys/Imkerei/Völker/2034-09-15 Ableger Stand Föhrenhang",
+      "Mobilität/Jahresnetzkarte/2036-10-24 Verlängerung",
+    ])
+
+    #expect(matcher.matches(for: "asdf").isEmpty)
+    #expect(matcher.matches(for: "jkl").isEmpty)
+  }
+
+  @Test("letters in at most half as many runs as the query is long still match")
+  func shortRunsStillMatch() {
+    let matcher = DestinationMatcher(paths: [
+      "Gesundheit/Fußpflege", "Wohnung/Umbauten/Bad 2037",
+      "Finanzen/Bank/Kontoauszüge/2032/2032-Q2",
+      "Rechnungen",
+    ])
+
+    #expect(paths(matcher.matches(for: "fpfl")) == ["Gesundheit/Fußpflege"])
+    #expect(paths(matcher.matches(for: "ba37")) == ["Wohnung/Umbauten/Bad 2037"])
+    #expect(paths(matcher.matches(for: "32q2")).first == "Finanzen/Bank/Kontoauszüge/2032/2032-Q2")
+    #expect(paths(matcher.matches(for: "rchng")) == ["Rechnungen"])
+  }
+
   @Test("returns at most `limit` matches")
   func respectsLimit() {
     let matcher = DestinationMatcher(paths: (1...30).map { "Rechnungen/\($0)" })

@@ -7,16 +7,29 @@ import UniformTypeIdentifiers
 /// alphabetically, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder changes.
 /// Clicking a file takes its name for the name field (``PickerEvent/tookFileName(_:)``).
 ///
-/// Accessibility: the view is `folder-contents`; each file is a button `folder-contents-file` labelled with its
-/// name, with the value `conflict` when it is the conflicting file.
+/// It is a drawer under the folder list: its header ("Files in Rechnungen", the file count) can be dragged up and down
+/// to resize the list under it, and its chevron collapses the drawer to the header.
+///
+/// Accessibility: the view is `folder-contents`; the header is `folder-contents-header`, its chevron
+/// `folder-contents-toggle`; each file is a button `folder-contents-file` labelled with its name, with the value
+/// `conflict` when it is the conflicting file.
 struct FolderContentsView: View {
   let model: DestinationPickerModel
   /// The name the name field would give the file; a file with this name (ignoring case) is highlighted in the
   /// warning colour and scrolled into view.
   var conflictingName: String? = nil
+  /// The height of the file list under the header.
+  @Binding var listHeight: Double
+  /// Whether the drawer shows only its header.
+  @Binding var isCollapsed: Bool
+  /// The tallest the list may get, so the folder list above keeps its room.
+  let maxListHeight: Double
 
   var body: some View {
-    FolderContentsListing(contents: model.contents, conflictingName: conflictingName) { file in
+    FolderContentsListing(
+      contents: model.contents, conflictingName: conflictingName, listHeight: $listHeight,
+      isCollapsed: $isCollapsed, maxListHeight: maxListHeight
+    ) { file in
       model.takeFileName(file)
     }
   }
@@ -26,51 +39,126 @@ struct FolderContentsView: View {
 struct FolderContentsListing: View {
   let contents: FolderContents
   let conflictingName: String?
+  @Binding var listHeight: Double
+  @Binding var isCollapsed: Bool
+  let maxListHeight: Double
   /// A click on a file.
   let takeFileName: (FolderFile) -> Void
 
+  /// The list height when a drag started.
+  @State private var dragStartHeight: Double?
+
+  /// The shortest the list gets while expanded.
+  static let minListHeight: Double = 48
+
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(spacing: 0) {
       header
-      content
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pickerBox()
+      if !isCollapsed {
+        Divider()
+        content
+          .frame(maxWidth: .infinity, alignment: .topLeading)
+          .frame(height: clampedListHeight, alignment: .topLeading)
+          .background(FilingPanelStyle.listBackground)
+      }
     }
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Folder contents")
     .accessibilityIdentifier("folder-contents")
   }
 
+  private var clampedListHeight: Double {
+    min(max(listHeight, Self.minListHeight), max(maxListHeight, Self.minListHeight))
+  }
+
   // MARK: Header
 
+  /// The drawer's header: a chevron that collapses it, "Files in Rechnungen" with the file count trailing (the
+  /// folder's full path is in its tooltip), and a grab bar, which alone shows the resize cursor; dragging anywhere on
+  /// the header resizes the list.
   private var header: some View {
-    HStack(spacing: 4) {
-      Text(headerTitle)
-        .fontWeight(.semibold)
-        .foregroundStyle(.secondary)
-      if let folder = contents.folder {
-        Text(Self.title(of: folder))
-          .lineLimit(1)
-          .truncationMode(.head)
-          .help(folder)
+    HStack(alignment: .firstTextBaseline, spacing: 6) {
+      Button {
+        isCollapsed.toggle()
+      } label: {
+        Image(systemName: "chevron.right")
+          .font(.footnote.weight(.semibold))
+          .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+          .foregroundStyle(.secondary)
+          .frame(width: 14, height: 14)
+          .contentShape(Rectangle())
       }
+      .buttonStyle(.plain)
+      .help(isCollapsed ? "Show the folder’s files" : "Hide the folder’s files")
+      .accessibilityLabel(isCollapsed ? "Show files" : "Hide files")
+      .accessibilityIdentifier("folder-contents-toggle")
+      Text(headerTitle)
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .help(contents.folder.map(Self.title(of:)) ?? "")
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityIdentifier("folder-contents-header")
       Spacer(minLength: 4)
       if let fileCount {
         Text(fileCount == 1 ? "1 file" : "\(fileCount) files")
+          .font(.subheadline)
           .foregroundStyle(.secondary)
           .fixedSize()
       }
     }
-    .font(.system(size: 11))
-    .accessibilityElement(children: .combine)
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
+    .padding(.top, 9)
+    .padding(.bottom, 6)
+    .overlay(alignment: .top) {
+      // The grab bar: the only part that shows the resize cursor, with a hit area larger than the bar itself.
+      Capsule()
+        .fill(.quaternary)
+        .frame(width: 32, height: 3)
+        .frame(width: 64, height: 9)
+        .contentShape(Rectangle())
+        .pointerStyle(.rowResize)
+        .help("Drag to resize")
+        .accessibilityHidden(true)
+    }
+    .frame(maxWidth: .infinity)
+    .contentShape(Rectangle())
+    .gesture(resizeGesture)
+    .accessibilityAdjustableAction { direction in
+      switch direction {
+      case .increment: listHeight = min(clampedListHeight + 24, maxListHeight)
+      case .decrement: listHeight = max(clampedListHeight - 24, Self.minListHeight)
+      @unknown default: break
+      }
+    }
   }
 
-  /// "In" before a folder's path, "Folder contents" without one.
+  /// Dragging the header: up makes the list taller, down shorter; dragging a collapsed drawer up opens it.
+  private var resizeGesture: some Gesture {
+    DragGesture(minimumDistance: 2, coordinateSpace: .global)
+      .onChanged { drag in
+        if isCollapsed {
+          guard drag.translation.height < -8 else { return }
+          isCollapsed = false
+          listHeight = Self.minListHeight
+        }
+        let start = dragStartHeight ?? clampedListHeight
+        dragStartHeight = start
+        listHeight = min(max(start - drag.translation.height, Self.minListHeight), maxListHeight)
+      }
+      .onEnded { _ in
+        dragStartHeight = nil
+      }
+  }
+
+  /// "Files in <folder name>", "Files in new folder", or "Folder contents" without a folder.
   private var headerTitle: String {
     switch contents {
     case .none: "Folder contents"
-    case .notOnDisk: "In new folder"
-    case .loading, .files, .failed: "In"
+    case .notOnDisk: "Files in new folder"
+    case .loading(let folder), .files(let folder, _), .failed(let folder, _):
+      "Files in \(ArchivePath.title(of: folder))"
     }
   }
 
@@ -105,19 +193,17 @@ struct FolderContentsListing: View {
       fileList(files)
     case .failed(_, let message):
       Label(message, systemImage: "exclamationmark.triangle.fill")
-        .font(.system(size: 12))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 6)
+        .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.listInset)
         .padding(.vertical, 8)
     }
   }
 
   private func note(_ text: String) -> some View {
     Text(text)
-      .font(.system(size: 12))
-      .foregroundStyle(.tertiary)
+      .foregroundStyle(.secondary)
       .fixedSize(horizontal: false, vertical: true)
-      .padding(.horizontal, 6)
+      .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.listInset)
       .padding(.vertical, 8)
   }
 
@@ -126,17 +212,15 @@ struct FolderContentsListing: View {
     return ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(spacing: 0) {
-          ForEach(Array(files.enumerated()), id: \.element.url) { position, file in
-            FolderContentsFileRow(
-              file: file, isConflict: file.url == conflict?.url, isAlternate: position % 2 == 1
-            ) {
+          ForEach(files, id: \.url) { file in
+            FolderContentsFileRow(file: file, isConflict: file.url == conflict?.url) {
               takeFileName(file)
             }
             .id(file.url)
           }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 3)
+        .padding(.horizontal, FilingPanelStyle.listInset)
+        .padding(.vertical, 4)
       }
       .defaultScrollAnchor(.bottom)
       .onChange(of: files.map(\.url), initial: true) { _, urls in
@@ -174,17 +258,15 @@ extension FolderContents {
   }
 }
 
-/// One file in Folder contents: its icon and name; a click takes the name.
+/// One file in Folder contents: its icon and name, in the same row style as the folder list; a click takes the name.
 struct FolderContentsFileRow: View {
   let file: FolderFile
   /// Whether the file's name conflicts with the name field's (highlighted in the warning colour).
   let isConflict: Bool
-  /// Whether the row gets the alternating background.
-  let isAlternate: Bool
   let take: () -> Void
 
   var body: some View {
-    HStack(spacing: 7) {
+    HStack(spacing: FilingPanelStyle.rowIconSpacing) {
       Image(nsImage: Self.icon(for: file.name))
         .resizable()
         .frame(width: 16, height: 16)
@@ -195,10 +277,12 @@ struct FolderContentsFileRow: View {
         .truncationMode(.middle)
       Spacer(minLength: 0)
     }
-    .font(.system(size: 12))
-    .padding(.horizontal, 6)
-    .frame(height: 22)
-    .background(background, in: RoundedRectangle(cornerRadius: 4))
+    .padding(.horizontal, FilingPanelStyle.rowPadding)
+    .frame(height: FilingPanelStyle.rowHeight)
+    .background(
+      isConflict ? Color(nsColor: .systemOrange).opacity(0.3) : .clear,
+      in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius)
+    )
     .contentShape(Rectangle())
     .onTapGesture(perform: take)
     .help("Click to use this name")
@@ -209,12 +293,6 @@ struct FolderContentsFileRow: View {
     .accessibilityAddTraits(.isButton)
     .accessibilityAction(.default, take)
     .accessibilityIdentifier("folder-contents-file")
-  }
-
-  private var background: Color {
-    if isConflict { return Color(nsColor: .systemOrange).opacity(0.3) }
-    if isAlternate { return Color(nsColor: .alternatingContentBackgroundColors.last ?? .clear) }
-    return .clear
   }
 
   /// The Finder icon for files named like `name`, from its extension alone (the file itself is not read).
@@ -239,40 +317,45 @@ struct FolderContentsFileRow: View {
 
   #Preview("Files") {
     FolderContentsListing(
-      contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"), conflictingName: nil
+      contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
+      conflictingName: nil,
+      listHeight: .constant(120), isCollapsed: .constant(false), maxListHeight: 400
     ) { _ in }
-    .padding()
     .frame(width: 340, height: 160)
   }
 
   #Preview("Conflict") {
     FolderContentsListing(
       contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
-      conflictingName: "2033-07-19 gutschrift störung.pdf"
+      conflictingName: "2033-07-19 gutschrift störung.pdf", listHeight: .constant(60),
+      isCollapsed: .constant(false), maxListHeight: 400
     ) { _ in }
-    .padding()
     .frame(width: 340, height: 100)
   }
 
   #Preview("New folder") {
-    FolderContentsListing(contents: .notOnDisk, conflictingName: nil) { _ in }
-      .padding()
-      .frame(width: 340, height: 100)
+    FolderContentsListing(
+      contents: .notOnDisk, conflictingName: nil, listHeight: .constant(60),
+      isCollapsed: .constant(false), maxListHeight: 400
+    ) { _ in }
+    .frame(width: 340, height: 100)
   }
 
   #Preview("Failed") {
     FolderContentsListing(
       contents: .failed(
         folder: "Reisen/Reiseplanung Ideen", message: "The folder no longer exists."),
-      conflictingName: nil
+      conflictingName: nil, listHeight: .constant(60), isCollapsed: .constant(false),
+      maxListHeight: 400
     ) { _ in }
-    .padding()
     .frame(width: 340, height: 100)
   }
 
   #Preview("From the picker") {
-    FolderContentsView(model: .sample { $0.filterText = "rechnungen" })
-      .padding()
-      .frame(width: 340, height: 160)
+    FolderContentsView(
+      model: .sample { $0.filterText = "rechnungen" }, listHeight: .constant(120),
+      isCollapsed: .constant(false), maxListHeight: 400
+    )
+    .frame(width: 340, height: 160)
   }
 #endif

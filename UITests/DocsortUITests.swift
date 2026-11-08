@@ -154,7 +154,8 @@ final class DocsortUITests: XCTestCase {
     // Tab chooses the highlighted folder and moves to the name field.
     mainWindow.typeKey(.tab, modifierFlags: [])
     XCTAssertTrue(waitForKeyboardFocus(of: nameField))
-    let token = app.descendants(matching: .any)["picker-chosen-token"]
+    // The chosen folder is named on the destination line under the lists.
+    let token = app.descendants(matching: .any)["filing-destination"]
     XCTAssertTrue(token.waitForExistence(timeout: 5))
     XCTAssertTrue(token.label.contains("Noten & Bücher"))
 
@@ -190,9 +191,10 @@ final class DocsortUITests: XCTestCase {
     mainWindow.typeKey(.return, modifierFlags: [])
 
     XCTAssertTrue(waitForKeyboardFocus(of: app.textFields["name-field"]))
-    let token = app.descendants(matching: .any)["picker-chosen-token"]
+    let token = app.descendants(matching: .any)["filing-destination"]
     XCTAssertTrue(token.waitForExistence(timeout: 5))
     XCTAssertTrue(token.label.contains("2033 Adventkonzert"))
+    XCTAssertTrue(token.label.contains("new folder"))
   }
 
   @MainActor

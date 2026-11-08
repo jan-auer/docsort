@@ -91,14 +91,13 @@ struct NewBadge: View {
 
   var body: some View {
     Text("New")
-      .font(.system(size: 9.5, weight: .bold))
-      .textCase(.uppercase)
-      .padding(.horizontal, 4)
+      .font(.caption2.weight(.semibold))
+      .padding(.horizontal, 5)
       .padding(.vertical, 1)
       .foregroundStyle(tone == .onAccent ? tone.primary : Color.accentColor)
       .background(
         (tone == .onAccent ? tone.primary : Color.accentColor).opacity(0.2),
-        in: RoundedRectangle(cornerRadius: 4)
+        in: Capsule()
       )
       .accessibilityLabel("New folder")
   }

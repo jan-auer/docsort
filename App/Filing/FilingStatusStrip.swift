@@ -22,8 +22,8 @@ nonisolated enum HandledTimeText {
   }
 }
 
-/// The slim strip at the top of the filing panel for a handled file: what happened to it and when, with the action
-/// that returns it to its inbox at the trailing end.
+/// The status banner across the top of the filing panel for a handled file: what happened to it and when, with the
+/// action that returns it to its inbox at the trailing end.
 ///
 /// A filed file shows a green check, "Filed to <destination>" (the destination middle-truncated) with the time
 /// below it, and **Move Back**; a trashed file a trash icon, "Moved to Trash" with the time, and **Put Back**.
@@ -48,8 +48,9 @@ struct FilingStatusStrip: View {
   var now: Date = .now
 
   var body: some View {
-    HStack(spacing: 6) {
+    HStack(spacing: 10) {
       icon
+        .font(.title3)
       description
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("filing-strip-text")
@@ -61,12 +62,21 @@ struct FilingStatusStrip: View {
         .help(buttonHelp)
         .accessibilityIdentifier(buttonIdentifier)
     }
-    .padding(.horizontal, 8)
-    .padding(.vertical, 6)
+    .padding(.horizontal, FilingPanelStyle.edgeMargin)
+    .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    // Not under the window's toolbar, which spans the preview and the panel.
+    .background(background, ignoresSafeAreaEdges: [])
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-strip")
+  }
+
+  /// A green tint for a filed file, the list colour for a trashed one; both neutral next to the orange failures.
+  private var background: Color {
+    switch status {
+    case .filed: Color.green.opacity(0.1)
+    case .trashed: FilingPanelStyle.listBackground
+    }
   }
 
   @ViewBuilder private var icon: some View {
@@ -101,7 +111,7 @@ struct FilingStatusStrip: View {
           .lineLimit(1)
       }
       Text(HandledTimeText.text(for: date, relativeTo: now))
-        .font(.caption)
+        .font(.subheadline)
         .foregroundStyle(.secondary)
         .lineLimit(1)
     }
@@ -138,7 +148,7 @@ struct FilingStatusStrip: View {
 #if DEBUG
   #Preview("Filed and trashed") {
     let now = PreviewDates.october2033(13, hour: 16)
-    VStack(spacing: 12) {
+    VStack(spacing: 0) {
       FilingStatusStrip(
         status: .filed(
           destinationPath: "Mobilität/Jahreskarte Regio Plus",
@@ -153,7 +163,6 @@ struct FilingStatusStrip: View {
         status: .trashed(date: PreviewDates.october2033(4, hour: 11)), inboxName: "Scanner",
         canReturnToInbox: true, returnToInbox: {}, now: now)
     }
-    .padding()
     .frame(width: 340)
   }
 

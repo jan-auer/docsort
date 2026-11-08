@@ -28,7 +28,7 @@ struct PickerListing {
     if query.trimmingCharacters(in: .whitespaces).isEmpty {
       sections = scope.isEmpty ? rootSections() : [scopeSection()]
     } else if let index {
-      sections = [searchSection(in: index)]
+      sections = searchSections(in: index)
     } else {
       sections = [
         PickerSection(
@@ -97,27 +97,73 @@ struct PickerListing {
     return PickerSection(id: section, title: nil, rows: [currentRow] + childRows)
   }
 
-  /// The index's matches for the filter inside the scope.
-  private func searchSection(in index: DestinationIndex) -> PickerSection {
-    let section = "search"
-    let matches = index.search(
-      query, in: scope, ranking: ranking, recents: recents, limit: Self.searchLimit)
-    var rows = matches.map { match in
-      PickerRow(
-        id: "\(section):\(match.path)",
-        kind: .folder(
-          PickerFolder(
-            path: match.path, displayPath: match.pathInScope, matchedRanges: match.matchedRanges,
-            hasSubfolders: !index.subfolders(of: match.path).isEmpty, isNew: false)))
+  /// The index's matches for the filter. At the root: one untitled section. Inside a folder (soft scope): the whole
+  /// archive is searched, the folder's own matches first under "In <folder>" (paths relative to it), the rest under
+  /// "Elsewhere" (full paths). When nothing in the folder matches, "In <folder>" holds the create row for a new folder
+  /// there (the highlight still goes to the first match elsewhere); when nothing matches anywhere, the create row is
+  /// all there is.
+  private func searchSections(in index: DestinationIndex) -> [PickerSection] {
+    guard !scope.isEmpty else {
+      let rows = index.search(
+        query, in: scope, ranking: ranking, recents: recents, limit: Self.searchLimit
+      ).map { searchRow(section: "search", match: $0, displayPath: $0.pathInScope, index: index) }
+      return [PickerSection(id: "search", title: nil, rows: rows.isEmpty ? createRows() : rows)]
     }
+
+    var inScopeRows = index.search(
+      query, in: scope, ranking: ranking, recents: recents, limit: Self.searchLimit
+    ).map { searchRow(section: "in", match: $0, displayPath: $0.pathInScope, index: index) }
+    // The scope itself is not among its descendants; offered as "this folder" when the query names it.
+    let elsewhereMatches = archiveMatches(in: index)
+    if elsewhereMatches.contains(where: { $0.path == scope }) {
+      inScopeRows.append(PickerRow(id: "in:current:\(scope)", kind: .currentFolder(path: scope)))
+    }
+    let elsewhereRows =
+      elsewhereMatches
+      .filter { $0.path != scope && ArchivePath.relative($0.path, to: scope) == nil }
+      .prefix(Self.searchLimit)
+      .map { searchRow(section: "elsewhere", match: $0, displayPath: $0.pathInScope, index: index) }
+
+    if inScopeRows.isEmpty, elsewhereRows.isEmpty {
+      return [PickerSection(id: "search", title: nil, rows: createRows())]
+    }
+    // Nothing in the folder: offer the new folder there, above the matches elsewhere.
+    let inScope = inScopeRows.isEmpty ? createRows() : inScopeRows
+    return [
+      PickerSection(id: "in", title: "In \(ArchivePath.title(of: scope))", rows: inScope),
+      PickerSection(id: "elsewhere", title: "Elsewhere", rows: Array(elsewhereRows)),
+    ]
+  }
+
+  /// The whole archive's matches for the filter, enough of them that ``searchLimit`` remain once the scope's subtree
+  /// is left out.
+  private func archiveMatches(in index: DestinationIndex) -> [DestinationMatch] {
+    let subtreeSize = index.folders.count { ArchivePath.relative($0, to: scope) != nil }
+    return index.search(
+      query, in: "", ranking: ranking, recents: recents, limit: Self.searchLimit + subtreeSize + 1)
+  }
+
+  /// A search result as a folder row of `section`, showing `displayPath`.
+  private func searchRow(
+    section: String, match: DestinationMatch, displayPath: String, index: DestinationIndex
+  ) -> PickerRow {
+    PickerRow(
+      id: "\(section):\(match.path)",
+      kind: .folder(
+        PickerFolder(
+          path: match.path, displayPath: displayPath, matchedRanges: match.matchedRanges,
+          hasSubfolders: !index.subfolders(of: match.path).isEmpty, isNew: false)))
+  }
+
+  /// The create row for the filter as a new folder in the scope, if the filter names one.
+  private func createRows() -> [PickerRow] {
     let newFolder = NewFolderPath(typed: query)
-    if rows.isEmpty, !newFolder.components.isEmpty {
-      rows.append(
-        PickerRow(
-          id: "\(section):create",
-          kind: .createFolder(name: newFolder.name, parent: scope, problem: newFolder.problem)))
-    }
-    return PickerSection(id: section, title: nil, rows: rows)
+    guard !newFolder.components.isEmpty else { return [] }
+    return [
+      PickerRow(
+        id: "search:create",
+        kind: .createFolder(name: newFolder.name, parent: scope, problem: newFolder.problem))
+    ]
   }
 
   private func folderRow(section: String, path: String, displayPath: String, isNew: Bool)

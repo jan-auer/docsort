@@ -1,8 +1,9 @@
 import DocsortCore
 import SwiftUI
 
-/// The content of the main window: the inbox sidebar, the preview and the filing panel as an inspector, with the
-/// selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
+/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it
+/// (340 pt to start, dragged between 300 and 480 pt),
+/// with the selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
 /// quiet "No file selected" while nothing is selected, with the bottom bar (confirmations, history save warning)
@@ -14,6 +15,12 @@ struct MainWindowView: View {
 
   @Environment(\.undoManager) private var undoManager
 
+  /// The filing panel's width, kept with the window.
+  @SceneStorage("filing-panel.width") private var filingPanelWidth = 340.0
+
+  /// The widths the filing panel can be dragged to.
+  private static let filingPanelWidths = 300.0...480.0
+
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
       SidebarColumn {
@@ -23,22 +30,34 @@ struct MainWindowView: View {
       }
       .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
     } detail: {
-      VStack(spacing: 0) {
-        detailColumn
-          .frame(maxHeight: .infinity)
-        WindowBottomBar(model: model)
+      // The filing panel is the main work surface, not details about the selection, so it is a pane of the detail
+      // column (HIG: inspectors are for details), resizable against the preview by dragging the divider between them.
+      HStack(spacing: 0) {
+        VStack(spacing: 0) {
+          detailColumn
+            .frame(maxHeight: .infinity)
+          WindowBottomBar(model: model)
+        }
+        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+        if model.isFilingPanelShown {
+          HStack(spacing: 0) {
+            PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
+            FilingPanel(
+              model: model,
+              locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
+            )
+            .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
+            .frame(maxHeight: .infinity)
+          }
+          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
+          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
+          .transition(.move(edge: .trailing))
+        }
       }
-      .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      .animation(.smooth(duration: 0.3), value: model.isFilingPanelShown)
       .toolbar { fileToolbar }
       .navigationTitle(windowTitle)
       .navigationSubtitle(windowSubtitle)
-    }
-    .inspector(isPresented: $model.isFilingPanelShown) {
-      FilingPanel(
-        model: model,
-        locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
-      )
-      .inspectorColumnWidth(min: 280, ideal: 340, max: 480)
     }
     .frame(minWidth: 1000, minHeight: 640)
     .onGeometryChange(for: MainWindowWidthClass.self) { geometry in
@@ -79,6 +98,8 @@ struct MainWindowView: View {
     } message: { alert in
       Text(alert.message)
     }
+    // The system's line between the toolbar and the content scrolling under it, as Finder shows it.
+    .background(TitlebarSeparatorLine())
     .focusedSceneValue(\.mainWindowModel, model)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("main-window")

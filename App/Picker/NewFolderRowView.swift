@@ -32,7 +32,7 @@ struct NewFolderRowView<FocusValue: Hashable>: View {
 
   var body: some View {
     let draft = model.newFolderDraft
-    HStack(alignment: .firstTextBaseline, spacing: 7) {
+    HStack(alignment: .firstTextBaseline, spacing: FilingPanelStyle.rowIconSpacing) {
       FolderIcon(tone: .standard)
       VStack(alignment: .leading, spacing: 3) {
         TextField(
@@ -46,10 +46,13 @@ struct NewFolderRowView<FocusValue: Hashable>: View {
         NewFolderNoticeView(notice: draft?.notice)
       }
     }
-    .padding(.horizontal, 6)
+    .padding(.horizontal, FilingPanelStyle.rowPadding)
     .padding(.top, 3)
     .padding(.bottom, 4)
-    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+    .background(
+      Color.accentColor.opacity(0.12),
+      in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius)
+    )
     .accessibilityElement(children: .contain)
     .task { await takeFocus() }
   }
@@ -65,7 +68,7 @@ struct NewFolderNoticeView: View {
 
   var body: some View {
     Text(text)
-      .font(.system(size: 10.5))
+      .font(.subheadline)
       .foregroundStyle(isWarning ? Color(nsColor: .systemOrange) : .secondary)
       .fixedSize(horizontal: false, vertical: true)
       .accessibilityIdentifier("picker-new-folder-notice")

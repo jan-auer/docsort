@@ -43,7 +43,8 @@ struct DestinationPickerNewFolderTests {
     #expect(events.events == [.chose(created)])
     #expect(model.pendingFolders == [created.path])
     #expect(
-      model.chosenToken == ChosenToken(text: "Reisen › Besuch Westerholm › Bahn", isNew: true))
+      model.destinationPath
+        == DestinationPath(path: created.path, isChosen: true, isNew: true))
     #expect(model.contents == .notOnDisk)
   }
 
