@@ -21,16 +21,6 @@ nonisolated struct SelectedFile: Hashable, Sendable {
   }
 }
 
-/// Whether the configured archive folder can be filed into.
-nonisolated enum ArchiveAvailability: Hashable, Sendable {
-  /// The archive folder is there and accessible.
-  case available
-  /// The archive folder cannot be reached (missing, renamed, drive not mounted, permission denied).
-  ///
-  /// `displayPath` is the folder's path as the user should read it, for example "~/Archiv".
-  case unreachable(displayPath: String)
-}
-
 /// How wide the main window is, as far as the sidebar's automatic collapsing cares.
 nonisolated enum MainWindowWidthClass: Sendable {
   /// Narrower than `MainWindowModel.sidebarCollapseWidth`: the sidebar gives way to the preview.
@@ -42,8 +32,8 @@ nonisolated enum MainWindowWidthClass: Sendable {
 /// The state of one main window: what is selected, which columns are shown, and the edge states it shows.
 ///
 /// The main window's views read it, and the menu commands reach it through the `mainWindowModel` focused value while
-/// the main window is key. Later steps drive it: the sidebar sets `selectedFile`, the folder settings set
-/// `areFoldersConfigured` and `archiveAvailability`.
+/// the main window is key. Later steps drive it: the sidebar sets `selectedFile`. Whether folders are configured and
+/// whether the archive is available come from the app's `FolderLibrary`, so they always match the folder settings.
 @Observable
 final class MainWindowModel {
   /// Below this window width the sidebar collapses on its own, so that the preview keeps its room.
@@ -55,10 +45,8 @@ final class MainWindowModel {
   var isFilingPanelShown = true
   /// Which split-view columns are shown. The sidebar toggle (⌃⌘S) and the automatic collapsing change it.
   var columnVisibility: NavigationSplitViewVisibility = .all
-  /// Whether an archive folder and at least one inbox are configured. While not, the window shows the welcome view.
-  var areFoldersConfigured: Bool
-  /// Whether the archive folder can be filed into.
-  var archiveAvailability: ArchiveAvailability = .available
+  /// The app's configured folders.
+  let folders: FolderLibrary
   /// The controller the window's zoom commands go through to the preview.
   let previewController = PreviewController()
 
@@ -66,10 +54,20 @@ final class MainWindowModel {
   /// sidebar come back by itself when the window is widened again.
   @ObservationIgnored private var isSidebarCollapsedForWidth = false
 
-  /// Creates the state of a main window.
-  init(areFoldersConfigured: Bool, selectedFile: SelectedFile? = nil) {
-    self.areFoldersConfigured = areFoldersConfigured
+  /// Creates the state of a main window showing the folders of `folders`.
+  init(folders: FolderLibrary, selectedFile: SelectedFile? = nil) {
+    self.folders = folders
     self.selectedFile = selectedFile
+  }
+
+  /// Whether an archive folder and at least one inbox are configured. While not, the window shows the welcome view.
+  var areFoldersConfigured: Bool {
+    folders.areFoldersConfigured
+  }
+
+  /// Whether the archive folder can be filed into.
+  var archiveAvailability: ArchiveAvailability {
+    folders.archiveAvailability
   }
 
   /// Collapses the sidebar when the window becomes narrow, and shows it again when the window is widened if it is

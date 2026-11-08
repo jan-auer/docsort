@@ -10,8 +10,6 @@ struct MainWindowView: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
 
-  @Environment(\.openSettings) private var openSettings
-
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
       SidebarColumn {}
@@ -25,8 +23,7 @@ struct MainWindowView: View {
       FilingPanel(
         selectedFile: model.selectedFile,
         archiveAvailability: model.archiveAvailability,
-        // Settings is where the archive folder is chosen; the Settings step may offer a folder picker here instead.
-        locateArchive: { openSettings() }
+        locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
       )
       .inspectorColumnWidth(min: 280, ideal: 340, max: 480)
     }
@@ -37,6 +34,7 @@ struct MainWindowView: View {
     } action: { widthClass in
       model.windowWidthClassChanged(to: widthClass)
     }
+    .folderSettingsAlert(for: model.folders)
     .focusedSceneValue(\.mainWindowModel, model)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("main-window")
@@ -97,21 +95,27 @@ struct MainWindowView: View {
   }
 }
 
-#Preview("First launch") {
-  MainWindowView(model: MainWindowModel(areFoldersConfigured: false))
-    .frame(width: 1280, height: 800)
-}
-
-#Preview("Nothing selected") {
-  MainWindowView(model: MainWindowModel(areFoldersConfigured: true))
-    .frame(width: 1280, height: 800)
-}
-
 #if DEBUG
+  #Preview("First launch") {
+    MainWindowView(
+      model: MainWindowModel(folders: .preview(archiveRoot: nil, inboxes: []))
+    )
+    .frame(width: 1280, height: 800)
+  }
+
+  #Preview("Nothing selected") {
+    MainWindowView(
+      model: MainWindowModel(
+        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes)
+      )
+    )
+    .frame(width: 1280, height: 800)
+  }
+
   #Preview("PDF selected") {
     MainWindowView(
       model: MainWindowModel(
-        areFoldersConfigured: true,
+        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
         selectedFile: SelectedFile(
           url: PreviewSampleFiles.invoicePDF(),
           inboxName: "Web-Downloads",
@@ -123,16 +127,17 @@ struct MainWindowView: View {
   }
 
   #Preview("Archive unreachable") {
-    let model = MainWindowModel(
-      areFoldersConfigured: true,
-      selectedFile: SelectedFile(
-        url: PreviewSampleFiles.textNote(),
-        inboxName: "Scanner",
-        completeness: .complete
+    MainWindowView(
+      model: MainWindowModel(
+        folders: .preview(
+          archiveRoot: SampleFolders.missingArchiveRoot, inboxes: SampleFolders.inboxes),
+        selectedFile: SelectedFile(
+          url: PreviewSampleFiles.textNote(),
+          inboxName: "Scanner",
+          completeness: .complete
+        )
       )
     )
-    model.archiveAvailability = .unreachable(displayPath: "~/Archiv")
-    return MainWindowView(model: model)
-      .frame(width: 1280, height: 800)
+    .frame(width: 1280, height: 800)
   }
 #endif

@@ -11,14 +11,19 @@ enum SceneID {
 
 @main
 struct DocsortApp: App {
+  /// The configured folders, loaded and resolved at launch.
+  @State private var folders: FolderLibrary
   /// The state of the one main window.
-  ///
-  /// No folders can be configured yet, so the window starts with the welcome view; the Settings step drives
-  /// `areFoldersConfigured` from the folder settings.
-  @State private var mainWindowModel = MainWindowModel(areFoldersConfigured: false)
+  @State private var mainWindowModel: MainWindowModel
 
+  /// Builds the app's models from the environment for this launch: the user's real settings normally, an inert
+  /// environment when the app hosts unit tests (see `AppEnvironment`).
   init() {
     Logger.lifecycle.notice("Docsort launched")
+    let environment = AppEnvironment.forCurrentProcess()
+    let folders = FolderLibrary(environment: environment)
+    _folders = State(initialValue: folders)
+    _mainWindowModel = State(initialValue: MainWindowModel(folders: folders))
   }
 
   var body: some Scene {

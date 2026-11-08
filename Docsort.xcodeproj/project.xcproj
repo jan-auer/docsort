@@ -18,6 +18,7 @@
   ],
   "files": [
     { "kind": "folder", "path": "App", "target-membership": [ "Docsort" ] },
+    { "kind": "folder", "path": "AppTests", "target-membership": [ "DocsortTests" ] },
     { "kind": "folder", "path": "UITests", "target-membership": [ "DocsortUITests" ] },
     {
       "kind": "group",
@@ -25,6 +26,7 @@
       "children": [
         { "path": "<PRODUCTS>/Docsort.app", "id": "D0C50A010000000000000001", "type": "wrapper.application", "index": false },
         { "path": "<PRODUCTS>/DocsortUITests.xctest", "id": "D0C50A010000000000000002", "type": "wrapper.cfbundle", "index": false },
+        { "path": "<PRODUCTS>/DocsortTests.xctest", "id": "D0C50A010000000000000003", "type": "wrapper.cfbundle", "index": false },
       ],
     },
   ],
@@ -72,6 +74,36 @@
         "SWIFT_EMIT_LOC_STRINGS": "YES",
         "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
         "SWIFT_VERSION": "6.0",
+      },
+    }, {
+      "name": "DocsortTests",
+      "id": "D0C50A010000000000000032",
+      "product": "Products/DocsortTests.xctest",
+      "product-type": "bundle.unit-test",
+      "test-host-target": "Docsort",
+      "dependencies": [
+        "Docsort",
+      ],
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+      ],
+      "build-settings": {
+        "BUNDLE_LOADER": "$(TEST_HOST)",
+        "CODE_SIGN_IDENTITY": "-",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "1",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "MARKETING_VERSION": "1.0",
+        "PRODUCT_BUNDLE_IDENTIFIER": "org.jauer.DocsortTests",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "STRING_CATALOG_GENERATE_SYMBOLS": "NO",
+        "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "NO",
+        "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
+        "SWIFT_VERSION": "6.0",
+        "TEST_HOST": "$(BUILT_PRODUCTS_DIR)/Docsort.app/Contents/MacOS/Docsort",
       },
     }, {
       "name": "DocsortUITests",

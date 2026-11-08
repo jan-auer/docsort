@@ -13,4 +13,13 @@ extension Logger {
 
   /// Opening files in other apps and revealing them in Finder.
   nonisolated static let fileActions = Logger(subsystem: subsystem, category: "file-actions")
+
+  /// Loading, resolving and saving the configured folders (archive root and inboxes), and their bookmarks.
+  nonisolated static let folders = Logger(subsystem: subsystem, category: "folders")
+
+  /// Building the index of archive folders that destinations are searched in.
+  nonisolated static let archiveIndex = Logger(subsystem: subsystem, category: "archive-index")
+
+  /// The app's own preferences other than the folders, such as the search ranking.
+  nonisolated static let preferences = Logger(subsystem: subsystem, category: "preferences")
 }

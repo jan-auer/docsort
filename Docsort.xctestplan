@@ -16,6 +16,13 @@
   },
   "testTargets" : [
     {
+      "target" : {
+        "containerPath" : "container:Docsort.xcodeproj",
+        "identifier" : "D0C50A010000000000000032",
+        "name" : "DocsortTests"
+      }
+    },
+    {
       "parallelizable" : false,
       "target" : {
         "containerPath" : "container:Docsort.xcodeproj",
