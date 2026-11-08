@@ -1,5 +1,6 @@
 import DocsortCore
 import Foundation
+import Synchronization
 import Testing
 
 @testable import Docsort
@@ -133,5 +134,29 @@ struct InboxLibraryTests {
     #expect(library.nextUnhandledRow(after: rows[2].id)?.id == rows[0].id)
     #expect(library.firstRow(inSection: 1)?.item.name == "2033-10-11_Optik Klarblick.pdf")
     #expect(library.sections.map(\.label) == ["Web-Downloads", "Scanner"])
+  }
+
+  @Test("Looking up a row observes it, so views reading one row follow its mark")
+  func rowLookupIsObserved() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    _ = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let library = await makeLibrary(environment)
+    let row = try #require(library.orderedRows.first)
+    let changed = Mutex(false)
+
+    withObservationTracking {
+      _ = library.row(for: row.id)
+    } onChange: {
+      changed.withLock { $0 = true }
+    }
+    library.setMark(
+      row.id,
+      .trashed(
+        trashedURL: environment.root.appending(path: "Trash/Rechnung_NA-33-08812.pdf"),
+        date: october2033(14)))
+
+    #expect(changed.withLock { $0 })
   }
 }
