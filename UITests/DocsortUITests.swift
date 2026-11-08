@@ -96,16 +96,17 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(waitForValue("filed", of: invoice))
     let status = app.descendants(matching: .any)["status-message"]
     XCTAssertTrue(status.waitForExistence(timeout: 5))
-    XCTAssertEqual(
-      status.label, "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z")
+    XCTAssertTrue(
+      waitForText(
+        "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z", of: status))
     let title = app.descendants(matching: .any)["toolbar-file-title"]
     XCTAssertTrue(
-      waitForLabel("Web-Downloads › 2033-10-20 Verlängerung Jahreskarte Konrad.pdf", of: title))
+      waitForText("Web-Downloads › 2033-10-20 Verlängerung Jahreskarte Konrad.pdf", of: title))
 
     mainWindow.typeKey("z", modifierFlags: .command)
 
     XCTAssertTrue(waitForValue("unfiled", of: invoice))
-    XCTAssertTrue(waitForLabel("Web-Downloads › Rechnung_NA-33-08812.pdf", of: title))
+    XCTAssertTrue(waitForText("Web-Downloads › Rechnung_NA-33-08812.pdf", of: title))
   }
 
   @MainActor
@@ -161,7 +162,7 @@ final class DocsortUITests: XCTestCase {
     mainWindow.typeKey(.return, modifierFlags: [])
     let hint = app.descendants(matching: .any)["filing-hint"]
     XCTAssertTrue(hint.waitForExistence(timeout: 5))
-    XCTAssertEqual(hint.label, "Press ⌘Return to move")
+    XCTAssertTrue(waitForText("Press ⌘Return to move", of: hint))
     XCTAssertTrue(waitForKeyboardFocus(of: nameField))
     XCTAssertTrue(token.exists)
 
@@ -207,7 +208,7 @@ final class DocsortUITests: XCTestCase {
 
     let hint = app.descendants(matching: .any)["filing-hint"]
     XCTAssertTrue(hint.waitForExistence(timeout: 5))
-    XCTAssertEqual(hint.label, "Choose a destination first")
+    XCTAssertTrue(waitForText("Choose a destination first", of: hint))
     XCTAssertTrue(waitForKeyboardFocus(of: app.textFields["picker-filter"]))
     XCTAssertEqual(invoice.value as? String, "unfiled")
   }
@@ -260,10 +261,10 @@ final class DocsortUITests: XCTestCase {
 
     let status = app.descendants(matching: .any)["status-message"]
     XCTAssertTrue(
-      waitForLabel("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status))
+      waitForText("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status))
     XCTAssertEqual(invoice.value as? String, "filed")
     let title = app.descendants(matching: .any)["toolbar-file-title"]
-    XCTAssertTrue(waitForLabel("Web-Downloads › 2033-10-13 Notenhaus Allegretto.pdf", of: title))
+    XCTAssertTrue(waitForText("Web-Downloads › 2033-10-13 Notenhaus Allegretto.pdf", of: title))
   }
 
   @MainActor
@@ -312,6 +313,13 @@ final class DocsortUITests: XCTestCase {
     let expectation = XCTNSPredicateExpectation(
       predicate: NSPredicate(format: "exists == false"), object: element)
     return XCTWaiter().wait(for: [expectation], timeout: 5) == .completed
+  }
+
+  /// Waits until the static text `element` reads `text`. On macOS a static text carries its text as its value, not
+  /// its label.
+  @MainActor
+  private func waitForText(_ text: String, of element: XCUIElement) -> Bool {
+    waitForValue(text, of: element)
   }
 
   /// Waits until `element`'s accessibility label is `label`.

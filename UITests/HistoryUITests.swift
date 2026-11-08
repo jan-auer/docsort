@@ -37,11 +37,12 @@ final class HistoryUITests: XCTestCase {
     let historyWindow = app.descendants(matching: .any)["history-window"]
     XCTAssertTrue(historyWindow.waitForExistence(timeout: 5))
     let count = historyWindow.descendants(matching: .any)["history-count"]
-    XCTAssertTrue(waitFor("label == '1 entry'", count))
+    // Static texts carry their text as their value on macOS.
+    XCTAssertTrue(waitFor("value == '1 entry'", count))
     let originalName = historyWindow.descendants(matching: .any)
       .matching(identifier: "history-original-name").firstMatch
     XCTAssertTrue(originalName.waitForExistence(timeout: 5))
-    XCTAssertEqual(originalName.label, "Rechnung_NA-33-08812.pdf")
+    XCTAssertEqual(originalName.value as? String, "Rechnung_NA-33-08812.pdf")
 
     // The newest entry is selected; Move Back to Inbox returns the file and adds an entry.
     let moveBack = historyWindow.buttons["history-return"]
@@ -49,7 +50,7 @@ final class HistoryUITests: XCTestCase {
     XCTAssertEqual(moveBack.title, "Move Back to Inbox")
     moveBack.click()
 
-    XCTAssertTrue(waitFor("label == '2 entries'", count))
+    XCTAssertTrue(waitFor("value == '2 entries'", count))
     XCTAssertTrue(waitFor("value == 'unfiled'", invoice))
   }
 
