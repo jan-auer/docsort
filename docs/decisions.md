@@ -64,6 +64,13 @@ The core package may import non-UI Apple frameworks (CoreServices for FSEvents n
 and Spotlight metadata for suggestions later), but never SwiftUI or AppKit. Reason: the app is macOS-only
 (`native-swift-app`), and these are what the core's services need; decided by the hub on the architect's proposal.
 
+## one-xctest-at-a-time
+
+Only one `xcodebuild test` runs on the machine at a time, across all sessions. Parallel runs share one testmanagerd
+and the same bundle ID, and hang. Wrap every run in the shared lock:
+`until mkdir /tmp/docsort-xctest.lock 2>/dev/null; do sleep 15; done; xcodebuild … test …; rc=$?; rmdir /tmp/docsort-xctest.lock`.
+Plain builds and `swift test` don't need it. Reason: two sessions' test runs hung each other on 2026-11-08.
+
 ## e2e-first
 
 Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
