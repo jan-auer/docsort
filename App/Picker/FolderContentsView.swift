@@ -34,6 +34,7 @@ struct FolderContentsListing: View {
       header
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pickerBox()
     }
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Folder contents")
@@ -134,6 +135,8 @@ struct FolderContentsListing: View {
             .id(file.url)
           }
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
       }
       .defaultScrollAnchor(.bottom)
       .onChange(of: files.map(\.url), initial: true) { _, urls in

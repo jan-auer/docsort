@@ -45,6 +45,8 @@ struct KeyCommandTextField: NSViewRepresentable {
   let onFocusChange: (Bool) -> Void
   /// Called for each handled key; returns whether it handled the key (otherwise the field does its default).
   let onCommand: (TextFieldKeyCommand) -> Bool
+  /// Room kept free at the field's trailing edge for controls drawn over it (the name field's ↺ and extension).
+  var trailingInset: CGFloat = 0
 
   func makeNSView(context: Context) -> NSTextField {
     let field = FocusReportingTextField()
@@ -63,6 +65,9 @@ struct KeyCommandTextField: NSViewRepresentable {
 
   func updateNSView(_ field: NSTextField, context: Context) {
     context.coordinator.parent = self
+    if let field = field as? FocusReportingTextField {
+      field.setTrailingInset(trailingInset)
+    }
     if field.stringValue != text {
       field.stringValue = text
     }
@@ -141,14 +146,45 @@ struct KeyCommandTextField: NSViewRepresentable {
 }
 
 /// A text field that says when it becomes first responder (by click, Tab or a focus request), which the delegate
-/// does not report until the first edit.
+/// does not report until the first edit, and keeps room free at its trailing edge.
 final class FocusReportingTextField: NSTextField {
   var onBecomeFirstResponder: (() -> Void)?
+
+  override class var cellClass: AnyClass? {
+    get { TrailingInsetTextFieldCell.self }
+    set {}
+  }
 
   override func becomeFirstResponder() -> Bool {
     let didBecome = super.becomeFirstResponder()
     if didBecome { onBecomeFirstResponder?() }
     return didBecome
+  }
+
+  /// Keeps `inset` points free at the trailing edge, for drawing and for editing.
+  func setTrailingInset(_ inset: CGFloat) {
+    guard let cell = cell as? TrailingInsetTextFieldCell, cell.trailingInset != inset else {
+      return
+    }
+    let growth = cell.trailingInset - inset
+    cell.trailingInset = inset
+    // While editing, the field editor's clip view was laid out with the old inset; resize it in place, since
+    // starting the edit over would select all of the text again and report a focus change.
+    if let clipView = currentEditor()?.superview as? NSClipView {
+      clipView.frame.size.width = max(0, clipView.frame.width + growth)
+    }
+    needsDisplay = true
+  }
+}
+
+/// A text field cell whose text, placeholder and field editor stop `trailingInset` points before the trailing edge.
+final class TrailingInsetTextFieldCell: NSTextFieldCell {
+  var trailingInset: CGFloat = 0
+
+  override func drawingRect(forBounds rect: NSRect) -> NSRect {
+    var bounds = rect
+    bounds.size.width = max(0, bounds.width - trailingInset)
+    return super.drawingRect(forBounds: bounds)
   }
 }
 
