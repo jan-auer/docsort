@@ -114,11 +114,6 @@ struct FilingPanel: View {
           model.focus = nil
         }
       }
-      .onChange(of: model.focus) { _, focus in
-        // The name field and the sidebar take focus outside this focus state (AppKit's `makeFirstResponder`, the
-        // sidebar's own focus state); keep it in step, so the picker stops treating its fields as focused.
-        if focus == .nameField || focus == .sidebar, focusedField != nil { focusedField = nil }
-      }
     FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
       .frame(minHeight: 80, maxHeight: 200)
 
