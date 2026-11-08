@@ -58,6 +58,17 @@ usable end to end, an architecture coordinator reviews the codebase and moves th
 with feature and UX work. Do it earlier only if the code gets too messy. Reason: the user found orchestration landing
 in the UI layer and asked for clean separation, but wants a usable app first.
 
+## e2e-first
+
+Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
+there:
+- one review before landing, with non-critical findings going to a backlog instead of another round;
+- coordinators decide implementation details themselves and escalate only product questions;
+- tests cover core logic and the main flow, not exhaustive suites;
+- privacy reviews only when new sample data is added (all sample data comes from the one reviewed archive).
+Reason: on 2026-11-08 the user found progress too slow: no usable prototype after many review, privacy and design
+rounds.
+
 ## parallel-sessions
 
 Sessions run in parallel wherever their files don't overlap, each owning one piece; avoid long-lived sessions that
