@@ -75,8 +75,9 @@ One main window, three columns (a `NavigationSplitView` with an inspector). Acce
 
   The panel is always visible but inactive until a file is selected; it never covers the preview.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
-  at the list's start or end), then plain title text like Finder's folder title (no box): "docsort" in bold, the
-  selected file's inbox in secondary colour, a › separator and its name in primary colour. At the right, the three
+  at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
+  and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
+  selected. At the right, the three
   actions on that file (Open, Reveal in Finder, Move to Trash) as one group, and the inspector toggle on its own at the
   very right. Everything in the toolbar is about the selected file; History,
   which is about all files, sits at the bottom of the sidebar instead (see "Toolbar and History placement"). All

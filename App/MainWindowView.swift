@@ -2,7 +2,7 @@ import DocsortCore
 import SwiftUI
 
 /// The content of the main window: the inbox sidebar, the preview and the filing panel as an inspector, with the
-/// selected file's name and actions in the toolbar.
+/// selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
 /// quiet "No file selected" while nothing is selected, with the bottom bar (confirmations, history save warning)
@@ -30,6 +30,8 @@ struct MainWindowView: View {
       }
       .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
       .toolbar { fileToolbar }
+      .navigationTitle(windowTitle)
+      .navigationSubtitle(windowSubtitle)
     }
     .inspector(isPresented: $model.isFilingPanelShown) {
       FilingPanel(
@@ -38,7 +40,6 @@ struct MainWindowView: View {
       )
       .inspectorColumnWidth(min: 280, ideal: 340, max: 480)
     }
-    .toolbar(removing: .title)
     .frame(minWidth: 1000, minHeight: 640)
     .onGeometryChange(for: MainWindowWidthClass.self) { geometry in
       geometry.size.width < MainWindowModel.sidebarCollapseWidth ? .narrow : .regular
@@ -128,69 +129,38 @@ struct MainWindowView: View {
     }
   }
 
-  /// The toolbar title's tooltip: the inbox and name, and where a filed file went.
-  private func toolbarHelp(for file: SelectedFile) -> String {
-    guard case .filed(_, let destinationPath, _, _) = file.mark else {
-      return "\(file.inboxName) › \(file.originalName)"
-    }
-    return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"
+  /// The window title: the selected file's name, or the app name while nothing is selected.
+  private var windowTitle: String {
+    model.selectedFile?.name ?? "docsort"
   }
 
-  /// Previous File and Next File as one back/forward pair (like Finder's), then the app name with the selected file's
-  /// inbox and name as plain toolbar text (like Finder's folder title), the file's actions as one group at the right,
-  /// and the filing panel toggle on its own at the far right.
-  @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
-    ToolbarItem(placement: .navigation) {
-      HStack(spacing: 10) {
-        HStack(spacing: 0) {
-          Button {
-            model.selectFile(.previous)
-          } label: {
-            Label("Previous File", systemImage: "chevron.left")
-              .frame(width: 36, height: 36)
-              .contentShape(Rectangle())
-          }
-          .help("Previous File (⌥⌘↑)")
-          .disabled(model.file(.previous) == nil)
-          .accessibilityIdentifier("toolbar-previous-file")
+  /// The window subtitle: the inbox the selected file is listed under.
+  private var windowSubtitle: String {
+    model.selectedFile?.inboxName ?? ""
+  }
 
-          Button {
-            model.selectFile(.next)
-          } label: {
-            Label("Next File", systemImage: "chevron.right")
-              .frame(width: 36, height: 36)
-              .contentShape(Rectangle())
-          }
-          .help("Next File (⌥⌘↓)")
-          .disabled(model.file(.next) == nil)
-          .accessibilityIdentifier("toolbar-next-file")
-        }
-        // One capsule for the pair, like the toolbar's own groups: the title item hides the shared background, and a
-        // separate navigation item would be placed after the title.
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .font(.body.weight(.medium))
-        .imageScale(.large)
-        .frame(height: 36)
-        .glassEffect(.regular.interactive(), in: .capsule)
-        .padding(.trailing, 4)
-        Text("docsort")
-          .fontWeight(.bold)
-        if let selectedFile = model.selectedFile {
-          Text(
-            "\(Text("\(selectedFile.inboxName) ›").foregroundStyle(.secondary)) \(selectedFile.name)"
-          )
-          .lineLimit(1)
-          .truncationMode(.middle)
-          .frame(minWidth: 120, maxWidth: 480, alignment: .leading)
-          .help(toolbarHelp(for: selectedFile))
-          .accessibilityIdentifier("toolbar-file-title")
-        }
+  /// Previous File and Next File as one back/forward pair at the leading edge, before the system window title (like
+  /// Finder's), the file's actions as one group at the right, and the filing panel toggle on its own at the far right.
+  @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
+    ToolbarItemGroup(placement: .navigation) {
+      Button {
+        model.selectFile(.previous)
+      } label: {
+        Label("Previous File", systemImage: "chevron.left")
       }
-      .font(.title3)
-      .padding(.horizontal, 4)
+      .help("Previous File (⌥⌘↑)")
+      .disabled(model.file(.previous) == nil)
+      .accessibilityIdentifier("toolbar-previous-file")
+
+      Button {
+        model.selectFile(.next)
+      } label: {
+        Label("Next File", systemImage: "chevron.right")
+      }
+      .help("Next File (⌥⌘↓)")
+      .disabled(model.file(.next) == nil)
+      .accessibilityIdentifier("toolbar-next-file")
     }
-    .sharedBackgroundVisibility(.hidden)
 
     ToolbarSpacer(.flexible)
 

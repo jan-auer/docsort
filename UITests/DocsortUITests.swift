@@ -101,13 +101,12 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(status.waitForExistence(timeout: 5))
     expectText(
       "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z", of: status)
-    let title = app.descendants(matching: .any)["toolbar-file-title"]
-    expectText("Web-Downloads › 2033-10-20 Verlängerung Jahreskarte Konrad.pdf", of: title)
+    expectWindowTitle("2033-10-20 Verlängerung Jahreskarte Konrad.pdf", in: app)
 
     mainWindow.typeKey("z", modifierFlags: .command)
 
     XCTAssertTrue(waitForValue("unfiled", of: invoice))
-    expectText("Web-Downloads › Rechnung_NA-33-08812.pdf", of: title)
+    expectWindowTitle("Rechnung_NA-33-08812.pdf", in: app)
   }
 
   @MainActor
@@ -259,8 +258,7 @@ final class DocsortUITests: XCTestCase {
     let status = app.descendants(matching: .any)["status-message"]
     expectText("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status)
     XCTAssertEqual(invoice.value as? String, "filed")
-    let title = app.descendants(matching: .any)["toolbar-file-title"]
-    expectText("Web-Downloads › 2033-10-13 Notenhaus Allegretto.pdf", of: title)
+    expectWindowTitle("2033-10-13 Notenhaus Allegretto.pdf", in: app)
   }
 
   @MainActor
@@ -331,6 +329,19 @@ final class DocsortUITests: XCTestCase {
     let result = XCTWaiter().wait(for: [expectation], timeout: 5)
     let shown = element.exists ? String(describing: element.value ?? "") : "(no element)"
     XCTAssertEqual(result, .completed, "reads “\(shown)”", file: file, line: line)
+  }
+
+  /// Waits until the main window's title (the selected file's name) reads `text`.
+  @MainActor
+  private func expectWindowTitle(
+    _ text: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line
+  ) {
+    let window = app.windows.containing(.any, identifier: "main-window").firstMatch
+    let expectation = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "title IN %@", normalizationForms(of: text)), object: window)
+    let result = XCTWaiter().wait(for: [expectation], timeout: 5)
+    let shown = window.exists ? window.title : "(no window)"
+    XCTAssertEqual(result, .completed, "title reads “\(shown)”", file: file, line: line)
   }
 
   /// `text` in its composed and decomposed Unicode forms. Names of files that Foundation creates (the fixture's) are
