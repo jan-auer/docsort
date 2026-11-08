@@ -2,6 +2,25 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/core-engine-79f2d6: core engine
+- What landed: `Packages/DocsortCore`, with 249 tests:
+  - settings with security-scoped bookmarks and per-folder status;
+  - the inbox scan (oldest first, groups placed by folder creation date, symlinks reported);
+  - destination search on FuzzyMatch 1.4.0 with scoped search and the `ScopedRanking` setting;
+  - file operations (Keep Both/Replace, new folders, Trash, identity-checked undo, verified cross-volume moves);
+  - recents and a crash-safe, versioned filing history with `undoFirst` blockers.
+- Divergence: on request, oldest-first order, persistent history, scoped search, the ranking setting and the review's
+  safety fixes. The test corpus was rewritten three times for privacy; it is now a fictional household dated
+  2031–2039, and the branch history holds only that version.
+- Follow-ups (for the UI piece):
+  - sandboxed-app verification of bookmarks;
+  - undo of Trash and Replace after a relaunch (`~/.Trash` access);
+  - one actor for perform/record/save;
+  - running the core off the main actor;
+  - cleaning up leftover `.partial` files.
+
+  Later: live folder watching as its own core piece. Cross-volume moves are tested only through a seam.
+
 ## 2026-11-08 claude/ux-design-78f5ba: approved UX design
 - What landed: `docs/design/ux.md` (spec approved by the user after four rounds), the interactive mockup and the
   picker A/B prototype with their build sources, and an invented sample archive (`docs/design/sample-data/`: a
