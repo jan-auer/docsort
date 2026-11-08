@@ -4,9 +4,10 @@ Docsort is a native macOS app for filing documents. Files pile up in inbox folde
 output folder; Docsort moves them from there into the folders of an archive you already keep, with a large preview
 of the file beside the controls and almost everything on the keyboard.
 
-![Docsort's main window: the inbox list on the left, a PDF preview in the middle, and the destination search, the files already in the folder and the name field on the right](docs/images/docsort-main-window.png)
+![Docsort's main window with an invoice selected: the inbox list on the left, the PDF preview in the middle, and on the right a destination search for "marg" listing the matching folders, with the path "Archive › Arbeit Margit" under the search field, the folder's file list and the name field](docs/images/docsort-main-window.png)
 
-*The screenshot is a rendering with invented sample data.*
+*Searching for "marg" while filing an invoice: the matching folders are listed, the destination path is shown under
+the search field, and the folder's files appear below the list. The screenshot shows invented sample data only.*
 
 - **Preview that stays put.** The file you are filing is shown large (PDFs, images and anything Quick Look can show)
   the whole time you choose a folder and a name.
