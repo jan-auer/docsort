@@ -1,8 +1,8 @@
 # docsort-ui: UX design
 
-Status: approved by the user on 2026-11-08. The interactive mockup is `docs/design/mockup.html`, built from
-`docs/design/mockup-src/`; the destination-picker comparison is `docs/design/picker.html`, built from
-`docs/design/picker-src/`. Both use the fictional sample archive in `docs/design/sample-data/`: an invented household
+Status: approved by the user on 2026-11-08. The interactive mockup is `docs/design/mockup.html`, published at
+https://claude.ai/artifact/QeyjkyzmY9y89bJrfPTY5w and built from `docs/design/mockup-src/`; the destination-picker
+comparison is `docs/design/picker.html`, built from `docs/design/picker-src/`. Both use the fictional sample archive in `docs/design/sample-data/`: an invented household
 written from scratch in the style of a German-language document archive, describing no real archive
 (`no-real-data-in-repo`). All names in this document's examples come from that sample archive.
 

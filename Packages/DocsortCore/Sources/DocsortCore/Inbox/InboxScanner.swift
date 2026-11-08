@@ -1,0 +1,120 @@
+import Foundation
+
+/// Lists the documents waiting in an inbox folder.
+///
+/// Guarantees: hidden entries are skipped, packages are single items, items in subfolders are grouped under their
+/// top-level folder, and the order is deterministic (see ``InboxListing/entries``). Unreadable subfolders are
+/// reported in ``InboxListing/problems`` without stopping the scan.
+public struct InboxScanner: Sendable {
+  private static let incompleteDownloadExtensions: Set<String> = [
+    "download", "crdownload", "part", "partial",
+  ]
+
+  private let walker = VisibleContentsWalker()
+
+  /// Creates a scanner.
+  public init() {}
+
+  /// Scans `folder` and everything visible below it.
+  ///
+  /// - Throws: ``FolderAccessError`` when `folder` is missing, is not a folder, or cannot be listed.
+  public func scan(_ folder: URL) throws(FolderAccessError) -> InboxListing {
+    let contents = try walker.walk(folder)
+
+    var problems = contents.problems
+    var topLevelItems: [InboxItem] = []
+    var itemsByTopLevelFolder: [String: [InboxItem]] = [:]
+    for visibleItem in contents.items {
+      guard let item = inboxItem(visibleItem) else {
+        problems.append(
+          ScanProblem(url: visibleItem.url, reason: "The file system reports no modification date.")
+        )
+        continue
+      }
+      let pathComponents = visibleItem.relativePath.split(separator: "/")
+      if pathComponents.count > 1 {
+        itemsByTopLevelFolder[String(pathComponents[0]), default: []].append(item)
+      } else {
+        topLevelItems.append(item)
+      }
+    }
+
+    var subfolders: [InboxSubfolder] = []
+    for folder in contents.folders where !folder.relativePath.contains("/") {
+      guard let items = itemsByTopLevelFolder[folder.relativePath] else { continue }
+      let date = Self.groupDate(
+        folderCreation: folder.creationDate, itemDates: items.map(\.modificationDate))
+      subfolders.append(
+        InboxSubfolder(
+          url: folder.url, name: folder.url.lastPathComponent, date: date,
+          items: items.sorted { DisplayOrder($0) < DisplayOrder($1) }))
+    }
+
+    let entries = (topLevelItems.map(InboxEntry.item) + subfolders.map(InboxEntry.subfolder))
+      .sorted { DisplayOrder($0) < DisplayOrder($1) }
+    return InboxListing(folder: folder, entries: entries, problems: problems)
+  }
+
+  /// The date that places a group among its siblings: the folder's creation date, or, when the file system reports
+  /// none, the oldest of its items' dates.
+  ///
+  /// Not the folder's modification date: that changes whenever a file is filed out of the folder, which would move
+  /// the whole group on the next scan (decision `inbox-and-history-behaviour`: the list never shuffles).
+  static func groupDate(folderCreation: Date?, itemDates: [Date]) -> Date {
+    // A group always holds at least one item; `distantPast` only guards the empty case.
+    folderCreation ?? itemDates.min() ?? .distantPast
+  }
+
+  /// The inbox item for `visibleItem`, or `nil` when it has no modification date to sort by.
+  private func inboxItem(_ visibleItem: VisibleItem) -> InboxItem? {
+    guard let modificationDate = visibleItem.modificationDate else { return nil }
+    let subfolderPath = visibleItem.relativePath.split(separator: "/").dropLast()
+      .joined(separator: "/")
+    return InboxItem(
+      url: visibleItem.url,
+      name: visibleItem.url.lastPathComponent,
+      modificationDate: modificationDate,
+      creationDate: visibleItem.creationDate,
+      byteCount: visibleItem.byteCount,
+      kind: visibleItem.kind,
+      subfolderPath: subfolderPath.isEmpty ? nil : subfolderPath,
+      isIncompleteDownload: Self.incompleteDownloadExtensions.contains(
+        visibleItem.url.pathExtension.lowercased()))
+  }
+}
+
+/// The sort key for inbox rows: oldest date first, then Finder name order, then the inbox-relative path so that
+/// equal names in different subfolders still sort the same way every time.
+private struct DisplayOrder: Comparable {
+  let date: Date
+  let name: String
+  let path: String
+
+  init(date: Date, name: String, path: String) {
+    self.date = date
+    self.name = name
+    self.path = path
+  }
+
+  init(_ item: InboxItem) {
+    self.init(
+      date: item.modificationDate, name: item.name,
+      path: item.subfolderPath.map { "\($0)/\(item.name)" } ?? item.name)
+  }
+
+  init(_ entry: InboxEntry) {
+    switch entry {
+    case .item(let item):
+      self.init(item)
+    case .subfolder(let subfolder):
+      self.init(date: subfolder.date, name: subfolder.name, path: subfolder.name)
+    }
+  }
+
+  static func < (lhs: DisplayOrder, rhs: DisplayOrder) -> Bool {
+    if lhs.date != rhs.date { return lhs.date < rhs.date }
+    let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
+    if nameOrder != .orderedSame { return nameOrder == .orderedAscending }
+    return lhs.path.localizedStandardCompare(rhs.path) == .orderedAscending
+  }
+}
