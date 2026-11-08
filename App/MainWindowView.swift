@@ -135,19 +135,32 @@ struct MainWindowView: View {
     return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"
   }
 
-  /// The selected file's inbox and name, its actions, and the filing panel toggle.
+  /// The app name with the selected file's inbox and name as plain toolbar text (like Finder's folder title), the
+  /// file's actions as one group at the right, and the filing panel toggle on its own at the far right.
   @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
     ToolbarItem(placement: .navigation) {
-      if let selectedFile = model.selectedFile {
-        Text("\(selectedFile.inboxName) › \(selectedFile.name)")
+      HStack(spacing: 10) {
+        Text("docsort")
+          .fontWeight(.bold)
+        if let selectedFile = model.selectedFile {
+          Text(
+            "\(Text("\(selectedFile.inboxName) ›").foregroundStyle(.secondary)) \(selectedFile.name)"
+          )
           .lineLimit(1)
           .truncationMode(.middle)
           .frame(minWidth: 120, maxWidth: 480, alignment: .leading)
           .help(toolbarHelp(for: selectedFile))
           .accessibilityIdentifier("toolbar-file-title")
+        }
       }
+      .font(.title3)
+      .padding(.horizontal, 4)
     }
-    ToolbarItemGroup(placement: .primaryAction) {
+    .sharedBackgroundVisibility(.hidden)
+
+    ToolbarSpacer(.flexible)
+
+    ToolbarItemGroup {
       Button {
         if let selectedFile = model.selectedFile { FileActions.open(selectedFile.url) }
       } label: {
@@ -175,7 +188,10 @@ struct MainWindowView: View {
       .disabled(!model.canTrashSelectedFile)
       .accessibilityIdentifier("toolbar-trash")
     }
-    ToolbarItem(placement: .primaryAction) {
+
+    ToolbarSpacer(.fixed)
+
+    ToolbarItem {
       Button {
         model.isFilingPanelShown.toggle()
       } label: {

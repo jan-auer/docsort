@@ -62,7 +62,7 @@ One main window, three columns (a `NavigationSplitView` with an inspector). Acce
   - **History row**: at the very bottom, below the inbox sections and separated by a hairline, a fixed **History** row
     (clock icon, "⌘Y" in secondary colour) opens the History window.
 - **Centre: preview** (takes the remaining width, at least 420 pt). PDFs render with PDFKit: continuous scroll,
-  fit-to-width. Images render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A
+  fit-to-width by default with a margin around each page; zooming (⌘− or pinch) also goes below fit-to-width. Images render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A
   thin footer shows page count, size, kind and dates.
 - **Right: filing panel** (340 pt, resizable, toggled with ⌥⌘I like an inspector). Top to bottom:
   1. **Suggestions slot.** Reserved, empty and hidden for now. Later work (PDF text, OCR, download source) puts up to
@@ -74,8 +74,10 @@ One main window, three columns (a `NavigationSplitView` with an inspector). Acce
      key-cap badge to the right of the label: `Move  ⌘↩`. For a filed file the label reads Rename or Move.
 
   The panel is always visible but inactive until a file is selected; it never covers the preview.
-- **Toolbar**: sidebar toggle, the selected file's inbox and name, then the three actions on that file (Open, Reveal
-  in Finder, Move to Trash), then the inspector toggle. Everything in the toolbar is about the selected file; History,
+- **Toolbar**: sidebar toggle, then plain title text like Finder's folder title (no box): "docsort" in bold, the
+  selected file's inbox in secondary colour, a › separator and its name in primary colour. At the right, the three
+  actions on that file (Open, Reveal in Finder, Move to Trash) as one group, and the inspector toggle on its own at the
+  very right. Everything in the toolbar is about the selected file; History,
   which is about all files, sits at the bottom of the sidebar instead (see "Toolbar and History placement"). All
   toolbar items have menu equivalents.
 
