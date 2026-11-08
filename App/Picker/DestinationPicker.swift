@@ -17,6 +17,8 @@ import DocsortCore
 ///   is `nil` the field reads "Indexing archive…", Recent stays usable, and typing finds nothing yet. Set a new index
 ///   after every rebuild (for example after a move created a pending folder); the highlight and the chosen
 ///   destination are kept where their folders still exist.
+/// - ``DestinationPickerModel/isRebuildingIndex``: whether the index is being rebuilt while the current one stays in
+///   use. The footer's refresh button shows progress meanwhile.
 /// - ``DestinationPickerModel/recents``: the recent destinations, most recent first. At the root with an empty
 ///   filter they are listed first (up to 20); search boosts them.
 /// - ``DestinationPickerModel/ranking``: the user's "Rank first" setting.
@@ -43,6 +45,8 @@ import DocsortCore
 /// - ``PickerEvent/tookFileName(_:)``: the user clicked a file in Folder contents. The payload is the file's full
 ///   name as on disk (`2033-10-04 Rechnung Oktober.pdf`); put its name without extension into the name field,
 ///   selected, and focus it.
+/// - ``PickerEvent/refreshRequested``: the user clicked the footer's refresh button. Rebuild the archive index and
+///   set the new one when it is ready.
 ///
 /// A ``PickerDestination/newFolder(_:)`` destination does not exist on disk. `FileOperations.move(_:into:named:...)`
 /// creates every missing folder of `index.url(for: destination.path)` when the file is moved (and its undo removes
@@ -97,6 +101,8 @@ enum PickerEvent: Hashable, Sendable {
   case steppedBack
   /// The user clicked a file in Folder contents; the payload is its full file name.
   case tookFileName(String)
+  /// The user clicked the refresh button: rebuild the archive index, for folders created outside docsort.
+  case refreshRequested
 }
 
 /// The picker's focusable text fields, for the panel's focus state.

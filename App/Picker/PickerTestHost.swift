@@ -148,6 +148,8 @@
       case .tookFileName(let fileName):
         name = (fileName as NSString).deletingPathExtension
         focus = .name
+      case .refreshRequested:
+        break
       }
     }
 
@@ -158,6 +160,7 @@
       case .moveRequested(let destination): "moveRequested \(description(of: destination))"
       case .steppedBack: "steppedBack"
       case .tookFileName(let fileName): "tookFileName \(fileName)"
+      case .refreshRequested: "refreshRequested"
       }
     }
 

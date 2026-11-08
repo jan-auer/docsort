@@ -214,6 +214,8 @@ extension MainWindowModel {
     case .tookFileName(let fileName):
       panel.nameText = FileNameParts(fileName).stem
       requestFocus(.nameField)
+    case .refreshRequested:
+      refresh()
     }
   }
 

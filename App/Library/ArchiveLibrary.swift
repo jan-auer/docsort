@@ -54,7 +54,8 @@ nonisolated enum ArchiveIndexStatus: Hashable, Sendable {
 }
 
 /// The index of archive folders that destinations are searched in, rebuilt whenever the archive root or the inbox
-/// folders change.
+/// folders change, on request (View › Refresh), and shortly after the app became active again, so folders created
+/// in Finder meanwhile show up without watching the whole archive.
 ///
 /// One per app. It watches a `FolderLibrary` and builds `DestinationIndex` in a `@concurrent` function, off the
 /// main actor, leaving out the inbox folders. A build whose request has been superseded is cancelled and its result
@@ -63,16 +64,26 @@ nonisolated enum ArchiveIndexStatus: Hashable, Sendable {
 final class ArchiveLibrary {
   /// How far the index is.
   private(set) var status: ArchiveIndexStatus = .unavailable
-  /// The index, once built; `nil` while there is none or it is being rebuilt.
+  /// The index, once built; `nil` while there is none or it is being built for new folders.
   private(set) var index: DestinationIndex?
+  /// Whether `rebuild()` is under way: the index is built again for the same folders while the previous index and
+  /// status stay in use.
+  private(set) var isRebuilding = false
 
   /// The request the current status and index belong to.
   @ObservationIgnored private var request: ArchiveIndexRequest?
   @ObservationIgnored private var buildTask: Task<Void, Never>?
   @ObservationIgnored private var observationTask: Task<Void, Never>?
+  /// How long the app has to stay active before `appBecameActive()` rebuilds the index.
+  @ObservationIgnored private let activationDelay: Duration
+  /// The rebuild waiting for `activationDelay` to pass after the app became active.
+  @ObservationIgnored private var activationTask: Task<Void, Never>?
 
-  /// An archive library that is told what to index through `update(to:)`.
-  init() {}
+  /// An archive library that is told what to index through `update(to:)`, and rebuilds the index `activationDelay`
+  /// after the app became active.
+  init(activationDelay: Duration = .milliseconds(500)) {
+    self.activationDelay = activationDelay
+  }
 
   /// An archive library that indexes `folders`' archive root, and rebuilds whenever its folders change.
   convenience init(folders: FolderLibrary) {
@@ -88,6 +99,7 @@ final class ArchiveLibrary {
   isolated deinit {
     observationTask?.cancel()
     buildTask?.cancel()
+    activationTask?.cancel()
   }
 
   /// Builds the index for `request`, unless it is the request already built or being built; `nil` clears it.
@@ -96,6 +108,7 @@ final class ArchiveLibrary {
     self.request = request
     buildTask?.cancel()
     index = nil
+    isRebuilding = false
     guard let request else {
       buildTask = nil
       status = .unavailable
@@ -111,7 +124,35 @@ final class ArchiveLibrary {
   func rebuild() {
     guard let request else { return }
     buildTask?.cancel()
+    isRebuilding = true
     startBuild(for: request)
+  }
+
+  /// Rebuilds the index once the app has stayed active for the activation delay, to pick up folders created outside
+  /// the app while it was in the background. Becoming active again restarts the delay; `appResignedActive()` drops
+  /// the pending rebuild. Does nothing while the index is being built anyway (at launch, for example).
+  func appBecameActive() {
+    activationTask?.cancel()
+    activationTask = nil
+    guard request != nil, status != .indexing, !isRebuilding else { return }
+    activationTask = Task { [weak self, activationDelay] in
+      // Sleeping throws only when cancelled, which the check below covers.
+      try? await Task.sleep(for: activationDelay)
+      guard !Task.isCancelled, let self else { return }
+      Logger.archiveIndex.info("Rebuilding the archive index after the app became active")
+      rebuild()
+    }
+  }
+
+  /// Drops a rebuild that `appBecameActive()` scheduled and that has not started yet.
+  func appResignedActive() {
+    activationTask?.cancel()
+    activationTask = nil
+  }
+
+  /// Waits until the rebuild scheduled by `appBecameActive()`, if any, has started or been dropped.
+  func waitForActivation() async {
+    await activationTask?.value
   }
 
   /// Builds the index for `request` off the main actor and applies it when done.
@@ -133,6 +174,7 @@ final class ArchiveLibrary {
       Logger.archiveIndex.debug("Ignoring an archive index built for superseded folders")
       return
     }
+    isRebuilding = false
     switch outcome {
     case .built(let builtIndex, let problems):
       index = builtIndex

@@ -23,6 +23,10 @@ final class DestinationPickerModel {
     didSet { indexDidChange() }
   }
 
+  /// Whether the archive index is being rebuilt while ``index`` stays in use; the footer's refresh button shows
+  /// progress meanwhile.
+  var isRebuildingIndex = false
+
   /// The recent destinations, most recent first.
   var recents: RecentDestinations {
     didSet { update(highlight: .keep) }
@@ -518,6 +522,14 @@ final class DestinationPickerModel {
   /// A click on a file in Folder contents: emits ``PickerEvent/tookFileName(_:)`` with its full name.
   func takeFileName(_ file: FolderFile) {
     onEvent(.tookFileName(file.name))
+  }
+
+  // MARK: Refresh
+
+  /// The footer's refresh button: emits ``PickerEvent/refreshRequested``. The picker's state stays as it is; the new
+  /// index keeps it where its folders still exist.
+  func requestRefresh() {
+    onEvent(.refreshRequested)
   }
 
   /// What ``contents`` should show.
