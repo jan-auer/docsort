@@ -48,7 +48,9 @@ anything:
    The search covers the whole archive; while you are inside a folder, its own matches come first. Press **Tab** (or
    **Return**) to choose the highlighted folder. A check mark appears and the destination is shown as a path.
    You can also browse: → steps into the highlighted folder, ← (or Backspace in an empty search field) steps out,
-   and ⌘↑ jumps to the archive's top folder.
+   and ⌘↑ jumps to the archive's top folder. To look at a folder in Finder, right-click its row in the list for
+   **Open in Finder** or **Reveal in Finder**, or choose **File › Open Destination in Finder** (⇧⌘O), which opens the
+   chosen folder, or else the highlighted one. A folder that does not exist yet has neither.
 3. **Name the file.** The name field starts with the file's current name, selected, so typing replaces it. The
    extension is fixed after the field. The ↺ button (or ⇧⌘R) restores the original name. Clicking a file in the
    folder's file list copies its name into the field. If the folder already has a file with that name, Docsort says
@@ -128,6 +130,7 @@ Every command is in the menu bar.
 | ⌥⌘Z | Move Back to Inbox (Put Back for a trashed file) |
 | ⌘O | Open the file in its default app |
 | ⌥⌘R | Reveal the file in Finder |
+| ⇧⌘O | Open the destination folder (chosen, else highlighted) in Finder |
 | ⌘Y | History |
 | ⌘R | Refresh inboxes and archive |
 | ⌥⌘I | Show / hide the filing panel |
