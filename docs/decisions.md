@@ -58,6 +58,12 @@ usable end to end, an architecture coordinator reviews the codebase and moves th
 with feature and UX work. Do it earlier only if the code gets too messy. Reason: the user found orchestration landing
 in the UI layer and asked for clean separation, but wants a usable app first.
 
+## core-apple-frameworks
+
+The core package may import non-UI Apple frameworks (CoreServices for FSEvents now; PDFKit text extraction, Vision
+and Spotlight metadata for suggestions later), but never SwiftUI or AppKit. Reason: the app is macOS-only
+(`native-swift-app`), and these are what the core's services need; decided by the hub on the architect's proposal.
+
 ## e2e-first
 
 Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
