@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/folder-watch-de5f8d: live inbox watching in the core
+- What landed: `InboxWatcher.updates(for:)` (FSEvents source, 0.5 s coalescing, rescan and diff by identity, then
+  path, then the download-name rule; unreachable inboxes retried every 5 s), `ExpectedChanges` so docsort's own
+  operations are not reported as external, and `identity: FileIdentity` on scanned items. 316 core tests.
+- Divergence: no manual rescan API (⌘R restarts the subscription); identity-less items are also dropped from
+  `DestinationIndex`, with a `ScanProblem`; with inboxes sharing a folder, own changes are suppressed for the first
+  only.
+- Follow-ups: wire it into `InboxLibrary` and `FilingService` (after the test-fix branch lands); backlog items.
+
 ## 2026-11-08 claude/app-ui-b54b29 (9d757fc) + Move Back fix + History window (a113978)
 - What landed:
   - filed and trashed status strips with Move Back and Put Back (⌥⌘Z);
