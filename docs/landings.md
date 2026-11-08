@@ -2,6 +2,12 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/nostalgic-jennings-7664e3: open destination folder in Finder
+- What landed: Open / Reveal in Finder in the right-click menu of picker folder rows, and File › Open Destination in
+  Finder (⇧⌘O) for the highlighted or chosen folder; existing folders only.
+- Divergence: None. Not tried in the running app.
+- Follow-ups: None.
+
 ## 2026-11-08 claude/panel-redesign-4b15b5: filing panel redesign
 - What landed:
   - Soft-scope destination search: whole-archive search, "In <folder>" before "Elsewhere"; the first Elsewhere match
