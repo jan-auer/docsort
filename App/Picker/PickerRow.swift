@@ -1,0 +1,80 @@
+import DocsortCore
+import Foundation
+
+/// A group of rows in the picker's list: "Recent" or "All folders" at the archive root, one untitled section
+/// elsewhere.
+struct PickerSection: Identifiable, Hashable {
+  /// Unique among the list's sections; also the prefix of its rows' ids.
+  let id: String
+  /// The section header ("Recent", "All folders"), or `nil` for no header.
+  let title: String?
+  /// The section's rows, in display order.
+  let rows: [PickerRow]
+}
+
+/// One row of the picker's list.
+struct PickerRow: Identifiable, Hashable {
+  /// What a row stands for.
+  enum Kind: Hashable {
+    /// Inside a folder, the first row: the folder the picker is in ("this folder"), with its archive-relative path.
+    case currentFolder(path: String)
+    /// An indexed folder or a pending new one.
+    case folder(PickerFolder)
+    /// The info row "Indexing archive…", shown when the user filters before the index is built.
+    case indexing
+  }
+
+  /// Unique across all sections of the list, stable while the row stands for the same thing.
+  let id: String
+  /// What the row stands for.
+  let kind: Kind
+
+  /// Whether the highlight can rest on the row and choosing it means something.
+  var isSelectable: Bool {
+    switch kind {
+    case .currentFolder, .folder: true
+    case .indexing: false
+    }
+  }
+
+  /// The archive-relative folder path the row stands for, if it stands for a folder.
+  var folderPath: String? {
+    switch kind {
+    case .currentFolder(let path): path
+    case .folder(let folder): folder.path
+    case .indexing: nil
+    }
+  }
+}
+
+/// A folder as a row in the picker shows it.
+struct PickerFolder: Hashable {
+  /// The archive-relative path; the folder a file is filed into.
+  let path: String
+  /// The path relative to the picker's scope, as the row shows it (the full path in Recent).
+  let displayPath: String
+  /// The characters of ``displayPath`` the filter matched, for bold highlighting; empty while browsing.
+  let matchedRanges: [Range<String.Index>]
+  /// Whether the folder has subfolders in the index (the row shows a chevron).
+  let hasSubfolders: Bool
+  /// Whether the folder is a pending new folder that does not exist on disk yet (the row shows a New badge).
+  let isNew: Bool
+}
+
+/// One clickable segment of the path bar above the list (`Archive › Gesundheit › Konrad`).
+struct PathBarSegment: Identifiable, Hashable {
+  /// The segment's label: ``ArchivePath/rootTitle`` for the root, else the folder's name.
+  let title: String
+  /// The archive-relative path to jump to, `""` for the root.
+  let path: String
+
+  var id: String { path }
+}
+
+/// The chosen destination as the filter field shows it in place of the query: `Rechnungen › Elektronik`.
+struct ChosenToken: Hashable {
+  /// The destination's path segments joined with ` › `.
+  let text: String
+  /// Whether the destination is a new folder (the token shows a New badge).
+  let isNew: Bool
+}
