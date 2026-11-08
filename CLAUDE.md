@@ -9,13 +9,18 @@ how to use them.
 
 - Xcode 27.2, Swift 6.4, macOS 27 only. No signing team: ad-hoc "Sign to Run Locally".
 - `Docsort.xcodeproj` uses Xcode's JSON project format (`project.xcproj`); edit it directly when targets, settings or
-  packages change, then run `xcrun xcprojformatter --update Docsort.xcodeproj`. `App/` and `UITests/` are synchronized
-  folders: adding, renaming or removing files there needs no project change.
-- `App/`: the SwiftUI app target `Docsort` (default actor isolation `MainActor`). `UITests/`: XCTest UI tests
+  packages change, then run `xcrun xcprojformatter --update Docsort.xcodeproj`. `App/`, `AppTests/` and `UITests/` are
+  synchronized folders: adding, renaming or removing files there needs no project change.
+- `App/`: the SwiftUI app target `Docsort` (default actor isolation `MainActor`). `AppTests/`: the app's unit tests
+  (`DocsortTests`, Swift Testing, `@testable import Docsort`), hosted by the app. `UITests/`: XCTest UI tests
   (`DocsortUITests`). `Packages/DocsortCore`: local Swift package for all non-UI logic (nonisolated by default), linked
   by the app.
-- Unit tests: Swift Testing, in the package. UI tests: XCTest with `XCUIApplication`; find views by
-  `.accessibilityIdentifier` (kebab-case, e.g. `main-window`, `settings-window`).
+- Unit tests: Swift Testing, in the package and in `DocsortTests` for the app's models. When the app hosts unit
+  tests (`XCTestConfigurationFilePath` is set), `AppEnvironment.forCurrentProcess()` gives it an inert environment
+  (an emptied `UserDefaults` suite of its own, no folders, a history file in the temporary directory), so tests never
+  touch the user's settings, bookmarks or history; tests build their own environments with fake bookmarks.
+- UI tests: XCTest with `XCUIApplication`; find views by `.accessibilityIdentifier` (kebab-case, e.g. `main-window`,
+  `settings-window`).
 - Formatter and linter: the swift-format bundled with Xcode (`swift format`), default config, no `.swift-format` file.
 - Logging: `os.Logger` with subsystem `org.jauer.Docsort` (see `App/Loggers.swift`).
 - App Sandbox is on (see `app-sandbox` in `docs/decisions.md`): read-write access to user-selected files via the
@@ -37,12 +42,16 @@ how to use them.
 Run before declaring work done:
 
 ```
-swift format lint --strict --recursive --parallel App UITests Packages
+swift format lint --strict --recursive --parallel App AppTests UITests Packages
 swift test --package-path Packages/DocsortCore
 xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode -quiet build
+xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode -quiet test -only-testing:DocsortTests
 ```
 
-Fix formatting with `swift format --in-place --recursive --parallel App UITests Packages`. Keep `-derivedDataPath`
+The last command runs the app's unit tests. It launches the app briefly as their host (with the inert environment);
+it captures nothing and takes over neither keyboard nor screen.
+
+Fix formatting with `swift format --in-place --recursive --parallel App AppTests UITests Packages`. Keep `-derivedDataPath`
 inside the worktree so parallel worktrees never share build state.
 
 UI tests are not part of the default checks: they launch the app and take over keyboard and screen. Run them when
