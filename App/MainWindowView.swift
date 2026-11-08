@@ -55,9 +55,6 @@ struct MainWindowView: View {
         }
       }
       .animation(.smooth(duration: 0.3), value: model.isFilingPanelShown)
-      // A hairline at the toolbar's bottom edge across the preview and the panel, as Finder separates its toolbar
-      // from the content scrolling under it.
-      .overlay(alignment: .top) { Divider() }
       .toolbar { fileToolbar }
       .navigationTitle(windowTitle)
       .navigationSubtitle(windowSubtitle)
@@ -101,6 +98,8 @@ struct MainWindowView: View {
     } message: { alert in
       Text(alert.message)
     }
+    // The system's line between the toolbar and the content scrolling under it, as Finder shows it.
+    .background(TitlebarSeparatorLine())
     .focusedSceneValue(\.mainWindowModel, model)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("main-window")
