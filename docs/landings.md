@@ -2,6 +2,12 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/ui-tweaks-2-48cb2d: prev/next buttons, first-file selection
+- What landed: a ‹ › Previous/Next File group left of the title, with menu items; the first file selected after the
+  initial scan (empty state otherwise); the filing panel's file-name heading removed.
+- Divergence: None.
+- Follow-ups: None.
+
 ## 2026-11-08 claude/ui-history-600ca2 (32bcac9) + claude/app-icon-985d1b: History actions and app icon
 - What landed: History inspector pattern B (an icon-only Reveal on the destination line; Open and Move Back side by
   side; Show in Main Window in the menus only). The app icon is concept C2: ink-blue tray with an amber check and a
