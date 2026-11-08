@@ -79,6 +79,20 @@ No UI-test runs except a single focused test, when it is essential to validate a
 confirmed. No full UI suites, and no UI tests used for diagnosis. Diagnose with unit tests or the log-based launch
 check; list leftovers instead of hunting. Reason: the user found the UI-test runs wasteful and slow (2026-11-08).
 
+## filing-panel-redesign
+
+Chosen by the user from the two design studies (`docs/design/destination-search-study.md`,
+`docs/design/filing-panel-visual-study.md`), 2026-11-08:
+- Destination search: concept C, soft scope. Every search covers the whole archive; results under the current folder
+  come first ("In <folder>"), then "Elsewhere". When nothing matches, offer "New Folder" (as in A and B). As in A, the
+  first "Elsewhere" match is selected by default when nothing in the current folder matches. No scope pill or chip
+  in the field.
+- Panel look: A's tidiness and contrast (system text styles, consistent spacing, one row style, clear separation).
+- Panel structure, from C: a space-efficient, edge-to-edge folder list and a resizable folder-contents area. The full
+  destination path must still show, rendered better than today. The New Folder button belongs with the folder list,
+  not at the bottom.
+- The panel leaves `.inspector` for a main-content pane.
+
 ## commit-signing
 
 Sessions commit unsigned on their own branches (`git -c commit.gpgsign=false commit`). The hub's merge commits and

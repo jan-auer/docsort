@@ -1,0 +1,1777 @@
+<title>Destination Search Concepts</title>
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --page-bg: #f5f5f7;
+  --fg: #1d1d1f;
+  --fg2: #6e6e73;
+  --card: #ffffff;
+  --card-border: rgba(0,0,0,0.08);
+  --code-bg: rgba(0,0,0,0.05);
+  --window-bg: #ffffff;
+  --window-border: rgba(0,0,0,0.22);
+  --toolbar-bg: #fbfbfb;
+  --label: rgba(0,0,0,0.85);
+  --label2: rgba(0,0,0,0.50);
+  --label3: rgba(0,0,0,0.28);
+  --separator: rgba(0,0,0,0.10);
+  --separator-strong: rgba(0,0,0,0.16);
+  --control-bg: #ffffff;
+  --control-border: rgba(0,0,0,0.14);
+  --control-shadow: 0 0.5px 1.5px rgba(0,0,0,0.12);
+  --button-bg: #ffffff;
+  --button-hover: #f4f4f4;
+  --button-press: #e6e6e6;
+  --field-bg: #ffffff;
+  --search-bg: rgba(0,0,0,0.05);
+  --accent: #007aff;
+  --accent-hover: #0068da;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(0,122,255,0.12);
+  --focus-ring: rgba(0,122,255,0.45);
+  --sel-unfocused: rgba(0,0,0,0.09);
+  --hover-bg: rgba(0,0,0,0.04);
+  --ficon-page: #ffffff;
+  --ficon-stroke: rgba(0,0,0,0.30);
+  --ficon-pdf: #e5483c;
+  --ficon-img: #2f8de4;
+  --ficon-folder: #4aa3f0;
+  --ficon-folder-tab: #3a8fdc;
+  --warn: #ff9500;
+  --warn-fg: #9a4f00;
+  --warn-bg: rgba(255,149,0,0.12);
+  --success: #28a745;
+  --new-badge-bg: #34c759;
+  --new-badge-fg: #ffffff;
+  --kbd-bg: rgba(0,0,0,0.06);
+  --scroll-thumb: rgba(0,0,0,0.22);
+  --table-alt: rgba(0,0,0,0.025);
+  --taken-row: rgba(0,122,255,0.14);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --toast-bg: rgba(40,40,42,0.92);
+  --toast-fg: #ffffff;
+  --moved-bg: rgba(40,167,69,0.10);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page-bg: #161618;
+    --fg: #f5f5f7;
+    --fg2: #a1a1a6;
+    --card: #1f1f22;
+    --card-border: rgba(255,255,255,0.08);
+    --code-bg: rgba(255,255,255,0.08);
+    --window-bg: #1e1e1e;
+    --window-border: rgba(255,255,255,0.14);
+    --toolbar-bg: #262626;
+    --label: rgba(255,255,255,0.86);
+    --label2: rgba(255,255,255,0.55);
+    --label3: rgba(255,255,255,0.28);
+    --separator: rgba(255,255,255,0.10);
+    --separator-strong: rgba(255,255,255,0.16);
+    --control-bg: rgba(255,255,255,0.06);
+    --control-border: rgba(255,255,255,0.14);
+    --control-shadow: 0 0.5px 1px rgba(0,0,0,0.4);
+    --button-bg: #5a5a5d;
+    --button-hover: #67676a;
+    --button-press: #77777a;
+    --field-bg: rgba(255,255,255,0.05);
+    --search-bg: rgba(255,255,255,0.07);
+    --accent: #0a84ff;
+    --accent-hover: #2b95ff;
+    --accent-fg: #ffffff;
+    --accent-soft: rgba(10,132,255,0.22);
+    --focus-ring: rgba(10,132,255,0.6);
+    --sel-unfocused: rgba(255,255,255,0.10);
+    --hover-bg: rgba(255,255,255,0.05);
+    --ficon-page: #f2f2f2;
+    --ficon-stroke: rgba(0,0,0,0.45);
+    --warn: #ff9f0a;
+    --warn-fg: #ffb340;
+    --warn-bg: rgba(255,159,10,0.14);
+    --success: #30d158;
+    --new-badge-bg: #30d158;
+    --kbd-bg: rgba(255,255,255,0.10);
+    --scroll-thumb: rgba(255,255,255,0.25);
+    --table-alt: rgba(255,255,255,0.03);
+    --taken-row: rgba(10,132,255,0.26);
+    --panel-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+    --toast-bg: rgba(235,235,240,0.94);
+    --toast-fg: #1d1d1f;
+    --moved-bg: rgba(48,209,88,0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page-bg: #161618;
+  --fg: #f5f5f7;
+  --fg2: #a1a1a6;
+  --card: #1f1f22;
+  --card-border: rgba(255,255,255,0.08);
+  --code-bg: rgba(255,255,255,0.08);
+  --window-bg: #1e1e1e;
+  --window-border: rgba(255,255,255,0.14);
+  --toolbar-bg: #262626;
+  --label: rgba(255,255,255,0.86);
+  --label2: rgba(255,255,255,0.55);
+  --label3: rgba(255,255,255,0.28);
+  --separator: rgba(255,255,255,0.10);
+  --separator-strong: rgba(255,255,255,0.16);
+  --control-bg: rgba(255,255,255,0.06);
+  --control-border: rgba(255,255,255,0.14);
+  --control-shadow: 0 0.5px 1px rgba(0,0,0,0.4);
+  --button-bg: #5a5a5d;
+  --button-hover: #67676a;
+  --button-press: #77777a;
+  --field-bg: rgba(255,255,255,0.05);
+  --search-bg: rgba(255,255,255,0.07);
+  --accent: #0a84ff;
+  --accent-hover: #2b95ff;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(10,132,255,0.22);
+  --focus-ring: rgba(10,132,255,0.6);
+  --sel-unfocused: rgba(255,255,255,0.10);
+  --hover-bg: rgba(255,255,255,0.05);
+  --ficon-page: #f2f2f2;
+  --ficon-stroke: rgba(0,0,0,0.45);
+  --warn: #ff9f0a;
+  --warn-fg: #ffb340;
+  --warn-bg: rgba(255,159,10,0.14);
+  --success: #30d158;
+  --new-badge-bg: #30d158;
+  --kbd-bg: rgba(255,255,255,0.10);
+  --scroll-thumb: rgba(255,255,255,0.25);
+  --table-alt: rgba(255,255,255,0.03);
+  --taken-row: rgba(10,132,255,0.26);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+  --toast-bg: rgba(235,235,240,0.94);
+  --toast-fg: #1d1d1f;
+  --moved-bg: rgba(48,209,88,0.14);
+  color-scheme: dark;
+}
+
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--page-bg);
+  color: var(--fg);
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+button, input { font: inherit; color: inherit; }
+kbd {
+  font-family: inherit; font-size: 11px; background: var(--kbd-bg); border-radius: 4px;
+  padding: 0 4px; white-space: nowrap;
+}
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; background: var(--code-bg); border-radius: 4px; padding: 0 3px; overflow-wrap: anywhere; }
+
+/* ---------- Header ---------- */
+.intro { margin-bottom: 20px; }
+.intro h1 { margin: 0 0 12px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 12px; }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--search-bg); border-radius: 7px; padding: 2px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 3px 10px; border-radius: 5px; font-size: 12px; cursor: default; color: var(--fg); }
+.seg.big button { font-size: 13px; padding: 4px 14px; }
+.seg button[aria-checked="true"] { background: var(--control-bg); box-shadow: var(--control-shadow), 0 0 0 0.5px var(--control-border); font-weight: 600; }
+.seg button:focus-visible, .page-btn:focus-visible, .sidebar-pill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.desc { margin: 0; max-width: 78ch; line-height: 1.5; color: var(--fg2); font-size: 13px; min-height: 3em; }
+
+/* ---------- Layout ---------- */
+.main { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px 28px; align-items: start; }
+@media (max-width: 760px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.stage { min-width: 0; max-width: 340px; width: 100%; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 16px; }
+.card h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.note { margin: 4px 0 8px; font-size: 12px; color: var(--fg2); line-height: 1.4; }
+.page-btn {
+  border: 0.5px solid var(--control-border); background: var(--button-bg); border-radius: 6px; padding: 3px 12px;
+  font-size: 12px; box-shadow: var(--control-shadow); cursor: default;
+}
+.page-btn:hover { background: var(--button-hover); }
+.page-btn:active { background: var(--button-press); }
+
+/* tasks */
+.tasks ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tasks li { display: flex; gap: 9px; align-items: flex-start; line-height: 1.45; }
+.tick {
+  flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 1.2px var(--control-border); color: var(--accent-fg);
+}
+.tick svg { width: 11px; height: 11px; }
+.tasks li.done .tick { background: var(--success); box-shadow: none; }
+.tasks li.done .tt { color: var(--fg2); }
+.tt { min-width: 0; }
+.tk { display: block; font-size: 12px; color: var(--fg2); margin-top: 1px; }
+.tk kbd { font-size: 11.5px; }
+
+/* key reference */
+.keys .kr { display: flex; gap: 10px; font-size: 12px; padding: 3px 0; border-bottom: 0.5px solid var(--separator); }
+.keys .kr .kk { flex: 0 0 104px; color: var(--fg); font-weight: 500; }
+.keys .kr .what { color: var(--fg2); flex: 1; min-width: 0; }
+.keys h2 { margin-bottom: 6px; }
+.kr-gap { height: 10px; }
+
+/* ---------- Sidebar focus stop ---------- */
+.sidebar-pill {
+  display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px; margin-bottom: 10px; border-radius: 12px;
+  background: var(--card); box-shadow: 0 0 0 0.5px var(--control-border); color: var(--fg2); font-size: 12px;
+  white-space: nowrap; overflow: hidden; cursor: default; outline: none;
+}
+.sidebar-pill .sb-lbl { font-weight: 600; }
+.sidebar-pill .sb-file { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sidebar-pill.focused { background: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 3px var(--focus-ring); }
+
+/* ---------- Filing panel (today's look) ---------- */
+.panel {
+  width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px;
+  background: var(--window-bg); border-radius: 12px; box-shadow: var(--panel-shadow), 0 0 0 0.5px var(--window-border);
+  color: var(--label); user-select: none; -webkit-user-select: none;
+}
+.pn-label { font-size: 11px; font-weight: 600; color: var(--label2); display: flex; align-items: baseline; gap: 6px; margin-top: 4px; white-space: nowrap; min-width: 0; }
+.pn-label .cnt { margin-left: auto; font-weight: 400; flex: 0 0 auto; }
+.pn-label .contents-path { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.search {
+  display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 6px 0 8px; border-radius: 7px; background: var(--search-bg);
+  box-shadow: inset 0 0 0 0.5px var(--control-border); cursor: text; flex: 0 0 auto; min-width: 0; overflow: hidden;
+}
+.search:focus-within { box-shadow: 0 0 0 3.5px var(--focus-ring), inset 0 0 0 1px var(--accent); background: var(--field-bg); }
+.search svg.mag { width: 14px; height: 14px; color: var(--label2); flex: 0 0 auto; }
+.search.nfmode svg.mag { color: var(--accent); }
+.qwrap { position: relative; flex: 1 1 40px; min-width: 40px; height: 100%; display: flex; align-items: center; overflow: hidden; }
+.search input { width: 100%; border: 0; background: transparent; outline: none; height: 100%; font-size: 13px; padding: 0; position: relative; z-index: 1; }
+.search input::placeholder { color: var(--label3); }
+.ghost { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; white-space: pre; color: var(--label3); font-size: 13px; pointer-events: none; }
+.search .clear { border: 0; background: transparent; color: var(--label3); width: 18px; height: 18px; padding: 0; display: inline-flex; cursor: default; flex: 0 0 auto; }
+.search .clear svg { width: 15px; height: 15px; }
+
+/* concept A: the committed path before the caret */
+.apath { display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; color: var(--label2); }
+.apath .pseg { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.apath .pseg:last-of-type { flex: 0 1 auto; min-width: 0; }
+.apath .pseg:last-of-type .seg-btn { overflow: hidden; text-overflow: ellipsis; min-width: 0; white-space: nowrap; }
+.apath .seg-btn { border: 0; background: transparent; padding: 0 1px; border-radius: 3px; color: var(--label2); cursor: default; font-size: 13px; }
+.apath .seg-btn:hover { color: var(--label); background: var(--hover-bg); text-decoration: underline; text-underline-offset: 2px; }
+.apath .psep { color: var(--label3); padding: 0 4px; }
+.apath .ell { color: var(--label3); flex: 0 0 auto; }
+.apath .badge-new { margin: 0 4px 0 0; }
+.badge-new { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: var(--new-badge-bg); color: var(--new-badge-fg); border-radius: 4px; padding: 1px 4px; flex: 0 0 auto; }
+
+/* picker box */
+.picker { display: flex; flex-direction: column; border-radius: 7px; overflow: hidden; box-shadow: inset 0 0 0 0.5px var(--control-border); background: var(--control-bg); }
+.pathbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 1px; padding: 4px 6px; border-bottom: 0.5px solid var(--separator);
+  overflow-x: auto; white-space: nowrap; font-size: 12px; scrollbar-width: none;
+}
+.pathbar::-webkit-scrollbar { display: none; }
+.pathbar .crumb { border: 0; background: transparent; padding: 1px 5px; border-radius: 4px; color: var(--label2); cursor: default; flex: 0 0 auto; }
+.pathbar .crumb:hover { background: var(--hover-bg); color: var(--label); }
+.pathbar .crumb.cur { color: var(--label); font-weight: 600; }
+.pathbar .sep { color: var(--label3); font-size: 11px; flex: 0 0 auto; }
+.list { position: relative; height: 288px; overflow-y: auto; padding: 4px; }
+.pk-bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 4px; border-top: 0.5px solid var(--separator);
+  background: var(--toolbar-bg);
+}
+.pk-btn {
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border: 0; border-radius: 5px; background: transparent;
+  color: var(--label); font-size: 12px; cursor: default; white-space: nowrap; flex: 0 0 auto;
+}
+.pk-btn svg { width: 16px; height: 13px; color: var(--label2); }
+.pk-btn:hover { background: var(--hover-bg); }
+.pk-btn:active { background: var(--sel-unfocused); }
+.pk-hint { margin-left: auto; font-size: 11px; color: var(--label3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 4px; }
+.pk-hint.flash { color: var(--warn-fg); }
+
+.res-h { font-size: 11px; font-weight: 600; color: var(--label2); padding: 6px 6px 3px; display: flex; gap: 6px; }
+.res-h .cnt { font-weight: 400; margin-left: auto; }
+.res-h.hair { border-top: 0.5px solid var(--separator); margin-top: 6px; padding-top: 8px; }
+.res-sep { height: 0.5px; background: var(--separator); margin: 3px 6px; }
+.res {
+  display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 2px 4px 2px 6px; border-radius: 5px; cursor: default; white-space: nowrap; overflow: hidden;
+}
+.res .fold, .nf-row .fold { width: 15px; height: 13px; flex: 0 0 15px; }
+.res .rt { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.par { color: var(--label2); }
+.last { color: var(--label); }
+.res b { font-weight: 700; }
+.par b { color: var(--label); }
+.res:not(.inert):hover { background: var(--hover-bg); }
+.res.inert { opacity: 0.75; }
+.res.hl { background: var(--sel-unfocused); }
+.pk-focus .res.hl { background: var(--accent); color: var(--accent-fg); }
+.pk-focus .res.hl .par, .pk-focus .res.hl .last, .pk-focus .res.hl .par b, .pk-focus .res.hl .into, .pk-focus .res.hl .check { color: var(--accent-fg); }
+.res.self .par { font-style: normal; }
+.check { flex: 0 0 auto; width: 14px; height: 14px; display: inline-flex; color: var(--accent); }
+.check svg { width: 14px; height: 14px; }
+.into {
+  flex: 0 0 auto; width: 20px; height: 18px; border: 0; padding: 0; border-radius: 4px; background: transparent; color: var(--label3);
+  display: inline-flex; align-items: center; justify-content: center; cursor: default;
+}
+.into svg { width: 11px; height: 11px; }
+.into:hover { background: var(--sel-unfocused); color: var(--label); }
+.create { color: var(--accent); }
+.create svg.plus { width: 13px; height: 13px; flex: 0 0 13px; }
+.pk-focus .create.hl { color: var(--accent-fg); }
+.nfprev .rt .par { font-style: italic; }
+.res-empty { color: var(--label2); padding: 6px 8px; font-size: 12px; line-height: 1.4; white-space: normal; }
+
+/* new-folder row (B, C: as today) */
+.nf-row { margin: 2px 0 4px; padding: 6px 6px 7px; border-radius: 6px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 4px; }
+.nf-row .nf-line { display: flex; align-items: center; gap: 5px; }
+.nf-row input {
+  flex: 1; min-width: 0; height: 22px; border-radius: 4px; border: 0; background: var(--field-bg); box-shadow: inset 0 0 0 0.5px var(--control-border);
+  padding: 0 6px; outline: none; font-size: 12.5px;
+}
+.nf-row input:focus { box-shadow: 0 0 0 3px var(--focus-ring), inset 0 0 0 1px var(--accent); }
+.nf-row .nf-note { font-size: 10.5px; line-height: 1.35; color: var(--label2); white-space: normal; }
+.nf-row .nf-note.warn { color: var(--warn-fg); }
+
+/* folder contents */
+.contents { position: relative; height: 112px; overflow-y: auto; border-radius: 7px; box-shadow: inset 0 0 0 0.5px var(--control-border); padding: 3px 4px; background: var(--control-bg); }
+.ct { display: flex; align-items: center; gap: 7px; height: 22px; padding: 0 6px; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; color: var(--label); cursor: default; }
+.ct:nth-child(even) { background: var(--table-alt); }
+.ct:hover { background: var(--hover-bg); }
+.ct .ficon { transform: scale(0.8); }
+.ct .tn { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.ct.taken { background: var(--taken-row) !important; }
+.ct-empty { color: var(--label3); font-size: 12px; padding: 8px 6px; line-height: 1.4; white-space: normal; }
+.ficon { width: 15px; height: 19px; display: inline-block; flex: 0 0 auto; }
+.ficon svg { width: 100%; height: 100%; display: block; }
+
+/* name */
+.namewrap { position: relative; }
+.namebox {
+  display: flex; align-items: center; height: 28px; border-radius: 6px; background: var(--field-bg); gap: 4px;
+  box-shadow: inset 0 0 0 0.5px var(--control-border), var(--control-shadow); padding: 0 8px; cursor: text;
+}
+.namebox:focus-within { box-shadow: 0 0 0 3.5px var(--focus-ring), inset 0 0 0 1px var(--accent); }
+.namebox input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; height: 100%; font-size: 13px; padding: 0; }
+.namebox .ext { color: var(--label2); flex: 0 0 auto; }
+.toast {
+  position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); z-index: 5; white-space: nowrap;
+  background: var(--toast-bg); color: var(--toast-fg); font-size: 12px; padding: 4px 10px; border-radius: 6px; box-shadow: var(--control-shadow);
+  animation: toast-in .15s ease-out;
+}
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -3px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.pn-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.btn {
+  height: 28px; padding: 0 16px; border-radius: 6px; border: 0; background: var(--button-bg); color: var(--label);
+  box-shadow: var(--control-shadow), 0 0 0 0.5px var(--control-border); font-size: 13px; cursor: default; white-space: nowrap;
+}
+.btn.default { background: var(--accent); color: var(--accent-fg); box-shadow: var(--control-shadow); }
+.btn.default:hover:not(:disabled) { background: var(--accent-hover); }
+.btn:disabled { opacity: 0.4; }
+.btn .k { opacity: 0.75; margin-left: 4px; font-size: 11.5px; }
+
+/* status */
+.status {
+  margin: 12px 0 0; padding: 7px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--card-border);
+  font-size: 12px; line-height: 1.45; color: var(--fg2); overflow-wrap: anywhere; min-height: 34px;
+}
+.status b { color: var(--fg); font-weight: 600; }
+.status.moved { background: var(--moved-bg); color: var(--fg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+</style>
+<div class="page">
+  <header class="intro">
+    <h1>Destination Search Concepts</h1>
+    <div class="controls">
+      <div class="seg big" role="radiogroup" aria-label="Concept" id="conceptSeg">
+        <button type="button" role="radio" data-act="concept" data-concept="A" aria-checked="true" title="Concept A (⌃1)">A · Path field</button>
+        <button type="button" role="radio" data-act="concept" data-concept="B" aria-checked="false" title="Concept B (⌃2)">B · Choice in list</button>
+        <button type="button" role="radio" data-act="concept" data-concept="C" aria-checked="false" title="Concept C (⌃3)">C · Soft scope</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Appearance" id="themeSeg">
+        <button type="button" role="radio" data-act="theme" data-theme-choice="auto" aria-checked="true">Auto</button>
+        <button type="button" role="radio" data-act="theme" data-theme-choice="light" aria-checked="false">Light</button>
+        <button type="button" role="radio" data-act="theme" data-theme-choice="dark" aria-checked="false">Dark</button>
+      </div>
+    </div>
+    <p class="desc" id="conceptDesc"></p>
+  </header>
+
+  <main class="main">
+    <div class="stage">
+      <div class="sidebar-pill" id="sidebar" tabindex="0" role="button" aria-label="Sidebar focus stop: Rechnung_NA-33-08812.pdf selected. Type to search a destination, Tab to go to the picker.">
+        <span class="sb-lbl">Sidebar</span><span class="sb-dot" aria-hidden="true">·</span><span class="sb-file">Rechnung_NA-33-08812.pdf</span>
+      </div>
+      <aside class="panel" id="panel" aria-label="Filing panel">
+        <label class="pn-label" for="filterInput">Destination</label>
+        <div class="search" id="filterBox">
+          <svg class="mag" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.3 10.3l3.7 3.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="apath" id="aPath" hidden></span>
+          <span class="qwrap">
+            <input id="filterInput" type="text" autocomplete="off" spellcheck="false" aria-controls="list" aria-autocomplete="list" aria-label="Destination search">
+            <span class="ghost" id="ghost" aria-hidden="true"></span>
+          </span>
+          <button type="button" class="clear" id="filterClear" data-act="clear" aria-label="Clear" title="Clear" tabindex="-1" hidden></button>
+        </div>
+        <div class="picker" id="picker">
+          <nav class="pathbar" id="pathBar" aria-label="Location" hidden></nav>
+          <div class="list" id="list" role="listbox" aria-label="Destination folders"></div>
+          <div class="pk-bar">
+            <button type="button" class="pk-btn" id="newFolderBtn" data-act="newfolder" tabindex="-1"></button>
+            <span class="pk-hint" id="pickerHint"></span>
+          </div>
+        </div>
+        <div class="pn-label" id="contentsLabel"><span class="contents-path" id="contentsPath">Files</span><span class="cnt" id="contentsCount"></span></div>
+        <div class="contents" id="contents" aria-label="Folder contents"></div>
+        <label class="pn-label" for="nameInput">Name</label>
+        <div class="namewrap">
+          <div class="namebox" id="nameBox">
+            <input id="nameInput" type="text" autocomplete="off" spellcheck="false" aria-label="File name without extension">
+            <span class="ext">.pdf</span>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        </div>
+        <div class="pn-actions">
+          <button type="button" class="btn default" id="moveBtn" data-act="move" tabindex="-1">Move<span class="k">⌘↩</span></button>
+        </div>
+      </aside>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="side">
+      <section class="card tasks" aria-labelledby="tasksTitle">
+        <div class="card-h">
+          <h2 id="tasksTitle">Tasks</h2>
+          <button type="button" class="page-btn" data-act="reset" title="Reset the panel and this concept’s ticks">Reset</button>
+        </div>
+        <p class="note">Ticks when you choose (Tab) or move (⌘Return) to the right folder the right way.</p>
+        <ol id="taskList"></ol>
+      </section>
+      <section class="card keys" aria-labelledby="keysTitle">
+        <h2 id="keysTitle">Keys</h2>
+        <div id="keyRef"></div>
+      </section>
+    </div>
+  </main>
+</div>
+<script>
+const FOLDERS = ["! Abgeschlossen","! Abgeschlossen/Alte Wohnung Seegasse bis 2031","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Kaution","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Mietvertrag","! Abgeschlossen/Alte Wohnung Seegasse bis 2031/Übergabeprotokoll","! Abgeschlossen/Auto verkauft 2031","! Abgeschlossen/Auto verkauft 2031/Abmeldung","! Abgeschlossen/Auto verkauft 2031/Kaufvertrag Verkauf","! Abgeschlossen/Auto verkauft 2031/Versicherung Kündigung","! Abgeschlossen/Dienst Vermessungsamt bis 2032","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Dienstreisen","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2031","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2032","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Gehaltszettel/2033","! Abgeschlossen/Dienst Vermessungsamt bis 2032/Personalakt Kopien","! Abgeschlossen/Girokonto Hausbank bis 2031","! Abgeschlossen/Handyvertrag alt","! Abgeschlossen/Matura Matthias 2031","Ahnenforschung","Ahnenforschung/Anfragen Archive","Ahnenforschung/Anfragen Archive/Landesarchiv","Ahnenforschung/Anfragen Archive/Pfarre St. Ägidius","Ahnenforschung/Anfragen Archive/Stadtarchiv Wettelau","Ahnenforschung/Fahrten zu Ahnenorten","Ahnenforschung/Fahrten zu Ahnenorten/2032-08 Pfarrarchiv Kirchberg","Ahnenforschung/Fahrten zu Ahnenorten/2033-04 Friedhof Oberau","Ahnenforschung/Familie Gruber","Ahnenforschung/Familie Gruber/Briefe","Ahnenforschung/Familie Gruber/Fotos","Ahnenforschung/Familie Gruber/Pfarrmatriken","Ahnenforschung/Familie Hollerer","Ahnenforschung/Familie Hollerer/Fotos","Ahnenforschung/Familie Hollerer/Pfarrmatriken","Ahnenforschung/Familie Strassl","Ahnenforschung/Familie Strassl/Briefe","Ahnenforschung/Familie Strassl/Fotos","Ahnenforschung/Familie Strassl/Pfarrmatriken","Ahnenforschung/Familie Weißenbacher","Ahnenforschung/Familie Weißenbacher/Briefe","Ahnenforschung/Familie Weißenbacher/Fotos","Ahnenforschung/Familie Weißenbacher/Pfarrmatriken","Ahnenforschung/Stammbaum","Ahnenforschung/Stammbaum/Druckfassung","Ahnenforschung/Stammbaum/Entwürfe","Arbeit Margit","Arbeit Margit/Betriebsrat","Arbeit Margit/Dienstreisen & Exkursionen","Arbeit Margit/Dienstreisen & Exkursionen/2032","Arbeit Margit/Dienstreisen & Exkursionen/2033","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld/Lehrverpflichtung","Arbeit Margit/Dienstvertrag Schulverein Lerchenfeld/Nachträge","Arbeit Margit/Fortbildungen","Arbeit Margit/Fortbildungen/2031-11 Stimmbildung mit Kindern","Arbeit Margit/Fortbildungen/2032-04 Chorleitung Grundkurs","Arbeit Margit/Fortbildungen/2032-10 Rhythmik Werkstatt","Arbeit Margit/Fortbildungen/2033-03 Tagung Musikpädagogik","Arbeit Margit/Fortbildungen/2033-08 Sommerakademie Blockflöte","Arbeit Margit/Gehaltszettel","Arbeit Margit/Gehaltszettel/2031","Arbeit Margit/Gehaltszettel/2032","Arbeit Margit/Gehaltszettel/2033","Arbeit Margit/Jahreslohnzettel","Arbeit Margit/Jahreslohnzettel/2031","Arbeit Margit/Jahreslohnzettel/2032","Arbeit Margit/Jahreslohnzettel/2033","Arbeit Margit/Konzerte & Vorspiele","Arbeit Margit/Konzerte & Vorspiele/2031-12 Adventvorspiel","Arbeit Margit/Konzerte & Vorspiele/2032-06 Schlusskonzert","Arbeit Margit/Konzerte & Vorspiele/2032-12 Adventvorspiel","Arbeit Margit/Konzerte & Vorspiele/2033-06 Schlusskonzert","Arbeit Margit/Schule Mitteilungen","Arbeit Margit/Schule Mitteilungen/2031","Arbeit Margit/Schule Mitteilungen/2032","Arbeit Margit/Schule Mitteilungen/2033","Arbeit Margit/Stundenpläne","Arbeit Margit/Stundenpläne/Schuljahr 2031-32","Arbeit Margit/Stundenpläne/Schuljahr 2032-33","Arbeit Margit/Stundenpläne/Schuljahr ab Herbst 2033","Bank & Geld","Bank & Geld/Girokonto Bürgerbank","Bank & Geld/Girokonto Bürgerbank/2031-Q1","Bank & Geld/Girokonto Bürgerbank/2031-Q2","Bank & Geld/Girokonto Bürgerbank/2031-Q3","Bank & Geld/Girokonto Bürgerbank/2031-Q4","Bank & Geld/Girokonto Bürgerbank/2032-Q1","Bank & Geld/Girokonto Bürgerbank/2032-Q2","Bank & Geld/Girokonto Bürgerbank/2032-Q3","Bank & Geld/Girokonto Bürgerbank/2032-Q4","Bank & Geld/Girokonto Bürgerbank/2033-Q1","Bank & Geld/Girokonto Bürgerbank/2033-Q2","Bank & Geld/Girokonto Bürgerbank/2033-Q3","Bank & Geld/Girokonto Bürgerbank/2033-Q4","Bank & Geld/Girokonto Bürgerbank/Daueraufträge","Bank & Geld/Girokonto Bürgerbank/Kontovertrag & Karten","Bank & Geld/Girokonto Bürgerbank/Online-Banking","Bank & Geld/Haushaltsbuch","Bank & Geld/Haushaltsbuch/2031","Bank & Geld/Haushaltsbuch/2031/2031-Q1","Bank & Geld/Haushaltsbuch/2031/2031-Q2","Bank & Geld/Haushaltsbuch/2031/2031-Q3","Bank & Geld/Haushaltsbuch/2031/2031-Q4","Bank & Geld/Haushaltsbuch/2032","Bank & Geld/Haushaltsbuch/2032/2032-Q1","Bank & Geld/Haushaltsbuch/2032/2032-Q2","Bank & Geld/Haushaltsbuch/2032/2032-Q3","Bank & Geld/Haushaltsbuch/2032/2032-Q4","Bank & Geld/Haushaltsbuch/2033","Bank & Geld/Haushaltsbuch/2033/2033-Q1","Bank & Geld/Haushaltsbuch/2033/2033-Q2","Bank & Geld/Haushaltsbuch/2033/2033-Q3","Bank & Geld/Haushaltsbuch/2033/2033-Q4","Bank & Geld/Kreditkarte","Bank & Geld/Kreditkarte/2031","Bank & Geld/Kreditkarte/2031/2031-Q1","Bank & Geld/Kreditkarte/2031/2031-Q2","Bank & Geld/Kreditkarte/2031/2031-Q3","Bank & Geld/Kreditkarte/2031/2031-Q4","Bank & Geld/Kreditkarte/2032","Bank & Geld/Kreditkarte/2032/2032-Q1","Bank & Geld/Kreditkarte/2032/2032-Q2","Bank & Geld/Kreditkarte/2032/2032-Q3","Bank & Geld/Kreditkarte/2032/2032-Q4","Bank & Geld/Kreditkarte/2033","Bank & Geld/Kreditkarte/2033/2033-Q1","Bank & Geld/Kreditkarte/2033/2033-Q2","Bank & Geld/Kreditkarte/2033/2033-Q3","Bank & Geld/Kreditkarte/2033/2033-Q4","Bank & Geld/Kreditkarte/Kartenvertrag","Bank & Geld/Notgroschen Tagesgeld","Bank & Geld/Notgroschen Tagesgeld/Vertrag","Bank & Geld/Notgroschen Tagesgeld/Zinsmitteilungen","Bank & Geld/Sparbuch Bürgerbank","Bank & Geld/Sparbuch Bürgerbank/2031","Bank & Geld/Sparbuch Bürgerbank/2032","Bank & Geld/Sparbuch Bürgerbank/2033","Bank & Geld/Überweisungen Matthias","Bank & Geld/Überweisungen Matthias/2031","Bank & Geld/Überweisungen Matthias/2032","Bank & Geld/Überweisungen Matthias/2033","Chor Liederkranz","Chor Liederkranz/Chorreisen","Chor Liederkranz/Chorreisen/2032-09 Chorreise Seetal","Chor Liederkranz/Chorreisen/2033-09 Chorfest Hochalm","Chor Liederkranz/Chronik","Chor Liederkranz/Chronik/Entwürfe","Chor Liederkranz/Chronik/Fotos","Chor Liederkranz/Chronik/Zeitungsberichte","Chor Liederkranz/Förderungen Gemeinde","Chor Liederkranz/Förderungen Gemeinde/2031","Chor Liederkranz/Förderungen Gemeinde/2032","Chor Liederkranz/Förderungen Gemeinde/2033","Chor Liederkranz/Kassa","Chor Liederkranz/Kassa/2031","Chor Liederkranz/Kassa/2032","Chor Liederkranz/Kassa/2033","Chor Liederkranz/Kassa/Kassabuch","Chor Liederkranz/Kassa/Kassaprüfung","Chor Liederkranz/Kassa/Kassaprüfung/2031","Chor Liederkranz/Kassa/Kassaprüfung/2032","Chor Liederkranz/Kassa/Kassaprüfung/2033","Chor Liederkranz/Konzerte","Chor Liederkranz/Konzerte/2031-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2031-12 Adventsingen","Chor Liederkranz/Konzerte/2032-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2032-12 Adventsingen","Chor Liederkranz/Konzerte/2033-05 Frühjahrskonzert","Chor Liederkranz/Konzerte/2033-12 Adventsingen","Chor Liederkranz/Mitgliedschaft","Chor Liederkranz/Noten","Chor Liederkranz/Probenpläne","Chor Liederkranz/Probenpläne/2031","Chor Liederkranz/Probenpläne/2032","Chor Liederkranz/Probenpläne/2033","Chor Liederkranz/Vorstand & Protokolle","Chor Liederkranz/Vorstand & Protokolle/2031","Chor Liederkranz/Vorstand & Protokolle/2032","Chor Liederkranz/Vorstand & Protokolle/2033","Dokumente & Ausweise","Dokumente & Ausweise/Heiratsurkunde","Dokumente & Ausweise/Konrad","Dokumente & Ausweise/Konrad/Führerschein","Dokumente & Ausweise/Konrad/Geburtsurkunde","Dokumente & Ausweise/Konrad/Personalausweis","Dokumente & Ausweise/Konrad/Reisepass","Dokumente & Ausweise/Konrad/Staatsbürgerschaftsnachweis","Dokumente & Ausweise/Margit","Dokumente & Ausweise/Margit/Führerschein","Dokumente & Ausweise/Margit/Geburtsurkunde","Dokumente & Ausweise/Margit/Personalausweis","Dokumente & Ausweise/Margit/Reisepass","Dokumente & Ausweise/Margit/Staatsbürgerschaftsnachweis","Dokumente & Ausweise/Meldezettel","Dokumente & Ausweise/Testament & Verfügungen","Dokumente & Ausweise/Vorsorgevollmacht","Dokumente & Ausweise/Wahlkarten","Dokumente & Ausweise/Wahlkarten/2031","Dokumente & Ausweise/Wahlkarten/2032","Dokumente & Ausweise/Wahlkarten/2033","Einkäufe & Garantien","Einkäufe & Garantien/Elektronik","Einkäufe & Garantien/Elektronik/Drucker & Scanner","Einkäufe & Garantien/Elektronik/Fernseher","Einkäufe & Garantien/Elektronik/Kopfhörer","Einkäufe & Garantien/Elektronik/Laptop Konrad","Einkäufe & Garantien/Elektronik/Tablet Margit","Einkäufe & Garantien/Geschenke","Einkäufe & Garantien/Geschenke/2031","Einkäufe & Garantien/Geschenke/2032","Einkäufe & Garantien/Geschenke/2033","Einkäufe & Garantien/Haushaltsgeräte","Einkäufe & Garantien/Haushaltsgeräte/Bügeleisen","Einkäufe & Garantien/Haushaltsgeräte/Kaffeemaschine","Einkäufe & Garantien/Haushaltsgeräte/Kühlschrank","Einkäufe & Garantien/Haushaltsgeräte/Mikrowelle","Einkäufe & Garantien/Haushaltsgeräte/Nähmaschine","Einkäufe & Garantien/Haushaltsgeräte/Staubsauger","Einkäufe & Garantien/Haushaltsgeräte/Waschmaschine","Einkäufe & Garantien/Kleidung & Schuhe","Einkäufe & Garantien/Kleidung & Schuhe/2031","Einkäufe & Garantien/Kleidung & Schuhe/2032","Einkäufe & Garantien/Kleidung & Schuhe/2033","Einkäufe & Garantien/Online-Bestellungen","Einkäufe & Garantien/Online-Bestellungen/2031","Einkäufe & Garantien/Online-Bestellungen/2032","Einkäufe & Garantien/Online-Bestellungen/2033","Gesundheit","Gesundheit/Apotheke Dauerrezepte","Gesundheit/Apotheke Dauerrezepte/2031","Gesundheit/Apotheke Dauerrezepte/2032","Gesundheit/Apotheke Dauerrezepte/2033","Gesundheit/Gesundheitskasse Ilmtal","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2031","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2032","Gesundheit/Gesundheitskasse Ilmtal/Rückerstattungen/2033","Gesundheit/Gesundheitskasse Ilmtal/Schreiben","Gesundheit/Gesundheitskasse Ilmtal/e-card","Gesundheit/Impfpässe","Gesundheit/Konrad","Gesundheit/Konrad/2033-05 Kur Bad Seetal","Gesundheit/Konrad/Augenarzt & Brillen","Gesundheit/Konrad/Hausarzt Dr. Rameis","Gesundheit/Konrad/Hörtest","Gesundheit/Konrad/Labor & Befunde","Gesundheit/Konrad/Physiotherapie","Gesundheit/Konrad/Zahnarzt","Gesundheit/Margit","Gesundheit/Margit/Frauenärztin","Gesundheit/Margit/HNO & Stimme","Gesundheit/Margit/Hausarzt Dr. Rameis","Gesundheit/Margit/Labor & Befunde","Gesundheit/Margit/Physiotherapie","Gesundheit/Margit/Zahnarzt","Gesundheit/Patientenverfügung","Hund Fritzi","Hund Fritzi/Chip & Heimtierausweis","Hund Fritzi/Futter & Zubehör","Hund Fritzi/Futter & Zubehör/2031","Hund Fritzi/Futter & Zubehör/2032","Hund Fritzi/Futter & Zubehör/2033","Hund Fritzi/Hundeabgabe","Hund Fritzi/Hundeabgabe/2031","Hund Fritzi/Hundeabgabe/2032","Hund Fritzi/Hundeabgabe/2033","Hund Fritzi/Hundepension & Sitter","Hund Fritzi/Hundeschule Pfotenweg","Hund Fritzi/Hundeschule Pfotenweg/2031-05 Junghundekurs","Hund Fritzi/Hundeschule Pfotenweg/2032-04 Begleithundeprüfung","Hund Fritzi/Hundeschule Pfotenweg/Mitgliedsbeiträge","Hund Fritzi/Tierarzt","Hund Fritzi/Tierarzt/Behandlungen","Hund Fritzi/Tierarzt/Impfungen","Hund Fritzi/Tierarzt/Rechnungen","Hund Fritzi/Tierarzt/Zahnkontrolle","Kleingarten Am Weidenbach","Kleingarten Am Weidenbach/Gartenbuch & Ernte","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2031","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2032","Kleingarten Am Weidenbach/Gartenbuch & Ernte/2033","Kleingarten Am Weidenbach/Gartenfeste","Kleingarten Am Weidenbach/Gartenfeste/2032-08 Sommerfest","Kleingarten Am Weidenbach/Gartenfeste/2033-08 Sommerfest","Kleingarten Am Weidenbach/Gartenhütte","Kleingarten Am Weidenbach/Gartenhütte/2032-04 Dachpappe erneuert","Kleingarten Am Weidenbach/Gartenhütte/2033-06 Regentonne","Kleingarten Am Weidenbach/Gemeinschaftsarbeit","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2031","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2032","Kleingarten Am Weidenbach/Gemeinschaftsarbeit/2033","Kleingarten Am Weidenbach/Pacht & Wasser","Kleingarten Am Weidenbach/Pachtvertrag Parzelle 23","Kleingarten Am Weidenbach/Saatgut & Pflanzen","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2031","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2032","Kleingarten Am Weidenbach/Saatgut & Pflanzen/2033","Kleingarten Am Weidenbach/Vereinsmitteilungen","Kleingarten Am Weidenbach/Vereinsmitteilungen/2031","Kleingarten Am Weidenbach/Vereinsmitteilungen/2032","Kleingarten Am Weidenbach/Vereinsmitteilungen/2033","Kleingarten Am Weidenbach/Werkzeug & Geräte","Kommunikation","Kommunikation/Abos & Mitgliedschaften online","Kommunikation/Handy Konrad parla mobil","Kommunikation/Handy Konrad parla mobil/Rechnungen","Kommunikation/Handy Konrad parla mobil/Vertrag","Kommunikation/Handy Margit parla mobil","Kommunikation/Handy Margit parla mobil/Rechnungen","Kommunikation/Handy Margit parla mobil/Vertrag","Kommunikation/Ilmnet Internet","Kommunikation/Ilmnet Internet/Rechnungen","Kommunikation/Ilmnet Internet/Router & Technik","Kommunikation/Ilmnet Internet/Vertrag","Kommunikation/Zeitungsabo Ilmtaler Rundschau","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2031","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2032","Kommunikation/Zeitungsabo Ilmtaler Rundschau/2033","Matthias","Matthias/Besuche","Matthias/Besuche/2031-12 Weihnachten daheim","Matthias/Besuche/2032-07 Sommer daheim","Matthias/Besuche/2033-07 Sommer daheim","Matthias/Dokumente Matthias","Matthias/Dokumente Matthias/Meldebestätigungen","Matthias/Dokumente Matthias/Reisepass Kopie","Matthias/Dokumente Matthias/Zeugnisse","Matthias/Familienbeihilfe","Matthias/Familienbeihilfe/2031","Matthias/Familienbeihilfe/2032","Matthias/Familienbeihilfe/2033","Matthias/Studium Westerholm","Matthias/Studium Westerholm/1. Studienjahr","Matthias/Studium Westerholm/1. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/1. Studienjahr/Collegegeld","Matthias/Studium Westerholm/1. Studienjahr/Prüfungen","Matthias/Studium Westerholm/1. Studienjahr/Wohnen","Matthias/Studium Westerholm/2. Studienjahr","Matthias/Studium Westerholm/2. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/2. Studienjahr/Collegegeld","Matthias/Studium Westerholm/2. Studienjahr/Prüfungen","Matthias/Studium Westerholm/2. Studienjahr/Wohnen","Matthias/Studium Westerholm/3. Studienjahr","Matthias/Studium Westerholm/3. Studienjahr/Bestätigungen","Matthias/Studium Westerholm/3. Studienjahr/Collegegeld","Matthias/Studium Westerholm/3. Studienjahr/Prüfungen","Matthias/Studium Westerholm/3. Studienjahr/Wohnen","Matthias/Studium Westerholm/Auslandsversicherung","Matthias/Studium Westerholm/Bewerbung & Zulassung","Matthias/Unterhalt & Überweisungen","Matthias/Unterhalt & Überweisungen/2031","Matthias/Unterhalt & Überweisungen/2032","Matthias/Unterhalt & Überweisungen/2033","Mobilität","Mobilität/Bahntickets","Mobilität/Bahntickets/2031","Mobilität/Bahntickets/2032","Mobilität/Bahntickets/2033","Mobilität/Fahrgastrechte","Mobilität/Fahrräder","Mobilität/Fahrräder/E-Bike Margit","Mobilität/Fahrräder/Fahrradanhänger","Mobilität/Fahrräder/Radwerkstatt Speiche","Mobilität/Fahrräder/Trekkingrad Konrad","Mobilität/Fahrräder/Zubehör & Schlösser","Mobilität/Jahreskarte Regio Plus","Mobilität/Rufbus & Taxi","Mobilität/Rufbus & Taxi/2031","Mobilität/Rufbus & Taxi/2032","Mobilität/Rufbus & Taxi/2033","Mobilität/rollmit Carsharing","Mobilität/rollmit Carsharing/Abrechnungen","Mobilität/rollmit Carsharing/Abrechnungen/2031","Mobilität/rollmit Carsharing/Abrechnungen/2032","Mobilität/rollmit Carsharing/Abrechnungen/2033","Mobilität/rollmit Carsharing/Mitgliedschaft","Musik Margit","Musik Margit/Blockflöten","Musik Margit/Blockflöten/Kaufbelege","Musik Margit/Blockflöten/Wartung","Musik Margit/Klavier","Musik Margit/Klavier/Kaufvertrag","Musik Margit/Klavier/Reparaturen","Musik Margit/Klavier/Stimmungen Klavierbau Sonnleitner","Musik Margit/Konzertbesuche","Musik Margit/Konzertbesuche/2031","Musik Margit/Konzertbesuche/2032","Musik Margit/Konzertbesuche/2033","Musik Margit/Kurse","Musik Margit/Kurse/2032-07 Kammermusikwoche","Musik Margit/Kurse/2033-07 Kammermusikwoche","Musik Margit/Noten & Bücher","Pension Konrad","Pension Konrad/1. Antrag Ruhestand","Pension Konrad/1. Antrag Ruhestand/Beratungsgespräch","Pension Konrad/1. Antrag Ruhestand/Dienstzeitenbestätigung","Pension Konrad/1. Antrag Ruhestand/Formulare","Pension Konrad/2. Bescheid Ruhegenuss","Pension Konrad/2. Bescheid Ruhegenuss/Berechnungsblatt","Pension Konrad/2. Bescheid Ruhegenuss/Bescheid","Pension Konrad/3. Laufende Bezüge","Pension Konrad/3. Laufende Bezüge/2032","Pension Konrad/3. Laufende Bezüge/2033","Pension Konrad/4. Neuberechnung & Nachzahlung","Pension Konrad/Dienstzeit Vermessungsamt","Pension Konrad/Dienstzeit Vermessungsamt/2032-06 Abschiedsfeier","Pension Konrad/Dienstzeit Vermessungsamt/Dienstzeugnis","Pension Konrad/Dienstzeit Vermessungsamt/Jubiläen","Pension Konrad/Pensionistenausweis","Reisen","Reisen/2031-08 Radtour Ilmtal","Reisen/2031-08 Radtour Ilmtal/Karten","Reisen/2031-08 Radtour Ilmtal/Unterkünfte","Reisen/2031-10 Herbstwandern Seetal","Reisen/2032-02 Städtereise Sankt Veitsberg","Reisen/2032-02 Städtereise Sankt Veitsberg/Bahn","Reisen/2032-02 Städtereise Sankt Veitsberg/Hotel","Reisen/2032-02 Städtereise Sankt Veitsberg/Museen","Reisen/2032-05 Pfingsten Hochalm","Reisen/2032-09 Besuch Matthias Westerholm","Reisen/2032-09 Besuch Matthias Westerholm/Bahn","Reisen/2032-09 Besuch Matthias Westerholm/Unterkunft","Reisen/2033-01 Langlaufwoche Hochalm","Reisen/2033-03 Thermenwochenende Bad Seetal","Reisen/2033-06 Wanderwoche Hochalm","Reisen/2033-06 Wanderwoche Hochalm/Anreise","Reisen/2033-06 Wanderwoche Hochalm/Unterkunft","Reisen/2033-06 Wanderwoche Hochalm/Wanderkarten","Reisen/Reiseplanung Ideen","Steuern","Steuern/Finanzamt Schreiben","Steuern/Kirchenbeitrag absetzbar","Steuern/Kirchenbeitrag absetzbar/2031","Steuern/Kirchenbeitrag absetzbar/2032","Steuern/Kirchenbeitrag absetzbar/2033","Steuern/Krankheitskosten Belege","Steuern/Krankheitskosten Belege/2031","Steuern/Krankheitskosten Belege/2031/Konrad","Steuern/Krankheitskosten Belege/2031/Margit","Steuern/Krankheitskosten Belege/2032","Steuern/Krankheitskosten Belege/2032/Konrad","Steuern/Krankheitskosten Belege/2032/Margit","Steuern/Krankheitskosten Belege/2033","Steuern/Krankheitskosten Belege/2033/Konrad","Steuern/Krankheitskosten Belege/2033/Margit","Steuern/Spendenbestätigungen","Steuern/Spendenbestätigungen/2031","Steuern/Spendenbestätigungen/2032","Steuern/Spendenbestätigungen/2033","Steuern/Steuerausgleich","Steuern/Steuerausgleich/2031","Steuern/Steuerausgleich/2031/Konrad","Steuern/Steuerausgleich/2031/Margit","Steuern/Steuerausgleich/2032","Steuern/Steuerausgleich/2032/Konrad","Steuern/Steuerausgleich/2032/Margit","Steuern/Steuerausgleich/2033","Steuern/Steuerausgleich/2033/Konrad","Steuern/Steuerausgleich/2033/Margit","Vereine & Ehrenamt","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2031","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2032","Vereine & Ehrenamt/Kirchenbeitrag Pfarre St. Ägidius/2033","Vereine & Ehrenamt/Naturschutzbund Ilmtal","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2031","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2032","Vereine & Ehrenamt/Naturschutzbund Ilmtal/2033","Vereine & Ehrenamt/Seniorentreff Brunnfeld","Vereine & Ehrenamt/Spenden","Vereine & Ehrenamt/Spenden/2031","Vereine & Ehrenamt/Spenden/2032","Vereine & Ehrenamt/Spenden/2033","Vereine & Ehrenamt/Stadtbücherei","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt/2032-04 Flohmarkt","Vereine & Ehrenamt/Stadtbücherei/Bücherflohmarkt/2033-04 Flohmarkt","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2032-Q3","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2032-Q4","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q1","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q2","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q3","Vereine & Ehrenamt/Stadtbücherei/Dienstpläne/2033-Q4","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft/Seniorenheim Am Anger","Vereine & Ehrenamt/Stadtbücherei/Lesepatenschaft/Volksschule Kirchberg","Vereine & Ehrenamt/Stadtbücherei/Vereinbarung Ehrenamt","Vereine & Ehrenamt/Tierschutzverein Wettelau","Vereine & Ehrenamt/Tierschutzverein Wettelau/2031","Vereine & Ehrenamt/Tierschutzverein Wettelau/2032","Vereine & Ehrenamt/Tierschutzverein Wettelau/2033","Versicherungen","Versicherungen/Ablebensversicherung","Versicherungen/Ablebensversicherung/Jahresmitteilungen","Versicherungen/Ablebensversicherung/Polizze","Versicherungen/Haushaltsversicherung Hollerau","Versicherungen/Haushaltsversicherung Hollerau/Polizze","Versicherungen/Haushaltsversicherung Hollerau/Prämien","Versicherungen/Haushaltsversicherung Hollerau/Schadensfälle","Versicherungen/Hundehaftpflicht Fritzi","Versicherungen/Hundehaftpflicht Fritzi/Nachträge","Versicherungen/Hundehaftpflicht Fritzi/Polizze","Versicherungen/Instrumentenversicherung Klavier","Versicherungen/Instrumentenversicherung Klavier/Polizze","Versicherungen/Instrumentenversicherung Klavier/Wertgutachten","Versicherungen/Privathaftpflicht","Versicherungen/Privathaftpflicht/Polizze","Versicherungen/Privathaftpflicht/Prämien","Versicherungen/Rechtsschutz","Versicherungen/Rechtsschutz/Fälle","Versicherungen/Rechtsschutz/Polizze","Versicherungen/Reiseversicherung","Versicherungen/Reiseversicherung/2032-09 Schadensmeldung Gepäck","Versicherungen/Reiseversicherung/Polizze","Versicherungen/Unfallversicherung Konrad","Versicherungen/Unfallversicherung Konrad/Polizze","Versicherungen/Unfallversicherung Konrad/Prämien","Wohnung Brunnfeldgasse","Wohnung Brunnfeldgasse/Betriebskosten","Wohnung Brunnfeldgasse/Betriebskosten/2031","Wohnung Brunnfeldgasse/Betriebskosten/2032","Wohnung Brunnfeldgasse/Betriebskosten/2033","Wohnung Brunnfeldgasse/Einrichtung","Wohnung Brunnfeldgasse/Einrichtung/Arbeitszimmer Konrad","Wohnung Brunnfeldgasse/Einrichtung/Küche","Wohnung Brunnfeldgasse/Einrichtung/Lampen","Wohnung Brunnfeldgasse/Einrichtung/Schlafzimmer","Wohnung Brunnfeldgasse/Einrichtung/Teppiche & Vorhänge","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2031","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2032","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Jahresabrechnungen/2033","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2031","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2032","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Teilbeträge/2033","Wohnung Brunnfeldgasse/Fernwärme Stadtwerke/Vertrag","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Hausordnung","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Hausversammlungen","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Mitgliedsanteil","Wohnung Brunnfeldgasse/Genossenschaft Heimstatt/Mitteilungen","Wohnung Brunnfeldgasse/Kellerabteil","Wohnung Brunnfeldgasse/Mietvertrag","Wohnung Brunnfeldgasse/Mietvertrag/Nachträge","Wohnung Brunnfeldgasse/Mietvertrag/Übergabeprotokoll","Wohnung Brunnfeldgasse/Mietvorschreibungen","Wohnung Brunnfeldgasse/Mietvorschreibungen/2031","Wohnung Brunnfeldgasse/Mietvorschreibungen/2032","Wohnung Brunnfeldgasse/Mietvorschreibungen/2033","Wohnung Brunnfeldgasse/Reparaturen","Wohnung Brunnfeldgasse/Reparaturen/2031-11 Heizkörperventil Wohnzimmer","Wohnung Brunnfeldgasse/Reparaturen/2032-03 Wasserhahn Küche","Wohnung Brunnfeldgasse/Reparaturen/2032-08 Wasserschaden Bad","Wohnung Brunnfeldgasse/Reparaturen/2033-02 Fensterdichtungen","Wohnung Brunnfeldgasse/Reparaturen/2033-07 Gegensprechanlage","Wohnung Brunnfeldgasse/Rundfunkbeitrag","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2031","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2032","Wohnung Brunnfeldgasse/Rundfunkbeitrag/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2031","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2032","Wohnung Brunnfeldgasse/Strom Stadtwerke/Jahresabrechnungen/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2031","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2032","Wohnung Brunnfeldgasse/Strom Stadtwerke/Teilbeträge/2033","Wohnung Brunnfeldgasse/Strom Stadtwerke/Vertrag","Wohnung Brunnfeldgasse/Zählerstände","Wohnung Brunnfeldgasse/Zählerstände/2031","Wohnung Brunnfeldgasse/Zählerstände/2032","Wohnung Brunnfeldgasse/Zählerstände/2033"];
+const KNOWN_CONTENTS = {"Arbeit Margit/Gehaltszettel/2033":["2033-01 Gehaltszettel.pdf","2033-02 Gehaltszettel.pdf","2033-03 Gehaltszettel.pdf","2033-04 Gehaltszettel.pdf","2033-05 Gehaltszettel.pdf","2033-06 Gehaltszettel.pdf","2033-06 Urlaubszuschuss.pdf","2033-07 Gehaltszettel.pdf","2033-08 Gehaltszettel.pdf"],"Kommunikation/Ilmnet Internet/Rechnungen":["2033-03-04 Rechnung März.pdf","2033-04-04 Rechnung April.pdf","2033-05-04 Rechnung Mai.pdf","2033-06-04 Rechnung Juni.pdf","2033-07-04 Rechnung Juli.pdf","2033-07-19 Gutschrift Störung.pdf","2033-08-04 Rechnung August.pdf","2033-09-04 Rechnung September.pdf","2033-10-04 Rechnung Oktober.pdf"],"Mobilität/Jahreskarte Regio Plus":["2031-10-18 Jahreskarte Konrad.pdf","2031-10-18 Jahreskarte Margit.pdf","2032-03-02 Fahrgastrechte Entschädigung.pdf","2032-10-19 Verlängerung Jahreskarte Konrad.pdf","2032-10-19 Verlängerung Jahreskarte Margit.pdf","2033-04-11 Ersatzkarte Margit.pdf","2033-10-20 Verlängerung Jahreskarte Margit.pdf"],"Bank & Geld/Girokonto Bürgerbank/2033-Q3":["2033-07 Kontoauszug.pdf","2033-08 Kontoauszug.pdf","2033-08-14 Änderung Dauerauftrag Matthias.pdf"],"Kleingarten Am Weidenbach/Pacht & Wasser":["2031-03-15 Pachtvorschreibung 2031.pdf","2031-10-06 Wasserabrechnung 2031.pdf","2032-03-14 Pachtvorschreibung 2032.pdf","2032-10-04 Wasserabrechnung 2032.pdf","2033-03-16 Pachtvorschreibung 2033.pdf","2033-05-02 Zählertausch Parzelle 23.pdf"],"Chor Liederkranz/Kassa/2033":["2033-01-15 Mitgliedsbeiträge Liste.pdf","2033-02-03 Saalmiete Pfarrsaal.pdf","2033-03-28 Förderung Gemeinde Zusage.pdf","2033-05-20 Abrechnung Frühjahrskonzert.pdf","2033-06-12 Blumen Chorleiterin.pdf","2033-09-25 Abrechnung Chorfest Bus.pdf"],"Chor Liederkranz/Noten":["2031-09-12 Notenhaus Allegretto Weihnachtslieder.pdf","2032-02-20 Notenhaus Allegretto Frühjahrsprogramm.pdf","2032-04-02 Aufführungsrechte Meldung.pdf","2032-10-08 Notenhaus Allegretto Adventprogramm.pdf","2033-02-17 Notenhaus Allegretto Frühjahrsprogramm.pdf"],"Gesundheit/Konrad/Augenarzt & Brillen":["2031-11-08 Befund Augenarzt Dr. Zöhrer.pdf","2032-01-20 Rechnung Gleitsichtbrille.pdf","2032-02-05 Rückerstattung Brille.pdf","2033-09-22 Befund Augenarzt Dr. Zöhrer.pdf"],"Matthias/Studium Westerholm/2. Studienjahr/Collegegeld":["2032-10-03 Collegegeld 1. Rate.pdf","2032-10-05 Zahlungsbestätigung 1. Rate.pdf","2033-03-02 Collegegeld 2. Rate.pdf","2033-03-04 Zahlungsbestätigung 2. Rate.pdf"],"Matthias/Studium Westerholm/3. Studienjahr/Wohnen":["2033-07-21 Mietvertrag Wohnheim Kanaalzicht.pdf","2033-08-29 Kaution Wohnheim.pdf","2033-09-01 Übergabe Zimmer 4.pdf"],"Hund Fritzi/Tierarzt/Impfungen":["2031-06-10 Grundimmunisierung Fritzi.pdf","2031-07-08 Tollwut Fritzi.pdf","2032-07-12 Auffrischung Fritzi.pdf"]};
+</script>
+<script>
+'use strict';
+/* Destination search concepts (docs/design/destination-search-study.md): A path field, B choice in list, C soft scope.
+   Plain DOM, no libraries. FOLDERS and KNOWN_CONTENTS come from the data script above. The logic keeps all state in S
+   and never reads the DOM, so it also runs headless (node) for checks; render() maps S onto the page. */
+
+const HAS_DOM = typeof document !== 'undefined';
+const TODAY = '2033-10-26';
+const FILE_STEM = 'Rechnung_NA-33-08812';
+const FILE_EXT = '.pdf';
+/* The same Recent list as the earlier picker prototype, newest first. */
+const START_RECENT = ['Mobilität/Jahreskarte Regio Plus', 'Kommunikation/Ilmnet Internet/Rechnungen', 'Chor Liederkranz/Kassa/2033', 'Gesundheit/Konrad/Augenarzt & Brillen', 'Bank & Geld/Girokonto Bürgerbank/2033-Q3', 'Arbeit Margit/Gehaltszettel/2033', 'Kleingarten Am Weidenbach/Pacht & Wasser'];
+const MAX_RESULTS = 50;
+/* Task targets, all folders of the fictional sample archive (or, for the new folder, one created in it). */
+const T = {
+  deep: 'Gesundheit/Margit/Physiotherapie',
+  browseParent: 'Hund Fritzi',
+  browse: 'Hund Fritzi/Hundeschule Pfotenweg',
+  scopeFolder: 'Gesundheit',
+  scoped: 'Gesundheit/Konrad/Augenarzt & Brillen',
+  newParent: 'Reisen',
+  newName: '2033-11 Besuch Matthias Westerholm',
+  elsewhere: 'Chor Liederkranz/Noten',
+};
+T.newPath = `${T.newParent}/${T.newName}`;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lastSeg = (p) => p.slice(p.lastIndexOf('/') + 1);
+const parentOf = (p) => (p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '');
+const chainOf = (p) => { if (!p) return []; const parts = p.split('/'); return parts.map((_, i) => parts.slice(0, i + 1).join('/')); };
+const crumbText = (p) => p.replace(/\//g, ' › ');
+const where = (p) => p || 'Archive';
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const within = (p, base) => !base || p === base || p.startsWith(base + '/');
+const collator = new Intl.Collator('de', { numeric: true, sensitivity: 'base' });
+
+/* ---------------------------------------------------------------- icons */
+const stroke = (vb, d, w = 1.4) =>
+  `<svg viewBox="${vb}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  chev: stroke('0 0 12 12', '<path d="M4.5 2.5 8 6l-3.5 3.5"/>', 1.6),
+  check: stroke('0 0 12 12', '<path d="M2.5 6.4 5 8.8l4.6-5.6"/>', 1.8),
+  plus: stroke('0 0 12 12', '<path d="M6 1.5v9M1.5 6h9"/>', 1.5).replace('<svg ', '<svg class="plus" '),
+  clear: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Z M5.4 4.3 4.3 5.4 6.9 8l-2.6 2.6 1.1 1.1L8 9.1l2.6 2.6 1.1-1.1L9.1 8l2.6-2.6-1.1-1.1L8 6.9Z"/></svg>',
+  folder: '<svg class="fold" viewBox="0 0 16 13" aria-hidden="true"><path d="M1 2.2A1.2 1.2 0 0 1 2.2 1h3.6l1.5 1.6h6.5A1.2 1.2 0 0 1 15 3.8v7A1.2 1.2 0 0 1 13.8 12H2.2A1.2 1.2 0 0 1 1 10.8z" style="fill:var(--ficon-folder)"/><path d="M1 4.3h14" style="stroke:var(--ficon-folder-tab)" stroke-width=".8"/></svg>',
+  /* "this folder": the folder with a downward "file here" arrow */
+  here: '<svg class="fold" viewBox="0 0 16 13" aria-hidden="true"><path d="M1 2.2A1.2 1.2 0 0 1 2.2 1h3.6l1.5 1.6h6.5A1.2 1.2 0 0 1 15 3.8v7A1.2 1.2 0 0 1 13.8 12H2.2A1.2 1.2 0 0 1 1 10.8z" style="fill:var(--ficon-folder)"/><path d="M8 4.6v5M5.8 7.6 8 9.8l2.2-2.2" fill="none" style="stroke:var(--ficon-page)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  newFolder: '<svg viewBox="0 0 16 13" aria-hidden="true"><path d="M1 2.2A1.2 1.2 0 0 1 2.2 1h3.6l1.5 1.6h6.5A1.2 1.2 0 0 1 15 3.8v7A1.2 1.2 0 0 1 13.8 12H2.2A1.2 1.2 0 0 1 1 10.8z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M8 5.2v4.6M5.7 7.5h4.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+};
+function fileIcon(name) {
+  const ext = (name.match(/\.([^.]+)$/) || ['', ''])[1].toLowerCase();
+  const img = ['jpg', 'jpeg', 'png', 'heic'].includes(ext);
+  const band = ext === 'pdf' ? '--ficon-pdf' : img ? '--ficon-img' : '--label3';
+  const label = ext === 'pdf' ? 'PDF' : img ? 'JPG' : '';
+  return `<span class="ficon"><svg viewBox="0 0 15 19" aria-hidden="true"><path d="M1.5 1.5h8l4 4v12h-12z" style="fill:var(--ficon-page);stroke:var(--ficon-stroke)" stroke-width=".8"/><path d="M9.5 1.5v4h4" fill="none" style="stroke:var(--ficon-stroke)" stroke-width=".8"/><rect x="1.9" y="11" width="11.2" height="4.6" style="fill:var(${band})"/>${label ? `<text x="7.5" y="14.5" text-anchor="middle" font-size="3.7" font-weight="700" font-family="-apple-system,Helvetica,sans-serif" style="fill:var(--ficon-page)">${label}</text>` : ''}</svg></span>`;
+}
+
+/* ---------------------------------------------------------------- folder model (from picker-src) */
+const F = { list: [], set: new Set(), pending: new Set(), index: new Map() };
+function resetFolders() { F.list = FOLDERS.slice(); F.pending = new Set(); rebuildIndex(); }
+function rebuildIndex() {
+  F.set = new Set(F.list);
+  const map = new Map();
+  for (const p of F.list) {
+    const par = parentOf(p);
+    if (!map.has(par)) map.set(par, []);
+    map.get(par).push(p);
+  }
+  for (const arr of map.values()) arr.sort((a, b) => collator.compare(lastSeg(a), lastSeg(b)));
+  F.index = map;
+  itemsCache.key = '';
+}
+const kids = (p) => F.index.get(p) || [];
+const exists = (p) => F.set.has(p);
+const isNew = (p) => F.pending.has(p);
+function childNamed(parent, name) {
+  const want = name.toLowerCase();
+  return kids(parent).find((c) => lastSeg(c).toLowerCase() === want) || null;
+}
+/* Resolves a typed new-folder name (slashes nest) against the tree: which folders it would create, or which existing
+   folder it names. */
+function resolveNew(parent, raw) {
+  const parts = raw.split('/').map((s) => s.trim()).filter(Boolean);
+  let cur = parent;
+  const create = [];
+  for (const part of parts) {
+    const hit = create.length ? null : childNamed(cur, part);
+    if (hit) cur = hit;
+    else { cur = (cur ? cur + '/' : '') + part; create.push(cur); }
+  }
+  return { path: cur, create, existing: parts.length && !create.length ? cur : null };
+}
+function addPending(paths) {
+  for (const p of paths) if (!exists(p)) { F.list.push(p); F.pending.add(p); }
+  rebuildIndex();
+}
+
+/* ---------------------------------------------------------------- folder contents (from picker-src) */
+const generatedCache = new Map();
+const GENERATED_FIRST_YEAR = 2031;
+const GEN_WORDS = ['Rechnung', 'Bestätigung', 'Schreiben', 'Vertrag', 'Information', 'Mitteilung', 'Beleg', 'Antrag', 'Bescheid', 'Polizze', 'Kontoauszug', 'Lieferschein', 'Angebot', 'Zahlungsbestätigung'];
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function seeded(seed) {
+  let x = seed || 1;
+  return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+}
+function baseContents(folder) {
+  if (isNew(folder)) return [];
+  if (KNOWN_CONTENTS[folder]) return KNOWN_CONTENTS[folder];
+  if (generatedCache.has(folder)) return generatedCache.get(folder);
+  const rnd = seeded(hashStr(folder));
+  const list = [];
+  if (rnd() > 0.18) {
+    const n = 3 + Math.floor(rnd() * 6);
+    // A folder named for a year holds that year's files; anything else ends just before today.
+    const year = (folder.match(/\b(203[1-3])\b/) || [])[1];
+    let y = year ? +year : +TODAY.slice(0, 4), m = year && year !== TODAY.slice(0, 4) ? 12 : +TODAY.slice(5, 7) - 1, d = 1 + Math.floor(rnd() * 27);
+    const firstYear = year ? +year : GENERATED_FIRST_YEAR;
+    const seg = lastSeg(folder).replace(/^[\d.\s!-]+/, '').trim();
+    for (let i = 0; i < n && y >= firstYear; i++) {
+      const word = GEN_WORDS[Math.floor(rnd() * GEN_WORDS.length)];
+      const desc = seg && seg.length < 18 && rnd() > 0.5 ? `${seg} ${word}` : word;
+      list.push(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} ${desc}.pdf`);
+      const step = 1 + Math.floor(rnd() * 5);
+      m -= step;
+      while (m < 1) { m += 12; y -= 1; }
+      d = 1 + Math.floor(rnd() * 27);
+    }
+  }
+  generatedCache.set(folder, list);
+  return list;
+}
+const contentsOf = (folder) => baseContents(folder).slice().sort(collator.compare);
+const stemOf = (name) => name.replace(/\.[^.]+$/, '');
+
+/* ---------------------------------------------------------------- fuzzy matching (from picker-src) */
+function foldChar(c) {
+  if (c === 'ß') return 'ss';
+  return c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+const foldStr = (s) => s.split('').map(foldChar).join('');
+const prepCache = new Map();
+function prep(str) {
+  let p = prepCache.get(str);
+  if (p) return p;
+  let f = '';
+  const map = [], segStart = [], wordStart = [];
+  const lastSlash = str.lastIndexOf('/');
+  let lastStart = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    const fc = foldChar(c);
+    const prev = i > 0 ? str[i - 1] : '/';
+    const seg = prev === '/';
+    const word = seg || /[\s\-_.()!,&]/.test(prev) || (/[a-zäöü]/.test(prev) && /[A-ZÄÖÜ]/.test(c)) || (/\D/.test(prev) && /\d/.test(c));
+    if (i === lastSlash + 1) lastStart = f.length;
+    for (let k = 0; k < fc.length; k++) {
+      map.push(i); segStart.push(seg && k === 0); wordStart.push(word && k === 0); f += fc[k];
+    }
+  }
+  p = { f, map, segStart, wordStart, lastStart };
+  prepCache.set(str, p);
+  return p;
+}
+const CONSEC = 5;
+function matchToken(tok, p) {
+  const n = p.f.length, m = tok.length;
+  if (m > n) return null;
+  for (let i = 0, j = 0; ; j++) {
+    if (i === m) break;
+    if (j === n) return null;
+    if (p.f[j] === tok[i]) i++;
+  }
+  const NEG = -1e9;
+  let prev = new Float64Array(n).fill(NEG);
+  const back = new Int32Array(m * n).fill(-1);
+  const bonus = (j) => 1 + (p.segStart[j] ? 9 : p.wordStart[j] ? 6 : 0) + (j >= p.lastStart ? 2 : 0);
+  for (let j = 0; j < n; j++) if (p.f[j] === tok[0]) prev[j] = bonus(j) - j * 0.02;
+  for (let i = 1; i < m; i++) {
+    const cur = new Float64Array(n).fill(NEG);
+    let best = NEG, bestK = -1;
+    for (let j = 0; j < n; j++) {
+      if (j >= 2 && prev[j - 2] > best) { best = prev[j - 2]; bestK = j - 2; }
+      if (p.f[j] !== tok[i]) continue;
+      const consec = j >= 1 && prev[j - 1] > NEG / 2 ? prev[j - 1] + CONSEC : NEG;
+      const gap = best > NEG / 2 ? best - 0.5 : NEG;
+      if (consec >= gap && consec > NEG / 2) { cur[j] = consec + bonus(j); back[i * n + j] = j - 1; }
+      else if (gap > NEG / 2) { cur[j] = gap + bonus(j); back[i * n + j] = bestK; }
+    }
+    prev = cur;
+  }
+  let bestJ = -1, bestScore = NEG;
+  for (let j = 0; j < n; j++) if (prev[j] > bestScore) { bestScore = prev[j]; bestJ = j; }
+  if (bestJ < 0 || bestScore < NEG / 2) return null;
+  const pos = new Array(m);
+  for (let i = m - 1, j = bestJ; i >= 0; i--) { pos[i] = j; j = back[i * n + j]; }
+  return { score: bestScore, pos };
+}
+const queryTokens = (q) => q.split(/\s+/).filter(Boolean).map(foldStr);
+/* Ranks candidates ({path, display}) for a query; marks are indices into display. */
+function fuzzy(query, candidates, recentBoost) {
+  const tokens = queryTokens(query);
+  if (!tokens.length) return [];
+  const out = [];
+  for (const c of candidates) {
+    const p = prep(c.display);
+    let score = 0;
+    const marks = new Set();
+    let allInLast = true;
+    let ok = true;
+    for (const t of tokens) {
+      const r = matchToken(t, p);
+      if (!r) { ok = false; break; }
+      score += r.score;
+      for (const j of r.pos) { marks.add(p.map[j]); if (j < p.lastStart) allInLast = false; }
+    }
+    if (!ok) continue;
+    if (allInLast) score += 6;
+    const lastF = p.f.slice(p.lastStart);
+    if (tokens.some((t) => lastF.startsWith(t))) score += 5;
+    score -= c.display.length * 0.12 + (c.display.split('/').length - 1) * 0.8;
+    const ri = recentBoost.indexOf(c.path);
+    if (ri >= 0) score += 14 - ri * 0.5;
+    out.push({ ...c, score, marks });
+  }
+  out.sort((a, b) => b.score - a.score || a.display.length - b.display.length);
+  return out;
+}
+/* Concept A's "/" query: each segment is matched fuzzily against one level below base, level by level. An empty last
+   segment ("ges/mar/") lists every folder at that level. Marks index into the relative display path. */
+function segmentMatches(base, query, recentBoost) {
+  const segs = query.replace(/^\/+/, '').split('/').map((s) => s.trim());
+  const n = segs.length;
+  const prefix = base ? base + '/' : '';
+  const out = [];
+  for (const path of F.list) {
+    if (!path.startsWith(prefix)) continue;
+    const rel = path.slice(prefix.length);
+    const parts = rel.split('/');
+    if (parts.length !== n) continue;
+    let score = 0, off = 0, ok = true;
+    const marks = new Set();
+    for (let i = 0; i < n && ok; i++) {
+      const tokens = queryTokens(segs[i]);
+      const p = prep(parts[i]);
+      for (const t of tokens) {
+        const r = matchToken(t, p);
+        if (!r) { ok = false; break; }
+        score += r.score;
+        for (const j of r.pos) marks.add(off + p.map[j]);
+      }
+      if (ok && tokens.length && tokens.some((t) => p.f.startsWith(t))) score += 5;
+      off += parts[i].length + 1;
+    }
+    if (!ok) continue;
+    // With an empty last segment ("ges/mar/") the listed level ranks alike and sorts by name.
+    score -= (segs[n - 1] ? rel.length : rel.length - parts[n - 1].length) * 0.05;
+    const ri = recentBoost.indexOf(path);
+    if (ri >= 0) score += 14 - ri * 0.5;
+    out.push({ path, display: rel, score, marks });
+  }
+  out.sort((a, b) => b.score - a.score || collator.compare(a.display, b.display));
+  return out;
+}
+
+/* ---------------------------------------------------------------- state */
+const CONCEPTS = ['A', 'B', 'C'];
+const S = {
+  concept: 'A',
+  focus: 'picker',          // sidebar | picker | newfolder (B/C inline row) | name | none
+  pendingFocus: true,       // render() moves DOM focus to S.focus once
+  selectName: false,        // render() selects the name field's text once
+  recent: START_RECENT.slice(),
+  query: '',
+  scope: '',                // B/C: the location; A: the committed path in the field
+  hl: 0,                    // index into the selectable rows
+  chosen: null,             // chosen destination (A: equals scope while chosen)
+  chosenVia: null,          // recent | browse | filter | new
+  chosenScope: null,        // scope at the moment of choosing (for the task checks)
+  nf: null,                 // new folder: B/C { parent, value, snap }; A { parent, snap } (the name is S.query)
+  name: FILE_STEM,
+  take: null,               // ⌥↑/⌥↓ position in Folder contents
+  toast: '',
+  hint: '',                 // short-lived note in the picker's bottom bar
+  moved: '',                // last move, shown in the status line until the next action
+  done: { A: new Set(), B: new Set(), C: new Set() },
+};
+
+function resetPanel() {
+  resetFolders();
+  S.query = ''; S.scope = ''; S.hl = 0;
+  S.chosen = null; S.chosenVia = null; S.chosenScope = null;
+  S.nf = null; S.name = FILE_STEM; S.take = null; S.toast = ''; S.hint = '';
+  S.hl = defaultHl();
+}
+
+/* ---------------------------------------------------------------- listing */
+let itemsCache = { key: '', items: [] };
+const folderRow = (path, display, extra = {}) => ({ type: 'folder', path, display, marks: new Set(), ...extra });
+function browseItems(scope) {
+  const items = [];
+  if (!scope) {
+    const rec = S.recent.filter(exists);
+    if (rec.length) {
+      items.push({ type: 'header', text: 'Recent' });
+      for (const p of rec) items.push(folderRow(p, p, { section: 'recent' }));
+    }
+    items.push({ type: 'header', text: 'All folders' });
+    for (const p of kids('')) items.push(folderRow(p, p));
+  } else {
+    // The folder you stand in is choosable itself, as the first row.
+    items.push(folderRow(scope, lastSeg(scope), { self: true }));
+    items.push({ type: 'sep' });
+    for (const p of kids(scope)) items.push(folderRow(p, lastSeg(p)));
+  }
+  return items;
+}
+const subtreeCands = (scope) => {
+  const prefix = scope ? scope + '/' : '';
+  return F.list.filter((p) => p.startsWith(prefix)).map((p) => ({ path: p, display: p.slice(prefix.length) }));
+};
+const countText = (n, scope) => `${n} ${n === 1 ? 'match' : 'matches'}${scope ? ` in ${lastSeg(scope)}` : ''}${n > MAX_RESULTS ? ` · best ${MAX_RESULTS} shown` : ''}`;
+/* The create row for a typed name, or null when the name is an existing folder. A resolves leading "/" segments
+   fuzzily (rei/Neu → Neu in Reisen); B and C resolve names literally, as today. */
+function createRow(base, query, fuzzyParents) {
+  const raw = query.trim().replace(/\s*\/\s*/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+  if (!raw || /:/.test(raw)) return null;
+  const segs = raw.split('/');
+  let parent = base, rest = segs;
+  if (fuzzyParents && !resolveNew(base, raw).existing) {
+    for (let k = segs.length - 1; k >= 1; k--) {
+      const lead = segs.slice(0, k).join('/');
+      const lit = resolveNew(base, lead);
+      const top = lit.existing ? { path: lit.existing } : segmentMatches(base, lead, S.recent)[0];
+      if (top) { parent = top.path; rest = segs.slice(k); break; }
+    }
+  }
+  const res = resolveNew(parent, rest.join('/'));
+  if (!res.create.length) return null;
+  const at = parentOf(res.create[0]);
+  return { type: 'create', parent: at, name: res.path.slice(at ? at.length + 1 : 0), path: res.path, create: res.create };
+}
+
+function itemsA() {
+  const scope = S.scope;
+  if (S.nf) {
+    const items = [folderRow(scope, lastSeg(scope) || 'Archive', { self: true, inert: true }), { type: 'sep' }];
+    const v = S.query.trim();
+    const res = v ? resolveNew(scope, v) : null;
+    items.push({ type: 'nfpreview', parent: scope, value: v, existing: res && res.existing });
+    items.push({ type: 'info', text: res && res.existing ? `${where(lastSeg(scope))} already contains “${lastSeg(res.existing)}”. Return selects it.` : 'Type the name; a slash nests. Tab or Return confirms, Esc cancels.' });
+    return items;
+  }
+  const q = S.query.replace(/^\/+/, '');
+  if (!q.trim()) return browseItems(scope);
+  const slash = q.includes('/');
+  const results = slash ? segmentMatches(scope, q, S.recent) : fuzzy(q, subtreeCands(scope), S.recent);
+  const create = q.trimEnd().endsWith('/') ? null : createRow(scope, q, true);
+  const items = [];
+  if (results.length) {
+    items.push({ type: 'header', text: countText(results.length, scope) });
+    for (const r of results.slice(0, MAX_RESULTS)) items.push({ type: 'folder', ...r, section: 'results' });
+    // As today, a plain query offers to create only when nothing matches; a path query ("reis/Neu") names folders,
+    // so its create row is offered next to partial matches.
+    if (create && slash) items.push(create);
+    return items;
+  }
+  if (create) items.push(create);
+  else items.push({ type: 'info', text: `No folder${scope ? ` in ${lastSeg(scope)}` : ''} matches.` });
+  if (scope) {
+    // Borrowed from C: a scoped search that finds nothing shows the whole archive below a hairline.
+    const outside = (r) => !within(r.path, scope);
+    const all = (slash ? segmentMatches('', q, S.recent) : fuzzy(q, F.list.map((p) => ({ path: p, display: p })), S.recent)).filter(outside);
+    if (all.length) {
+      items.push({ type: 'header', text: `Not in ${lastSeg(scope)} – elsewhere`, hairline: true });
+      for (const r of all.slice(0, MAX_RESULTS)) items.push({ type: 'folder', ...r, section: 'elsewhere' });
+    }
+  }
+  return items;
+}
+function itemsBC() {
+  const scope = S.scope;
+  if (S.nf) return [{ type: 'header', text: `New folder in ${where(S.nf.parent)}` }, { type: 'nfslot', parent: S.nf.parent }];
+  const q = S.query;
+  if (!q.trim()) return browseItems(scope);
+  const items = [];
+  if (S.concept === 'C' && scope) {
+    const inRes = fuzzy(q, subtreeCands(scope), S.recent);
+    const prefix = scope + '/';
+    const elseRes = fuzzy(q, F.list.filter((p) => p !== scope && !p.startsWith(prefix)).map((p) => ({ path: p, display: p })), S.recent);
+    if (!inRes.length && !elseRes.length) return [createRow(scope, q, false) || { type: 'info', text: 'No folder matches.' }];
+    items.push({ type: 'header', text: `In ${lastSeg(scope)}`, count: inRes.length });
+    if (inRes.length) for (const r of inRes.slice(0, MAX_RESULTS)) items.push({ type: 'folder', ...r, section: 'in' });
+    else items.push({ type: 'info', text: `Nothing in ${lastSeg(scope)} matches.` });
+    if (elseRes.length) {
+      items.push({ type: 'header', text: 'Elsewhere', count: elseRes.length, hairline: true });
+      for (const r of elseRes.slice(0, MAX_RESULTS)) items.push({ type: 'folder', ...r, section: 'elsewhere' });
+    }
+    return items;
+  }
+  const res = fuzzy(q, subtreeCands(scope), S.recent);
+  if (!res.length) return [createRow(scope, q, false) || { type: 'info', text: 'No folder matches.' }];
+  items.push({ type: 'header', text: countText(res.length, scope) });
+  for (const r of res.slice(0, MAX_RESULTS)) items.push({ type: 'folder', ...r, section: 'results' });
+  return items;
+}
+function items() {
+  const key = [S.concept, S.query, S.scope, S.nf ? S.nf.parent : '\u0002', F.list.length, S.recent.join('|')].join('\u0001');
+  if (itemsCache.key === key) return itemsCache.items;
+  itemsCache = { key, items: S.concept === 'A' ? itemsA() : itemsBC() };
+  return itemsCache.items;
+}
+const isSelectable = (it) => (it.type === 'folder' && !it.inert) || it.type === 'create' || it.type === 'nfpreview';
+const selectable = () => items().filter(isSelectable);
+function defaultHl() {
+  const sel = selectable();
+  const i = sel.findIndex((x) => x.type === 'nfpreview');
+  if (i >= 0) return i;
+  const f = sel.findIndex((x) => x.type === 'folder');
+  return f >= 0 ? f : 0;
+}
+function highlighted() {
+  const sel = selectable();
+  if (!sel.length) return null;
+  return sel[clamp(S.hl, 0, sel.length - 1)];
+}
+/* Index of a folder's row, skipping "this folder" and (unless asked) Recent. */
+function indexOfPath(path, allowRecent) {
+  return selectable().findIndex((x) => x.type === 'folder' && x.path === path && !x.self && (allowRecent || x.section !== 'recent'));
+}
+function viaOf(h) {
+  if (h.section === 'recent') return 'recent';
+  return S.query.trim() ? 'filter' : 'browse';
+}
+
+/* ---------------------------------------------------------------- picker actions */
+function wantFocus(stop) { S.focus = stop; S.pendingFocus = true; }
+function flashHint(text) {
+  S.hint = text;
+  clearTimeout(flashHint.t);
+  if (HAS_DOM) flashHint.t = setTimeout(() => { S.hint = ''; render(); }, 3200);
+}
+function showToast(text) {
+  S.toast = text;
+  clearTimeout(showToast.t);
+  if (HAS_DOM) showToast.t = setTimeout(() => { S.toast = ''; render(); }, 2000);
+}
+function unchoose() { S.chosen = null; S.chosenVia = null; S.chosenScope = null; }
+
+/* Typing (or any change of the field's text). */
+function setQueryFromUser(v) {
+  S.moved = '';
+  S.query = v;
+  if (S.concept === 'A' && S.nf) { S.hl = defaultHl(); return; }
+  unchoose();
+  S.hl = defaultHl();
+}
+function moveHl(delta) {
+  if (S.concept === 'A' && S.nf) return;
+  const sel = selectable();
+  if (!sel.length) return;
+  unchoose();
+  S.hl = clamp(S.hl + delta, 0, sel.length - 1);
+}
+/* A: write the highlighted folder into the path. B/C: step into it. */
+function stepInto(path) {
+  const h = highlighted();
+  const p = path || (h && h.type === 'folder' && !h.self ? h.path : null);
+  if (!p) return false;
+  unchoose();
+  S.scope = p; S.query = ''; S.hl = defaultHl();
+  return true;
+}
+/* A: remove the last path segment. B/C: step out. The folder you came from is highlighted. */
+function stepOut() {
+  if (!S.scope) return false;
+  const old = S.scope;
+  unchoose();
+  S.scope = parentOf(old);
+  if (S.concept !== 'A') S.query = '';
+  S.hl = S.query.trim() ? defaultHl() : Math.max(0, indexOfPath(old, false));
+  return true;
+}
+/* Path-bar segment (B/C) or field segment (A): jump there, highlighting the child you came from. */
+function jumpTo(path) {
+  const old = S.scope;
+  unchoose();
+  S.scope = path; S.query = '';
+  const child = old !== path && within(old, path) ? chainOf(old)[chainOf(path).length] : null;
+  S.hl = child ? Math.max(0, indexOfPath(child, false)) : defaultHl();
+}
+function toRoot(keepQuery) {
+  const top = S.scope ? chainOf(S.scope)[0] : null;
+  unchoose();
+  S.scope = '';
+  if (!keepQuery) S.query = '';
+  S.hl = !S.query.trim() && top ? Math.max(0, indexOfPath(top, false)) : defaultHl();
+}
+function clearAll() { unchoose(); S.scope = ''; S.query = ''; S.hl = defaultHl(); }
+
+function choose() {
+  const h = highlighted();
+  if (!h) return;
+  if (h.type === 'create') {
+    if (S.concept === 'A') { flashHint('Tab doesn’t create folders: ⇧⌘N or a click on the row does.'); return; }
+    createFrom(h);
+    return;
+  }
+  if (h.type === 'nfpreview') { confirmNf(); return; }
+  const via = viaOf(h), scopeBefore = S.scope;
+  if (S.concept === 'A') { S.scope = h.path; S.query = ''; S.hl = 0; }
+  setChosen(h.path, via, scopeBefore);
+}
+function setChosen(path, via, scopeBefore) {
+  S.chosen = path; S.chosenVia = via; S.chosenScope = scopeBefore;
+  checkTasks(path, via, scopeBefore);
+  S.take = null;
+  wantFocus('name'); S.selectName = true;
+}
+/* Shows a just-created or found folder: A writes it as the path, B/C stand in its parent with its row highlighted. */
+function adoptPath(path) {
+  S.query = '';
+  if (S.concept === 'A') { S.scope = path; S.hl = 0; return; }
+  S.scope = parentOf(path); itemsCache.key = '';
+  S.hl = Math.max(0, indexOfPath(path, false));
+}
+function createFrom(row) {
+  const scopeBefore = S.scope;
+  addPending(row.create);
+  adoptPath(row.path);
+  setChosen(row.path, 'new', scopeBefore);
+}
+
+/* ⇧⌘N */
+function newFolderCmd() {
+  const h = highlighted();
+  if (h && h.type === 'create') { createFrom(h); return; }
+  if (S.concept === 'A') {
+    if (S.nf) return;
+    const parent = h && h.type === 'folder' ? h.path : S.scope;
+    unchoose();
+    S.nf = { parent, snap: { scope: S.scope, query: S.query, hl: S.hl } };
+    S.scope = parent; S.query = ''; itemsCache.key = '';
+    S.hl = defaultHl();
+    wantFocus('picker');
+    return;
+  }
+  if (S.nf) { wantFocus('newfolder'); return; }
+  const parent = h && h.type === 'folder' ? h.path : S.scope;
+  unchoose();
+  S.nf = { parent, value: '', snap: { scope: S.scope, query: S.query, hl: S.hl } };
+  S.scope = parent; S.query = ''; itemsCache.key = '';
+  wantFocus('newfolder');
+}
+function cancelNf(focusPicker) {
+  if (!S.nf) return;
+  const snap = S.nf.snap;
+  S.nf = null;
+  S.scope = snap.scope; S.query = snap.query; itemsCache.key = '';
+  S.hl = snap.hl;
+  if (focusPicker) wantFocus('picker');
+  flashHint('New folder cancelled; nothing was created.');
+}
+/* Confirms the new-folder name (A: the field's text, B/C: the inline row). */
+function confirmNf() {
+  const raw = S.concept === 'A' ? S.query : S.nf.value;
+  const v = raw.trim().replace(/\s*\/\s*/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+  if (!v) { cancelNf(true); return false; }
+  if (/:/.test(v)) { flashHint('Folder names can’t contain “:”.'); return false; }
+  const parent = S.nf.parent, scopeBefore = S.nf.snap.scope;
+  const res = resolveNew(parent, v);
+  S.nf = null;
+  if (res.existing) { adoptPath(res.existing); setChosen(res.existing, 'browse', scopeBefore); return true; }
+  addPending(res.create);
+  adoptPath(res.path);
+  setChosen(res.path, 'new', scopeBefore);
+  return true;
+}
+function nfNotice(parent, value) {
+  if (/:/.test(value)) return { warn: true, text: 'Folder names can’t contain “:”.' };
+  const res = value.trim() ? resolveNew(parent, value) : null;
+  if (res && res.existing) return { warn: true, text: `${where(lastSeg(parentOf(res.existing)))} already contains a folder named “${lastSeg(res.existing)}”. Return selects it.` };
+  if (res && res.create.length > 1) return { warn: false, text: `Creates ${res.create.length} nested folders.` };
+  return { warn: false, text: 'Tab or Return confirms · Esc cancels' };
+}
+
+/* ---------------------------------------------------------------- move */
+/* What Move would file into right now: { path, via, scopeBefore } or { blocked: reason }. */
+function moveTarget() {
+  const inPicker = S.focus === 'picker' || S.focus === 'newfolder';
+  if (S.chosen && !inPicker) return { path: S.chosen, via: S.chosenVia, scopeBefore: S.chosenScope };
+  if (S.nf) return { blocked: 'Name the new folder first.' };
+  const h = highlighted();
+  if (h && h.type === 'folder') {
+    if (S.chosen === h.path) return { path: S.chosen, via: S.chosenVia, scopeBefore: S.chosenScope };
+    return { path: h.path, via: viaOf(h), scopeBefore: S.scope };
+  }
+  if (h && h.type === 'create') return { blocked: S.concept === 'A' ? 'Create the folder first (⇧⌘N or a click).' : null, create: h };
+  return { blocked: 'Nothing highlighted.' };
+}
+function effectiveStem() {
+  let v = S.name.trim();
+  if (!v) return FILE_STEM;
+  while (v.toLowerCase().endsWith(FILE_EXT) && v.length > FILE_EXT.length) v = v.slice(0, v.length - FILE_EXT.length).trimEnd();
+  return v;
+}
+function moveNow() {
+  if (S.nf) {
+    if (!confirmNf()) return;
+  }
+  let t = moveTarget();
+  if (t.create && !t.blocked) { createFrom(t.create); t = moveTarget(); }
+  if (t.blocked || !t.path) { if (t.blocked) flashHint(t.blocked); return; }
+  checkTasks(t.path, t.via, t.scopeBefore);
+  const name = effectiveStem() + FILE_EXT;
+  const created = chainOf(t.path).filter(isNew);
+  let msg = `Moved to <b>${esc(t.path)}</b> as <b>${esc(name)}</b>`;
+  if (created.length) msg += ` · created ${esc(created.map(lastSeg).join('/'))}`;
+  msg += '. Panel reset for the next try; focus is back in the sidebar.';
+  resetPanel();
+  S.moved = msg;
+  wantFocus('sidebar');
+}
+
+/* ---------------------------------------------------------------- tasks */
+const TASKS = {
+  t1: { text: `File into <code>${esc(T.deep)}</code> by typing.` },
+  t2: { text: `Browse <code>${esc(T.browseParent)}</code> and pick <code>${esc(lastSeg(T.browse))}</code>.` },
+  t3: { text: `Inside <code>${esc(T.scopeFolder)}</code>, search <code>augen</code> and file into <code>${esc(T.scoped)}</code>.` },
+  t4: { text: `Create <code>${esc(T.newName)}</code> in <code>${esc(T.newParent)}</code>.` },
+  t5: { text: `From inside <code>${esc(T.scopeFolder)}</code>, find <code>${esc(T.elsewhere)}</code>.` },
+};
+const TASK_KEYS = {
+  A: {
+    t1: '<kbd>margit physio</kbd> Tab, or <kbd>ges/mar/phy</kbd> Tab',
+    t2: '<kbd>hund</kbd> → ↓×5 Tab',
+    t3: '<kbd>gesund</kbd> → <kbd>augen</kbd> Tab',
+    t4: `<kbd>reisen</kbd> → <kbd>${esc(T.newName)}</kbd> ⇧⌘N`,
+  },
+  B: {
+    t1: '<kbd>margit physio</kbd> Tab',
+    t2: '<kbd>hund</kbd> → ↓×5 Tab',
+    t3: '<kbd>gesund</kbd> → <kbd>augen</kbd> Tab',
+    t4: `<kbd>reisen</kbd> ⇧⌘N <kbd>${esc(T.newName)}</kbd> Tab`,
+  },
+  C: {
+    t1: '<kbd>margit physio</kbd> Tab',
+    t2: '<kbd>hund</kbd> → ↓×5 Tab',
+    t3: '<kbd>gesund</kbd> → <kbd>augen</kbd> Tab',
+    t4: `<kbd>reisen</kbd> ⇧⌘N <kbd>${esc(T.newName)}</kbd> Tab`,
+    t5: '<kbd>gesund</kbd> → <kbd>noten</kbd> Tab (nothing in Gesundheit matches, so the first Elsewhere row is highlighted)',
+  },
+};
+function checkTasks(path, via, scopeBefore) {
+  const sb = scopeBefore || '';
+  if (path === T.deep) markDone('t1');
+  if (path === T.browse && via === 'browse') markDone('t2');
+  if (path === T.scoped && via === 'filter' && sb && within(sb, T.scopeFolder)) markDone('t3');
+  if (path === T.newPath && isNew(path)) markDone('t4');
+  if (S.concept === 'C' && path === T.elsewhere && via === 'filter' && sb && within(sb, T.scopeFolder)) markDone('t5');
+}
+function markDone(id) { S.done[S.concept].add(id); }
+
+/* ---------------------------------------------------------------- keyboard (state only) */
+/* k: { key, cmd, ctrl, alt, shift }; caret: { start, end, len } of the focused text field. */
+function is(k, spec) {
+  const parts = spec.split('+');
+  const key = parts.pop();
+  return k.key === key && k.cmd === parts.includes('cmd') && k.ctrl === parts.includes('ctrl') && k.alt === parts.includes('alt') && k.shift === parts.includes('shift');
+}
+const cmdOr = (k, rest) => is(k, 'cmd+' + rest) || is(k, 'ctrl+' + rest);
+const isMoveKey = (k) => cmdOr(k, 'Enter');
+const printable = (k) => k.key.length === 1 && !k.cmd && !k.ctrl;
+
+function switchConcept(c) {
+  if (!CONCEPTS.includes(c)) return;
+  S.concept = c;
+  S.moved = '';
+  resetPanel();
+  wantFocus('picker');
+}
+function handleKey(k, caret) {
+  if (k.ctrl && !k.cmd && !k.alt && !k.shift && /^[123]$/.test(k.key)) { switchConcept(CONCEPTS[+k.key - 1]); return true; }
+  switch (S.focus) {
+    case 'sidebar': return sidebarKey(k);
+    case 'picker': return S.concept === 'A' ? pickerKeyA(k, caret) : pickerKeyBC(k, caret);
+    case 'newfolder': return nfKeyBC(k);
+    case 'name': return nameKey(k);
+    default: return false;
+  }
+}
+function sidebarKey(k) {
+  if (isMoveKey(k)) {
+    if (S.chosen) { moveNow(); return true; }
+    wantFocus('picker'); showToast('Choose a destination first');
+    return true;
+  }
+  if (is(k, 'Tab') || is(k, 'Enter')) { wantFocus('picker'); return true; }
+  if (is(k, 'shift+Tab')) { wantFocus('name'); return true; }
+  if (printable(k) && !k.alt) {
+    wantFocus('picker');
+    setQueryFromUser(S.query + k.key);
+    return true;
+  }
+  return false;
+}
+function pickerCommon(k) {
+  if (isMoveKey(k)) { moveNow(); return true; }
+  if (is(k, 'ArrowDown')) { moveHl(1); return true; }
+  if (is(k, 'ArrowUp')) { moveHl(-1); return true; }
+  if (cmdOr(k, 'shift+n')) { newFolderCmd(); return true; }
+  return false;
+}
+function pickerKeyA(k, caret) {
+  const atEnd = caret.start === caret.len && caret.end === caret.len;
+  const empty = !S.query;
+  if (S.nf) {
+    if (isMoveKey(k)) { moveNow(); return true; }
+    if (is(k, 'Enter') || is(k, 'Tab')) { confirmNf(); return true; }
+    if (is(k, 'Escape') || is(k, 'shift+Tab')) { cancelNf(true); return true; }
+    if (is(k, 'Backspace') && empty) { cancelNf(true); return true; }
+    if (is(k, 'ArrowDown') || is(k, 'ArrowUp') || cmdOr(k, 'shift+n')) return true;
+    return false;
+  }
+  if (pickerCommon(k)) return true;
+  if (is(k, 'Enter') || is(k, 'Tab')) { choose(); return true; }
+  if (is(k, 'shift+Tab')) { wantFocus('sidebar'); return true; }
+  if (is(k, 'ArrowRight')) {
+    if (!atEnd) return false;
+    stepInto();
+    return true;
+  }
+  if (is(k, 'ArrowLeft')) {
+    if (!empty) return false;
+    stepOut();
+    return true;
+  }
+  if (is(k, 'Backspace')) {
+    if (empty || (caret.start === 0 && caret.end === 0)) { stepOut(); return true; }
+    return false;
+  }
+  if (cmdOr(k, 'ArrowUp')) { clearAll(); return true; }
+  if (is(k, 'Escape')) {
+    if (S.query || S.scope) { clearAll(); flashHint('Path cleared. Esc again goes back to the sidebar.'); }
+    else wantFocus('sidebar');
+    return true;
+  }
+  return false;
+}
+function pickerKeyBC(k, caret) {
+  const atEnd = caret.start === caret.len && caret.end === caret.len;
+  const empty = !S.query;
+  if (pickerCommon(k)) return true;
+  if (is(k, 'Enter') || is(k, 'Tab')) { choose(); return true; }
+  if (is(k, 'shift+Tab')) { wantFocus('sidebar'); return true; }
+  if (is(k, 'ArrowRight')) {
+    if (!atEnd) return false;
+    stepInto();
+    return true;
+  }
+  if (is(k, 'ArrowLeft') || is(k, 'Backspace')) {
+    if (!empty) return false;
+    stepOut();
+    return true;
+  }
+  if (cmdOr(k, 'ArrowUp')) { toRoot(true); return true; }
+  if (is(k, 'Escape')) {
+    if (S.query || S.scope) { clearAll(); flashHint('Search and location cleared. Esc again goes back to the sidebar.'); }
+    else wantFocus('sidebar');
+    return true;
+  }
+  return false;
+}
+function nfKeyBC(k) {
+  if (isMoveKey(k)) { moveNow(); return true; }
+  if (is(k, 'Enter') || is(k, 'Tab')) { confirmNf(); return true; }
+  if (is(k, 'Escape') || is(k, 'shift+Tab')) { cancelNf(true); return true; }
+  if (cmdOr(k, 'shift+n')) return true;
+  return false;
+}
+function nameKey(k) {
+  if (isMoveKey(k)) { moveNow(); return true; }
+  if (is(k, 'Enter')) { showToast('Press ⌘Return to move'); return true; }
+  if (is(k, 'shift+Tab') || is(k, 'Escape')) { wantFocus('picker'); return true; }
+  if (is(k, 'Tab')) { wantFocus('sidebar'); return true; }
+  if (is(k, 'alt+ArrowUp')) { takeName(-1); return true; }
+  if (is(k, 'alt+ArrowDown')) { takeName(1); return true; }
+  return false;
+}
+
+/* ---------------------------------------------------------------- name and folder contents */
+function contentsFolder() {
+  if (S.chosen && S.focus !== 'picker') return S.chosen;
+  if (S.nf) return null;
+  const h = highlighted();
+  return h && h.type === 'folder' ? h.path : S.chosen;
+}
+function takeName(dir) {
+  const folder = contentsFolder();
+  if (!folder) return;
+  const files = contentsOf(folder);
+  if (!files.length) { showToast(`“${lastSeg(folder)}” has no files to take a name from.`); return; }
+  const idx = !S.take || S.take.folder !== folder ? files.length - 1 : clamp(S.take.idx + dir, 0, files.length - 1);
+  S.take = { folder, idx };
+  S.name = stemOf(files[idx]);
+  S.selectName = true;
+}
+
+/* ---------------------------------------------------------------- headless API (node checks) */
+if (!HAS_DOM) {
+  const keyFrom = (spec) => {
+    const parts = spec.split('+');
+    const key = parts.pop();
+    return { key, cmd: parts.includes('cmd'), ctrl: parts.includes('ctrl'), alt: parts.includes('alt'), shift: parts.includes('shift') };
+  };
+  globalThis.MOCK = {
+    S, T, items, selectable, highlighted, fuzzy, segmentMatches, createRow, moveTarget, contentsFolder,
+    reset(concept) { S.done = { A: new Set(), B: new Set(), C: new Set() }; switchConcept(concept); S.focus = 'picker'; },
+    type(text) {
+      if (S.focus === 'newfolder') S.nf.value += text;
+      else if (S.focus === 'name') S.name += text;
+      else if (S.focus === 'sidebar') for (const ch of text) handleKey(keyFrom(ch), { start: 0, end: 0, len: 0 });
+      else setQueryFromUser(S.query + text);
+    },
+    key(spec) {
+      const len = S.focus === 'newfolder' ? S.nf.value.length : S.focus === 'name' ? S.name.length : S.query.length;
+      return handleKey(keyFrom(spec), { start: len, end: len, len });
+    },
+    click(path) {  // click a folder row by path (first match)
+      const i = selectable().findIndex((x) => x.type === 'folder' && x.path === path);
+      if (i >= 0) { S.hl = i; unchoose(); }
+      return i;
+    },
+  };
+}
+
+/* ================================================================ rendering (browser only) */
+const DESC = {
+  A: 'The field is the destination, written as a path: committed folders sit before the caret as clickable segments, then what you type. → (or Tab) accepts the highlighted completion into the path, ⌫ in an empty query removes the last segment, and a “/” in the query matches level by level. New folders are made in the same field: the create row (⇧⌘N or a click), or ⇧⌘N on a folder. There is no path bar; when a search under the path finds nothing, the whole archive is offered below a hairline.',
+  B: 'The field holds only what you type. The location is shown in one place, the path bar at the top of the list. Choosing (Tab) marks the row with ✓ and keeps query and list, so ⇧Tab returns to exactly what you chose from; the “Files in …” header names the destination. ⌘↑ jumps to the archive root and keeps the query. New folder works as today.',
+  C: 'Like B, but scope only ranks: inside a folder every search covers the whole archive. Matches under the folder come first (“In …”), the rest of the archive follows (“Elsewhere”), so a folder you stand in can never hide the target. ⌘↑ jumps to the root and keeps the query.',
+};
+const KEYREF = {
+  A: [
+    ['type', 'Search below the path (root: whole archive)'],
+    ['/', 'Match level by level: ges/mar/phy'],
+    ['↑ ↓', 'Highlight'],
+    ['→', 'Complete: write the highlighted folder into the path'],
+    ['← ⌫', 'In an empty query: remove the last segment'],
+    ['Tab Return', 'Choose (path = destination), go to the name'],
+    ['⇧⌘N', 'Create row: create it · folder: new folder inside it'],
+    ['Esc ⌘↑', 'Clear the path; Esc again: back to the sidebar'],
+    ['⌘Return', 'Move now'],
+    ['click', 'A path segment cuts the path there'],
+  ],
+  B: [
+    ['type', 'Search the location’s subtree'],
+    ['↑ ↓', 'Highlight'],
+    ['→', 'Step into the highlighted folder'],
+    ['← ⌫', 'In an empty field: step out'],
+    ['Tab Return', 'Choose (row ✓), go to the name'],
+    ['⇧⌘N', 'New folder inside the highlighted folder'],
+    ['⌘↑', 'Archive root, keeping the query'],
+    ['Esc', 'Clear query and location; again: sidebar'],
+    ['⌘Return', 'Move the highlighted folder now'],
+  ],
+  C: [
+    ['type', 'Search everything, the location first'],
+    ['↑ ↓', 'Highlight (across both sections)'],
+    ['→', 'Step into the highlighted folder'],
+    ['← ⌫', 'In an empty field: step out'],
+    ['Tab Return', 'Choose (row ✓), go to the name'],
+    ['⇧⌘N', 'New folder inside the highlighted folder'],
+    ['⌘↑', 'Archive root, keeping the query'],
+    ['Esc', 'Clear query and location; again: sidebar'],
+    ['⌘Return', 'Move the highlighted folder now'],
+  ],
+  common: [
+    ['Name: Return', 'Toast only; ⌘Return moves'],
+    ['Name: ⇧Tab Esc', 'Back to the picker · Tab: to the sidebar'],
+    ['Name: ⌥↑ ⌥↓', 'Take a name from the folder’s files'],
+    ['Sidebar: type', 'Goes into the destination field · Tab: picker'],
+    ['⌃1 ⌃2 ⌃3', 'Switch concept'],
+  ],
+};
+
+let rendering = false;
+let nfInputEl = null;
+let lastListKey = '';
+
+function segHtml(text, marks) {
+  let html = '', inBold = false;
+  for (let i = 0; i < text.length; i++) {
+    const b = marks.has(i);
+    if (b && !inBold) { html += '<b>'; inBold = true; }
+    if (!b && inBold) { html += '</b>'; inBold = false; }
+    html += esc(text[i]);
+  }
+  return html + (inBold ? '</b>' : '');
+}
+function localMarks(marks, from, to) {
+  const out = new Set();
+  for (const k of marks) if (k >= from && k < to) out.add(k - from);
+  return out;
+}
+/* Relative path with the parent part in secondary colour; marks index into display. */
+function pathHtml(display, marks) {
+  const cut = display.lastIndexOf('/');
+  const last = `<span class="last">${segHtml(display.slice(cut + 1), localMarks(marks, cut + 1, display.length))}</span>`;
+  if (cut < 0) return last;
+  return `<span class="par">${segHtml(display.slice(0, cut + 1), localMarks(marks, 0, cut + 1))}</span>${last}`;
+}
+
+function renderHeader() {
+  document.querySelectorAll('#conceptSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.concept === S.concept)));
+  $('conceptDesc').textContent = DESC[S.concept];
+  const ids = S.concept === 'C' ? ['t1', 't2', 't3', 't4', 't5'] : ['t1', 't2', 't3', 't4'];
+  $('taskList').innerHTML = ids.map((id) => {
+    const done = S.done[S.concept].has(id);
+    return `<li class="${done ? 'done' : ''}"><span class="tick" aria-label="${done ? 'done' : 'not done yet'}">${done ? ICON.check : ''}</span><span class="tt">${TASKS[id].text}<span class="tk">${TASK_KEYS[S.concept][id]}</span></span></li>`;
+  }).join('');
+  const row = ([k, w]) => `<div class="kr"><span class="kk">${esc(k)}</span><span class="what">${esc(w)}</span></div>`;
+  $('keyRef').innerHTML = `${KEYREF[S.concept].map(row).join('')}<div class="kr-gap"></div>${KEYREF.common.map(row).join('')}<p class="note">Ctrl works for ⌘ (⌃↩, ⌃⇧N, ⌃↑), useful where the browser keeps ⇧⌘N for itself.</p>`;
+}
+
+function placeholder() {
+  if (S.concept === 'A') {
+    if (S.nf) return `New folder in ${where(lastSeg(S.nf.parent))}`;
+    if (S.chosen) return '';
+    return S.scope ? 'Search here' : 'Search or type a path';
+  }
+  if (S.concept === 'B') return S.scope ? `Search in ${lastSeg(S.scope)}` : 'Search archive';
+  return S.scope ? `Search, ${lastSeg(S.scope)} first` : 'Search';
+}
+function renderField() {
+  const inp = $('filterInput');
+  if (inp.value !== S.query) { inp.value = S.query; inp.setSelectionRange(S.query.length, S.query.length); }
+  inp.placeholder = placeholder();
+  const box = $('filterBox');
+  box.classList.toggle('nfmode', S.concept === 'A' && !!S.nf);
+  const apath = $('aPath');
+  apath.hidden = S.concept !== 'A' || !S.scope;
+  if (!apath.hidden) {
+    const chain = chainOf(S.scope);
+    apath.innerHTML = `<span class="ell" hidden>… / </span>` + chain.map((p, i) => `<span class="pseg"><button type="button" class="seg-btn" data-act="aseg" data-path="${esc(p)}" tabindex="-1" title="${esc(p)}: cut the path here">${esc(lastSeg(p))}</button><span class="psep">/</span></span>`).join('')
+      + (chain.some(isNew) ? '<span class="badge-new">New</span>' : '');
+    fitPath();
+  }
+  $('filterClear').hidden = !(S.query || (S.concept === 'A' && S.scope));
+  $('filterClear').innerHTML = ICON.clear;
+  renderGhost();
+}
+/* Long paths lose their head: "… / Margit / Physiotherapie /". */
+function fitPath() {
+  const apath = $('aPath');
+  const box = $('filterBox');
+  // Leave room for typing; with an empty query the path may take nearly the whole field.
+  const max = Math.max(60, box.clientWidth - (S.query ? 140 : 108));
+  const segs = [...apath.querySelectorAll('.pseg')];
+  const ell = apath.querySelector('.ell');
+  segs.forEach((s) => { s.hidden = false; });
+  ell.hidden = true;
+  for (let i = 0; i < segs.length - 1 && apath.scrollWidth > max; i++) { segs[i].hidden = true; ell.hidden = false; }
+}
+let measureCtx = null;
+function renderGhost() {
+  const ghost = $('ghost');
+  ghost.textContent = '';
+  if (S.concept !== 'A' || S.nf || S.focus !== 'picker') return;
+  const inp = $('filterInput');
+  if (!S.query || inp.selectionStart !== S.query.length || inp.selectionEnd !== S.query.length) return;
+  const h = highlighted();
+  if (!h || h.type !== 'folder') return;
+  const typed = S.query.slice(S.query.lastIndexOf('/') + 1);
+  const tf = foldStr(typed);
+  const name = lastSeg(h.path);
+  if (!tf || !foldStr(name).startsWith(tf)) return;
+  let i = 0;
+  while (i < name.length && foldStr(name.slice(0, i)).length < tf.length) i++;
+  if (foldStr(name.slice(0, i)).length !== tf.length || i >= name.length) return;
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+  const cs = getComputedStyle(inp);
+  measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  ghost.textContent = name.slice(i);
+  ghost.style.left = `${measureCtx.measureText(S.query).width - inp.scrollLeft}px`;
+}
+
+function rowHtml(it, si, hlItem) {
+  const isHl = it === hlItem;
+  if (it.type === 'create') {
+    const tip = S.concept === 'A' ? '⇧⌘N or a click creates it' : 'Tab, Return or ⇧⌘N creates it';
+    return `<div class="res create${isHl ? ' hl' : ''}" role="option" aria-selected="${isHl}" id="row-${si}" data-act="create" data-si="${si}" title="${tip}">${ICON.plus}<span class="rt">New Folder “${esc(it.name)}” in ${esc(where(it.parent))}</span></div>`;
+  }
+  if (it.type === 'nfpreview') {
+    const label = it.value ? pathHtml(it.value, new Set()) : '<span class="par">untitled folder</span>';
+    return `<div class="res nfprev${isHl ? ' hl' : ''}" role="option" aria-selected="${isHl}" id="row-${si}">${ICON.folder}<span class="rt">${label}</span>${it.existing ? '' : '<span class="badge-new">New</span>'}</div>`;
+  }
+  const chosenMark = S.chosen && S.chosen === it.path && (S.concept !== 'A' || it.self);
+  const hasKids = !it.self && kids(it.path).length > 0;
+  const label = it.self ? `<span class="last">${esc(it.display)}</span><span class="par"> — this folder</span>` : pathHtml(it.display, it.marks);
+  const cls = `res${isHl ? ' hl' : ''}${it.self ? ' self' : ''}${chosenMark ? ' chosen' : ''}${it.inert ? ' inert' : ''}`;
+  const act = it.inert ? '' : ` data-act="row" data-si="${si}"`;
+  return `<div class="${cls}" role="option" aria-selected="${isHl}" id="row-${si}"${act} title="${esc(it.path)}">${it.self ? ICON.here : ICON.folder}<span class="rt">${label}</span>${isNew(it.path) ? '<span class="badge-new">New</span>' : ''}${chosenMark ? `<span class="check" title="Chosen destination">${ICON.check}</span>` : ''}${hasKids ? `<button type="button" class="into" data-act="into" data-path="${esc(it.path)}" tabindex="-1" title="${S.concept === 'A' ? 'Into the path (→)' : 'Show subfolders (→)'}" aria-label="Into ${esc(lastSeg(it.path))}">${ICON.chev}</button>` : ''}</div>`
+
+}
+function renderPathBar() {
+  const pb = $('pathBar');
+  pb.hidden = S.concept === 'A';
+  if (pb.hidden) return;
+  const loc = S.nf ? S.nf.parent : S.scope;
+  const crumbs = [{ path: '', name: 'Archive' }].concat(chainOf(loc).map((p) => ({ path: p, name: lastSeg(p) })));
+  pb.innerHTML = crumbs.map((c, i) => `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" class="crumb${i === crumbs.length - 1 ? ' cur' : ''}" data-act="crumb" data-path="${esc(c.path)}" tabindex="-1" title="${c.path ? esc(c.path) : 'Archive root (⌘↑)'}">${esc(c.name)}</button>`).join('');
+  pb.scrollLeft = pb.scrollWidth;
+}
+function renderList() {
+  const list = $('list');
+  const all = items();
+  const sel = selectable();
+  S.hl = clamp(S.hl, 0, Math.max(0, sel.length - 1));
+  const hlItem = sel[S.hl];
+  let si = -1, html = '';
+  for (const it of all) {
+    if (it.type === 'header') { html += `<div class="res-h${it.hairline ? ' hair' : ''}">${esc(it.text)}${it.count !== undefined ? `<span class="cnt">${it.count}</span>` : ''}</div>`; continue; }
+    if (it.type === 'sep') { html += '<div class="res-sep"></div>'; continue; }
+    if (it.type === 'info') { html += `<div class="res-empty">${esc(it.text)}</div>`; continue; }
+    if (it.type === 'nfslot') {
+      const rows = kids(it.parent).map((p) => ({ name: lastSeg(p), html: `<div class="res inert" title="${esc(p)}">${ICON.folder}<span class="rt"><span class="last">${esc(lastSeg(p))}</span></span>${isNew(p) ? '<span class="badge-new">New</span>' : ''}</div>` }));
+      const first = (S.nf.value.split('/')[0] || '').trim();
+      const before = rows.filter((r) => first && collator.compare(r.name, first) < 0), after = rows.filter((r) => !(first && collator.compare(r.name, first) < 0));
+      const n = nfNotice(it.parent, S.nf.value);
+      html += before.map((r) => r.html).join('') + `<div class="nf-row" id="nfRowBox"><div class="nf-line">${ICON.folder}<span id="nfSlot"></span></div><div class="nf-note${n.warn ? ' warn' : ''}">${esc(n.text)}</div></div>` + after.map((r) => r.html).join('');
+      continue;
+    }
+    if (isSelectable(it)) si++;
+    html += rowHtml(it, isSelectable(it) ? si : -1, hlItem);
+  }
+  list.innerHTML = html;
+  const slot = $('nfSlot');
+  if (slot) {
+    if (!nfInputEl) createNfInput();
+    nfInputEl.setAttribute('aria-label', `New folder name in ${where(S.nf.parent)}`);
+    if (nfInputEl.value !== S.nf.value) nfInputEl.value = S.nf.value;
+    const ss = nfInputEl.selectionStart, se = nfInputEl.selectionEnd;
+    slot.replaceWith(nfInputEl);
+    if (S.focus === 'newfolder') { nfInputEl.focus({ preventScroll: true }); try { nfInputEl.setSelectionRange(ss ?? S.nf.value.length, se ?? S.nf.value.length); } catch (err) { /* not a text field state */ } }
+  }
+  // Keep the highlight in view; reset scroll when the listing changes.
+  const key = itemsCache.key;
+  if (key !== lastListKey) { list.scrollTop = 0; lastListKey = key; }
+  const target = list.querySelector('.res.hl') || $('nfRowBox');
+  if (target) {
+    const top = target.offsetTop, bottom = top + target.offsetHeight;
+    if (top < list.scrollTop + 22) list.scrollTop = Math.max(0, top - 26);
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 4;
+    if (target.id) $('filterInput').setAttribute('aria-activedescendant', target.id);
+  }
+}
+function renderBar() {
+  const h = highlighted();
+  const btn = $('newFolderBtn');
+  btn.innerHTML = `${ICON.newFolder}<span>New Folder</span>`;
+  const parent = S.nf ? S.nf.parent : h && h.type === 'folder' ? h.path : S.scope;
+  btn.title = h && h.type === 'create' ? `New Folder “${h.name}” in ${where(h.parent)} (⇧⌘N)` : `New Folder in ${where(parent)} (⇧⌘N)`;
+  btn.setAttribute('aria-label', btn.title);
+  $('pickerHint').textContent = S.hint || (S.concept === 'A' ? '→ complete · ⌫ back · / path' : '→ into folder · ← out');
+  $('pickerHint').classList.toggle('flash', !!S.hint);
+}
+function renderContents() {
+  const box = $('contents');
+  const folder = contentsFolder();
+  const pathEl = $('contentsPath'), cnt = $('contentsCount');
+  if (!folder) {
+    pathEl.textContent = 'Files'; cnt.textContent = '';
+    const h = highlighted();
+    box.innerHTML = `<div class="ct-empty">${S.nf || (h && (h.type === 'create' || h.type === 'nfpreview')) ? 'A new folder is empty; docsort creates it when you move the file.' : 'Highlight a folder to see its files.'}</div>`;
+    box.dataset.folder = '';
+    return;
+  }
+  pathEl.textContent = `Files in ${crumbText(folder)}`; pathEl.title = folder;
+  if (isNew(folder)) {
+    cnt.textContent = '';
+    box.innerHTML = '<div class="ct-empty">New folder. docsort creates it when you move the file, so cancelling leaves nothing behind.</div>';
+    box.dataset.folder = folder;
+    return;
+  }
+  const files = contentsOf(folder);
+  cnt.textContent = files.length === 1 ? '1 file' : `${files.length} files`;
+  const taken = S.take && S.take.folder === folder ? S.take.idx : -1;
+  box.innerHTML = files.length
+    ? files.map((n, i) => `<div class="ct${i === taken ? ' taken' : ''}" data-act="ct" data-i="${i}" title="Click to use “${esc(stemOf(n))}” as the name">${fileIcon(n)}<span class="tn">${esc(n)}</span></div>`).join('')
+    : '<div class="ct-empty">No files yet.</div>';
+  if (box.dataset.folder !== folder) { box.scrollTop = box.scrollHeight; box.dataset.folder = folder; }
+}
+function renderName() {
+  const inp = $('nameInput');
+  if (inp.value !== S.name) inp.value = S.name;
+  const toast = $('toast');
+  toast.hidden = !S.toast;
+  toast.textContent = S.toast;
+  const t = moveTarget();
+  $('moveBtn').disabled = !t.path && !(t.create && !t.blocked);
+}
+function renderStatus() {
+  const el = $('status');
+  if (S.moved) { el.innerHTML = S.moved; el.classList.add('moved'); return; }
+  el.classList.remove('moved');
+  const t = moveTarget();
+  const name = esc(effectiveStem() + FILE_EXT);
+  if (t.path) el.innerHTML = `Move would file into <b>${esc(t.path)}</b> as <b>${name}</b>${isNew(t.path) ? ' (new folder)' : ''}.`;
+  else if (t.create && !t.blocked) el.innerHTML = `Move would create <b>${esc(t.create.path)}</b> and file into it as <b>${name}</b>.`;
+  else el.innerHTML = `Move: ${esc(t.blocked || 'nothing to file into yet.')}`;
+}
+function applyFocus() {
+  const panelFocus = S.focus === 'picker' || S.focus === 'newfolder';
+  $('panel').classList.toggle('pk-focus', panelFocus);
+  $('sidebar').classList.toggle('focused', S.focus === 'sidebar');
+  if (!S.pendingFocus) return;
+  S.pendingFocus = false;
+  const el = S.focus === 'picker' ? $('filterInput') : S.focus === 'newfolder' ? nfInputEl : S.focus === 'name' ? $('nameInput') : S.focus === 'sidebar' ? $('sidebar') : null;
+  if (el && document.activeElement !== el) el.focus({ preventScroll: true });
+  if (S.focus === 'picker') { const inp = $('filterInput'); inp.setSelectionRange(inp.value.length, inp.value.length); }
+}
+function render() {
+  rendering = true;
+  try {
+    renderHeader();
+    renderField();
+    renderPathBar();
+    renderList();
+    renderBar();
+    renderContents();
+    renderName();
+    renderStatus();
+    applyFocus();
+    if (S.selectName && S.focus === 'name') { $('nameInput').select(); S.selectName = false; }
+    renderGhost();
+  } finally {
+    rendering = false;
+  }
+}
+
+/* ---------------------------------------------------------------- DOM events */
+function createNfInput() {
+  nfInputEl = document.createElement('input');
+  nfInputEl.id = 'nfInput';
+  nfInputEl.type = 'text';
+  nfInputEl.autocomplete = 'off';
+  nfInputEl.spellcheck = false;
+  nfInputEl.placeholder = 'Folder name';
+  nfInputEl.addEventListener('input', () => { if (S.nf) { S.nf.value = nfInputEl.value; S.moved = ''; render(); } });
+}
+function keyOf(e) {
+  let key = e.key;
+  if (key.length === 1 && (e.metaKey || e.ctrlKey || e.altKey)) {
+    if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3).toLowerCase();
+    else if (/^Digit\d$/.test(e.code)) key = e.code.slice(5);
+  }
+  if (key.length === 1 && /^[A-Z]$/.test(key) && e.shiftKey && (e.metaKey || e.ctrlKey)) key = key.toLowerCase();
+  return { key, cmd: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey };
+}
+function caretOf(el) {
+  if (el && typeof el.selectionStart === 'number') return { start: el.selectionStart, end: el.selectionEnd, len: el.value.length };
+  return { start: 0, end: 0, len: 0 };
+}
+function stopOf(el) {
+  if (!el) return 'none';
+  if (el.id === 'filterInput') return 'picker';
+  if (el.id === 'nfInput') return 'newfolder';
+  if (el.id === 'nameInput') return 'name';
+  if (el.id === 'sidebar') return 'sidebar';
+  return 'none';
+}
+if (HAS_DOM) {
+  // Capture phase, so ⌃1–3 and ⌘Return reach us whatever is focused.
+  window.addEventListener('keydown', (e) => {
+    if (e.isComposing) return;
+    const k = keyOf(e);
+    const a = document.activeElement;
+    const stop = stopOf(a);
+    if (stop !== S.focus && stop !== 'none') S.focus = stop;
+    if (stop === 'none' && S.focus !== 'none' && !(k.ctrl && /^[123]$/.test(k.key))) S.focus = 'none';
+    let handled = handleKey(k, caretOf(a));
+    if (!handled && stop === 'none' && isMoveKey(k) && a && $('panel').contains(a)) { moveNow(); handled = true; }
+    if (handled) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isMoveKey(k)) S.moved = '';
+      render();
+    }
+  }, true);
+  // After the browser moved the caret (← → Home End), the ghost text may appear or go.
+  window.addEventListener('keyup', () => { if (S.concept === 'A') renderGhost(); });
+
+  $('filterInput').addEventListener('input', (e) => {
+    if (S.focus !== 'picker') S.focus = 'picker';
+    setQueryFromUser(e.target.value);
+    render();
+  });
+  $('nameInput').addEventListener('input', (e) => { S.name = e.target.value; S.take = null; S.moved = ''; render(); });
+  $('filterInput').addEventListener('click', () => renderGhost());
+
+  document.addEventListener('focusin', (e) => {
+    if (rendering) return;
+    const stop = stopOf(e.target);
+    if (stop === 'none' || stop === S.focus) return;
+    if (S.nf && S.concept !== 'A' && S.focus === 'newfolder' && stop !== 'newfolder') cancelNf(false);
+    if (S.nf && S.concept === 'A' && stop !== 'picker') cancelNf(false);
+    S.focus = stop;
+    render();
+  });
+  document.addEventListener('focusout', () => {
+    if (rendering) return;
+    setTimeout(() => {
+      if (rendering) return;
+      const stop = stopOf(document.activeElement);
+      if (stop === 'none' && S.focus !== 'none') { S.focus = 'none'; render(); }
+    }, 0);
+  });
+
+  // Clicks inside the panel and on header controls keep focus where it is; handlers move it on purpose.
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('input')) return;
+    if (e.target.closest('#panel') || e.target.closest('[data-act="concept"], [data-act="theme"], [data-act="reset"]')) e.preventDefault();
+  });
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-act]');
+    if (!el) {
+      if (e.target.closest('#filterBox')) { wantFocus('picker'); render(); }
+      return;
+    }
+    const act = el.dataset.act;
+    S.moved = '';
+    switch (act) {
+      case 'concept': switchConcept(el.dataset.concept); break;
+      case 'theme': setTheme(el.dataset.themeChoice); return;
+      case 'reset': S.done[S.concept] = new Set(); resetPanel(); wantFocus('picker'); break;
+      case 'row': {
+        if (e.detail >= 2) return;
+        if (S.nf) cancelNf(false);
+        unchoose();
+        S.hl = +el.dataset.si;
+        wantFocus('picker');
+        break;
+      }
+      case 'into': if (e.detail >= 2) return; if (S.nf) cancelNf(false); stepInto(el.dataset.path); wantFocus('picker'); break;
+      case 'create': {
+        S.hl = +el.dataset.si;
+        const h = highlighted();
+        if (h && h.type === 'create') createFrom(h);
+        break;
+      }
+      case 'crumb': if (S.nf) cancelNf(false); jumpTo(el.dataset.path); wantFocus('picker'); break;
+      case 'aseg': if (S.nf) cancelNf(false); jumpTo(el.dataset.path); wantFocus('picker'); break;
+      case 'clear': if (S.nf) cancelNf(false); clearAll(); wantFocus('picker'); break;
+      case 'newfolder': newFolderCmd(); break;
+      case 'ct': {
+        const folder = contentsFolder();
+        const files = folder ? contentsOf(folder) : [];
+        const i = +el.dataset.i;
+        if (!files[i]) return;
+        S.take = { folder, idx: i };
+        S.name = stemOf(files[i]);
+        wantFocus('name'); S.selectName = true;
+        break;
+      }
+      case 'move': moveNow(); break;
+      default: return;
+    }
+    render();
+  });
+  /* A double-click acts on the row its first click highlighted: steps in, or chooses a folder without subfolders. */
+  document.addEventListener('dblclick', (e) => {
+    const el = e.target.closest('[data-act="row"]');
+    if (!el) return;
+    const h = highlighted();
+    if (!h || h.type !== 'folder') return;
+    if (!h.self && kids(h.path).length) stepInto(h.path);
+    else choose();
+    render();
+  });
+  window.addEventListener('resize', () => { if (S.concept === 'A' && S.scope) fitPath(); renderGhost(); });
+}
+
+/* ---------------------------------------------------------------- theme (no storage: the choice lasts for this visit) */
+function setTheme(choice) {
+  if (choice === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', choice);
+  document.querySelectorAll('#themeSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.themeChoice === choice)));
+  wantFocus(S.focus === 'none' ? 'picker' : S.focus);
+  render();
+}
+
+/* ---------------------------------------------------------------- start */
+resetPanel();
+if (HAS_DOM) {
+  wantFocus('picker');
+  render();
+  // Some hosts focus the frame late; try once more when the page is fully loaded.
+  window.addEventListener('load', () => { if (stopOf(document.activeElement) === 'none') { wantFocus('picker'); render(); } });
+}
+</script>
