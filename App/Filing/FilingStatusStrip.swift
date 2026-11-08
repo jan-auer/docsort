@@ -25,8 +25,8 @@ nonisolated enum HandledTimeText {
 /// The slim strip at the top of the filing panel for a handled file: what happened to it and when, with the action
 /// that returns it to its inbox at the trailing end.
 ///
-/// A filed file shows a green check, "Filed to <destination> · <time>" (the destination middle-truncated) and **Move
-/// Back**; a trashed file a trash icon, "Moved to Trash · <time>" and **Put Back**.
+/// A filed file shows a green check, "Filed to <destination>" (the destination middle-truncated) with the time
+/// below it, and **Move Back**; a trashed file a trash icon, "Moved to Trash" with the time, and **Put Back**.
 struct FilingStatusStrip: View {
   /// What the strip shows.
   enum Status {
@@ -82,22 +82,34 @@ struct FilingStatusStrip: View {
     }
   }
 
-  @ViewBuilder private var description: some View {
-    switch status {
-    case .filed(let destinationPath, let date):
-      HStack(spacing: 4) {
-        Text("Filed to")
-          .fixedSize()
-        Text(destinationPath)
+  /// What happened on the first line (a filed file's destination middle-truncated to the room it has), and when on a
+  /// second, smaller line, so the destination isn't squeezed by the time and the button at the panel's width.
+  private var description: some View {
+    VStack(alignment: .leading, spacing: 1) {
+      switch status {
+      case .filed(let destinationPath, _):
+        HStack(spacing: 4) {
+          Text("Filed to")
+            .fixedSize()
+          Text(destinationPath)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .help(destinationPath)
+        }
+      case .trashed:
+        Text("Moved to Trash")
           .lineLimit(1)
-          .truncationMode(.middle)
-          .help(destinationPath)
-        Text("· \(HandledTimeText.text(for: date, relativeTo: now))")
-          .fixedSize()
       }
-    case .trashed(let date):
-      Text("Moved to Trash · \(HandledTimeText.text(for: date, relativeTo: now))")
+      Text(HandledTimeText.text(for: date, relativeTo: now))
+        .font(.caption)
+        .foregroundStyle(.secondary)
         .lineLimit(1)
+    }
+  }
+
+  private var date: Date {
+    switch status {
+    case .filed(_, let date), .trashed(let date): date
     }
   }
 
