@@ -1,3 +1,4 @@
+import DocsortCore
 import OSLog
 import SwiftUI
 
@@ -37,9 +38,14 @@ struct DocsortApp: App {
     _folders = State(initialValue: folders)
     let archive = ArchiveLibrary(folders: folders)
     let search = SearchSettings(defaults: environment.defaults)
-    let inboxes = InboxLibrary(folders: folders)
+    // One registry of docsort's own file changes, shared by the filing service and the inbox watcher, so the watcher
+    // leaves the service's moves and trashes out of the changes it reports.
+    let expectedChanges = ExpectedChanges()
+    let inboxes = InboxLibrary(
+      folders: folders, watcher: InboxWatcher(expectedChanges: expectedChanges))
     let filing = FilingModel(
-      service: .make(environment: environment), historyFileURL: environment.filingHistoryURL)
+      service: .make(environment: environment, expectedChanges: expectedChanges),
+      historyFileURL: environment.filingHistoryURL)
     _archive = State(initialValue: archive)
     _search = State(initialValue: search)
     _inboxes = State(initialValue: inboxes)

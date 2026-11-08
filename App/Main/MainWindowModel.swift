@@ -100,6 +100,7 @@ final class MainWindowModel {
   var sidebarSelection: SidebarRowID? {
     didSet {
       guard sidebarSelection != oldValue else { return }
+      if case .item(let id) = sidebarSelection { inboxes.markSeen(id) }
       resetPanel()
     }
   }
@@ -165,6 +166,7 @@ final class MainWindowModel {
     self.filing = filing
     self.search = search
     picker.onEvent = { [weak self] event in self?.handlePickerEvent(event) }
+    inboxes.onExternalChange = { [weak self] change in self?.follow(change) }
     pickerInputsTask = Task { [weak self, archive, filing, search] in
       for await inputs in Observations({
         PickerInputs(index: archive.index, recents: filing.recents, ranking: search.ranking)
@@ -258,6 +260,26 @@ final class MainWindowModel {
   }
 
   /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
+  /// Follows a change made outside docsort: when the selected file was removed, selects the next unfiled file (the
+  /// panel resets, discarding what was typed) and says so in the bottom bar; when the selected download completed into
+  /// a file of its own, selects that file.
+  private func follow(_ change: InboxExternalChange) {
+    switch change {
+    case .removed(let id, let name, let inboxLabel, let next):
+      guard sidebarSelection == .item(id) else { return }
+      if let next {
+        select(next)
+      } else {
+        sidebarSelection = nil
+      }
+      statusMessage = WindowStatusMessage(
+        text: "“\(name)” was removed from \(inboxLabel) outside docsort.")
+    case .replaced(let id, let replacement):
+      guard sidebarSelection == .item(id) else { return }
+      select(replacement)
+    }
+  }
+
   private static func folderPath(of url: URL) -> String {
     let path = url.standardizedFileURL.path(percentEncoded: false)
     return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path

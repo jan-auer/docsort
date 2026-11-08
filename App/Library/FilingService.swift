@@ -95,6 +95,8 @@ actor FilingService {
   private let store: FilingHistoryStore
   private let recentsPreference: StoredPreference<RecentDestinations>
   private let fileOperations: FileOperations
+  /// Every file operation runs through it, so the inbox watcher leaves the operation's own changes out.
+  private let expectedChanges: ExpectedChanges
 
   /// Whether `history`, `unreadableError` and `recents` have been loaded.
   private var isLoaded = false
@@ -106,22 +108,28 @@ actor FilingService {
   private var pendingSaveError: FilingHistoryStoreError?
 
   /// A service keeping its history at `historyURL` and its recents in `recentsPreference`, moving files with
-  /// `fileOperations`.
+  /// `fileOperations` and registering each operation's changes with `expectedChanges`, which must be the instance the
+  /// app's `InboxWatcher` uses.
   init(
     historyURL: URL, recentsPreference: StoredPreference<RecentDestinations>,
-    fileOperations: FileOperations
+    fileOperations: FileOperations, expectedChanges: ExpectedChanges = ExpectedChanges()
   ) {
     store = FilingHistoryStore(fileURL: historyURL)
     self.recentsPreference = recentsPreference
     self.fileOperations = fileOperations
+    self.expectedChanges = expectedChanges
   }
 
-  /// The service for `environment`: its history file and defaults, and its Trash.
-  @MainActor static func make(environment: AppEnvironment) -> FilingService {
+  /// The service for `environment`: its history file and defaults, and its Trash, registering its changes with
+  /// `expectedChanges`.
+  @MainActor static func make(
+    environment: AppEnvironment, expectedChanges: ExpectedChanges = ExpectedChanges()
+  ) -> FilingService {
     FilingService(
       historyURL: environment.filingHistoryURL,
       recentsPreference: RecentDestinations.preference(in: environment.defaults),
-      fileOperations: FileOperations(trash: environment.fileTrash))
+      fileOperations: FileOperations(trash: environment.fileTrash),
+      expectedChanges: expectedChanges)
   }
 
   /// The current state, loading the history and recents first if needed.
@@ -185,7 +193,10 @@ actor FilingService {
     var history = history
     let record: MoveRecord
     do {
-      record = try fileOperations.move(source, into: folder, named: name, resolution: resolution)
+      record = try expectedChanges.perform(
+        { () throws(FileOperationError) in
+          try fileOperations.move(source, into: folder, named: name, resolution: resolution)
+        }, expecting: Self.changes(madeBy:))
     } catch {
       throw .fileOperation(error)
     }
@@ -206,7 +217,9 @@ actor FilingService {
     var history = try writableHistory()
     let record: TrashRecord
     do {
-      record = try fileOperations.moveToTrash(url)
+      record = try expectedChanges.perform(
+        { () throws(FileOperationError) in try fileOperations.moveToTrash(url) },
+        expecting: { record in [.removal(of: record.originalURL)] })
     } catch {
       throw .fileOperation(error)
     }
@@ -229,14 +242,17 @@ actor FilingService {
     }
     let restored: RestoredItem
     do throws(FileOperationError) {
-      switch event.action {
-      case .moved(let record):
-        if let blocker = fileOperations.undoBlocker(for: record) { throw blocker }
-        restored = try fileOperations.undo(record, resolution: .refuse)
-      case .trashed(let record):
-        if let blocker = fileOperations.undoBlocker(for: record) { throw blocker }
-        restored = try fileOperations.undo(record)
-      }
+      restored = try expectedChanges.perform(
+        { () throws(FileOperationError) in
+          switch event.action {
+          case .moved(let record):
+            if let blocker = fileOperations.undoBlocker(for: record) { throw blocker }
+            return try fileOperations.undo(record, resolution: .refuse)
+          case .trashed(let record):
+            if let blocker = fileOperations.undoBlocker(for: record) { throw blocker }
+            return try fileOperations.undo(record)
+          }
+        }, expecting: { restored in Self.changes(undoing: event.action, restoredTo: restored) })
     } catch {
       throw .fileOperation(error)
     }
@@ -276,9 +292,12 @@ actor FilingService {
     }
     let record: MoveRecord
     do {
-      record = try fileOperations.move(
-        currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
-        resolution: resolution)
+      record = try expectedChanges.perform(
+        { () throws(FileOperationError) in
+          try fileOperations.move(
+            currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
+            resolution: resolution)
+        }, expecting: Self.changes(madeBy:))
     } catch {
       throw .fileOperation(error)
     }
@@ -335,6 +354,36 @@ actor FilingService {
   func events() -> [FilingEvent] {
     loadIfNeeded()
     return history?.events ?? []
+  }
+
+  // MARK: Own changes
+
+  /// The changes `record`'s move made: the file left its place and arrived at its destination (which is in an inbox
+  /// for a rename in place, a move into an inbox subfolder or a Move Back), and a Replace removed the item that was
+  /// there. The watcher applies each change only to the inbox it lies in, so changes in the archive are ignored.
+  private static func changes(madeBy record: MoveRecord) -> [ExpectedChange] {
+    var changes: [ExpectedChange] = [
+      .removal(of: record.originalURL), .arrival(at: record.destinationURL),
+    ]
+    if let replaced = record.replaced { changes.append(.removal(of: replaced.originalURL)) }
+    return changes
+  }
+
+  /// The changes undoing `action` made: the file is back at `restored`, having left its filed place; an item a
+  /// Replace sent to the Trash is back at that place.
+  private static func changes(
+    undoing action: FilingAction, restoredTo restored: RestoredItem
+  ) -> [ExpectedChange] {
+    switch action {
+    case .moved(let record):
+      var changes: [ExpectedChange] = [
+        .removal(of: record.destinationURL), .arrival(at: restored.url),
+      ]
+      if let replaced = record.replaced { changes.append(.arrival(at: replaced.originalURL)) }
+      return changes
+    case .trashed:
+      return [.arrival(at: restored.url)]
+    }
   }
 
   // MARK: History file

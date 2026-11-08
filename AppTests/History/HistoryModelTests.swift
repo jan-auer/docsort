@@ -159,7 +159,8 @@ struct HistoryModelTests {
     folders.setArchiveRoot(to: environment.archive)
     folders.addInbox(folder: environment.webDownloads)
     folders.addInbox(folder: environment.scanner)
-    let inboxes = InboxLibrary()
+    let expectedChanges = ExpectedChanges()
+    let inboxes = InboxLibrary(watcher: InboxWatcher(expectedChanges: expectedChanges))
     inboxes.update(inboxes: folders.inboxes)
     await inboxes.waitForScan()
     let historyURL = environment.root.appending(path: "FilingHistory.json")
@@ -167,7 +168,8 @@ struct HistoryModelTests {
       historyURL: historyURL,
       recentsPreference: RecentDestinations.preference(in: environment.defaults),
       fileOperations: FileOperations(
-        trash: FixtureTrash(folder: environment.root.appending(path: "Trash"))))
+        trash: FixtureTrash(folder: environment.root.appending(path: "Trash"))),
+      expectedChanges: expectedChanges)
     let mainWindow = MainWindowModel(
       folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
       filing: FilingModel(service: service, historyFileURL: historyURL),

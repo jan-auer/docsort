@@ -76,7 +76,9 @@ struct InboxLibraryTests {
     #expect(library.row(for: renewalRow.id) == nil)
   }
 
-  @Test("A new file arriving under a filed file's name is listed unfiled after a rescan")
+  @Test(
+    "A new file arriving under a filed file's name gets an unfiled row of its own; the filed row stays"
+  )
   func newFileUnderFiledNameIsUnfiled() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
@@ -101,8 +103,10 @@ struct InboxLibraryTests {
     library.refresh()
     await library.waitForScan()
 
-    #expect(names(library) == ["Rechnung_NA-33-08812.pdf"])
-    let newRow = try #require(library.orderedRows.first)
+    #expect(names(library) == ["Rechnung_NA-33-08812.pdf", "Rechnung_NA-33-08812.pdf"])
+    #expect(library.row(for: invoiceRow.id)?.mark?.filedDocumentID != nil)
+    let newRow = try #require(library.orderedRows.last)
+    #expect(newRow.id != invoiceRow.id)
     #expect(newRow.mark == nil)
     #expect(
       newRow.currentURL == environment.webDownloads.appending(path: "Rechnung_NA-33-08812.pdf"))

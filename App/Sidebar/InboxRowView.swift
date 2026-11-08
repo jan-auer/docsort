@@ -6,7 +6,8 @@ import SwiftUI
 ///
 /// A filed file shows a green check and its new name in secondary colour; a trashed file a trash icon and its name
 /// struck through; a file still downloading a cloud icon. The row's accessibility value says which ("filed",
-/// "trashed", "unfiled"), and its label is always the inbox name.
+/// "trashed", "unfiled"), and its label is always the inbox name. A file that arrived from outside docsort shows a small
+/// accent dot on its icon's corner until it is first selected.
 struct InboxRowView: View {
   /// The row to show.
   let row: InboxRow
@@ -15,6 +16,15 @@ struct InboxRowView: View {
     HStack(spacing: 6) {
       icon
         .frame(width: 16, height: 16)
+        .overlay(alignment: .topTrailing) {
+          if row.isNewArrival && row.mark == nil {
+            Circle()
+              .fill(.tint)
+              .frame(width: 6, height: 6)
+              .offset(x: 2, y: -2)
+              .accessibilityHidden(true)
+          }
+        }
       Text(shownName)
         .lineLimit(1)
         .truncationMode(.middle)
@@ -31,6 +41,7 @@ struct InboxRowView: View {
     .accessibilityAddTraits(.isStaticText)
     .accessibilityLabel(row.item.name)
     .accessibilityValue(state)
+    .accessibilityHint(row.isNewArrival ? "New" : "")
     .accessibilityIdentifier("sidebar-row")
   }
 
