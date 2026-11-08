@@ -73,6 +73,13 @@ Plain builds and `swift test` don't need it. Also, RenderPreview (Xcode MCP) lau
 running, and a running Docsort.app makes `xcodebuild test` hang. Call `XcodeCloseWorkspace` after rendering previews
 and before testing, and check `ps` for a stray Docsort.app when tests hang. Reason: test runs hung on 2026-11-08.
 
+## targeted-ui-tests
+
+UI tests are slow and take over the machine. While fixing, run only the affected test (`-only-testing:`), and
+diagnose with unit tests or the log-based launch check where possible. Run the full UI suite once before landing, not
+after every change. Timebox flaky-test hunting and list leftovers instead. Reason: the user found repeated full-suite
+runs wasteful.
+
 ## e2e-first
 
 Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
