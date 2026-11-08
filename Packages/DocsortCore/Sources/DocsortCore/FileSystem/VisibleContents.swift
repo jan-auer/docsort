@@ -25,6 +25,9 @@ public struct VisibleFolder: Hashable, Sendable {
 public struct VisibleItem: Hashable, Sendable {
   /// The item's location.
   public let url: URL
+  /// Which item on disk this is, independent of its path: a rename or a move within the volume keeps it, a copy or a
+  /// replacement at the same path gets a new one. The same value `FileIdentity.ofItem(at:)` reports.
+  public let identity: FileIdentity
   /// The path below the walked root, components joined by `/`, without leading slash (`"A/B/file.pdf"`).
   public let relativePath: String
   /// Whether the item is a regular file or a package.

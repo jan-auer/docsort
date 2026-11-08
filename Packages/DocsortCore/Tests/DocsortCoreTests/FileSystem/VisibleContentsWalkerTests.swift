@@ -60,6 +60,21 @@ struct VisibleContentsWalkerTests {
     #expect(contents.folders.first?.creationDate != nil)
   }
 
+  @Test("carries each item's file identity, the one FileIdentity.ofItem(at:) reports")
+  func carriesFileIdentity() throws {
+    let root = try TemporaryDirectory()
+    let file = try root.createFile("Ordner/scan-1.pdf")
+    try root.createFile("Brief.rtfd/TXT.rtf")
+    let package = root.url.appending(path: "Brief.rtfd")
+
+    let contents = try walker.walk(root.url)
+
+    let identitiesByPath = Dictionary(
+      uniqueKeysWithValues: contents.items.map { ($0.relativePath, $0.identity) })
+    #expect(identitiesByPath["Ordner/scan-1.pdf"] == (try FileIdentity.ofItem(at: file)))
+    #expect(identitiesByPath["Brief.rtfd"] == (try FileIdentity.ofItem(at: package)))
+  }
+
   @Test("reports an unreadable subfolder and walks the rest")
   func reportsUnreadableSubfolder() throws {
     let root = try TemporaryDirectory()

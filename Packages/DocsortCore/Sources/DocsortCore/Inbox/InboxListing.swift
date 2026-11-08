@@ -6,6 +6,9 @@ public struct InboxItem: Hashable, Sendable, Identifiable {
   public var id: URL { url }
   /// The item's location.
   public let url: URL
+  /// Which item on disk this is, independent of its path: a rename or a move within the volume keeps it, a copy or a
+  /// replacement at the same path gets a new one. The same value `FileIdentity.ofItem(at:)` reports.
+  public let identity: FileIdentity
   /// The item's file name, including its extension.
   public let name: String
   /// The item's own content modification date.
@@ -56,7 +59,7 @@ public enum InboxEntry: Hashable, Sendable, Identifiable {
 }
 
 /// The visible contents of one inbox folder, in display order.
-public struct InboxListing: Sendable {
+public struct InboxListing: Equatable, Sendable {
   /// The scanned inbox folder, as passed to the scanner.
   public let folder: URL
   /// Top-level items and folders, oldest first: an item by its modification date, a folder by its own ``InboxSubfolder/date``;

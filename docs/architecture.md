@@ -16,7 +16,7 @@ App (SwiftUI target "Docsort", default isolation MainActor)
 Core (Packages/DocsortCore, nonisolated by default)               Building blocks (Sendable values and structs):
                                                                   FileOperations, FilingHistory(+Store),
                                                                   InboxScanner, DestinationIndex, FolderResolver,
-                                                                  RecentDestinations, StoredPreference, FolderWatcher
+                                                                  RecentDestinations, StoredPreference, InboxWatcher
 ```
 
 - Dependencies point down only: views → view models → core services → building blocks. The core never imports

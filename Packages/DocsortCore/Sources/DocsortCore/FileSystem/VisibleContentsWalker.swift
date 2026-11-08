@@ -16,6 +16,8 @@ public enum WalkDepth: Hashable, Sendable {
 /// - Symbolic links are never followed, so the walk cannot loop; each one is reported in ``VisibleContents/problems``.
 ///   Special files (sockets, devices) are skipped.
 /// - A subfolder that cannot be listed is reported in ``VisibleContents/problems``; the rest is still walked.
+/// - Every item carries its ``FileIdentity``. An item the file system reports no file identifier for is reported in
+///   ``VisibleContents/problems`` instead of being listed.
 /// - Siblings are visited in Finder name order (`localizedStandardCompare`), so results are deterministic.
 public struct VisibleContentsWalker: Sendable {
   /// Creates a walker.
@@ -52,7 +54,7 @@ public struct VisibleContentsWalker: Sendable {
 private struct Walk {
   private static let resourceKeys: Set<URLResourceKey> = [
     .fileResourceTypeKey, .isPackageKey, .contentModificationDateKey, .creationDateKey,
-    .fileSizeKey,
+    .fileSizeKey, .fileIdentifierKey, .volumeUUIDStringKey,
   ]
 
   let depth: WalkDepth
@@ -96,17 +98,9 @@ private struct Walk {
           problems.append(ScanProblem(url: child, reason: error.localizedDescription))
         }
       case .directory?:
-        items.append(
-          VisibleItem(
-            url: child, relativePath: childPath, kind: .package,
-            modificationDate: values.contentModificationDate, creationDate: values.creationDate,
-            byteCount: nil))
+        appendItem(child, relativePath: childPath, kind: .package, values: values)
       case .regular?:
-        items.append(
-          VisibleItem(
-            url: child, relativePath: childPath, kind: .file,
-            modificationDate: values.contentModificationDate,
-            creationDate: values.creationDate, byteCount: values.fileSize.map(Int64.init)))
+        appendItem(child, relativePath: childPath, kind: .file, values: values)
       case .symbolicLink?:
         // Links are not followed, so the walk cannot loop or leave the granted folder; report them so a linked
         // folder (for example one pointing into a cloud drive) does not vanish without a word.
@@ -121,5 +115,22 @@ private struct Walk {
         continue
       }
     }
+  }
+
+  /// Records the file or package at `url`, or a problem when the file system reports no file identifier for it.
+  private mutating func appendItem(
+    _ url: URL, relativePath: String, kind: ItemKind, values: URLResourceValues
+  ) {
+    guard let fileID = values.fileIdentifier else {
+      problems.append(ScanProblem(url: url, reason: "The file system reports no file identifier."))
+      return
+    }
+    items.append(
+      VisibleItem(
+        url: url, identity: FileIdentity(volumeUUID: values.volumeUUIDString, fileID: fileID),
+        relativePath: relativePath, kind: kind, modificationDate: values.contentModificationDate,
+        creationDate: values.creationDate,
+        // A package's size is not known without walking it.
+        byteCount: kind == .file ? values.fileSize.map(Int64.init) : nil))
   }
 }

@@ -72,6 +72,7 @@ public struct InboxScanner: Sendable {
       .joined(separator: "/")
     return InboxItem(
       url: visibleItem.url,
+      identity: visibleItem.identity,
       name: visibleItem.url.lastPathComponent,
       modificationDate: modificationDate,
       creationDate: visibleItem.creationDate,
