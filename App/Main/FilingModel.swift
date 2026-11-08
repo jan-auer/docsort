@@ -74,6 +74,37 @@ final class FilingModel {
     }
   }
 
+  /// Moves the filed file at `currentURL` back to its inbox; see `FilingService.moveBack`.
+  func moveBack(_ currentURL: URL, resolution: ConflictResolution) async throws(FilingError)
+    -> MoveOutcome
+  {
+    do {
+      let outcome = try await service.moveBack(currentURL, resolution: resolution)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
+  /// Puts the file at `trashedURL` back from the Trash; see `FilingService.putBack`.
+  func putBack(_ trashedURL: URL) async throws(FilingError) -> UndoOutcome {
+    do {
+      let outcome = try await service.putBack(trashedURL)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
+  /// Every event of the filing history, oldest first; see `FilingService.events`.
+  func events() async -> [FilingEvent] {
+    await service.events()
+  }
+
   /// Tries the pending history save again.
   func retrySave() async {
     apply(await service.retrySave())

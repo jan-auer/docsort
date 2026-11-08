@@ -15,6 +15,8 @@ enum FilingMessages {
       text(for: historyError)
     case .setAsideFailed(let url, let reason):
       "The filing history “\(url.lastPathComponent)” could not be set aside: \(reason)"
+    case .noHistoryRecord(let url):
+      "The filing history has no record of how “\(url.lastPathComponent)” got to \(path(of: url.deletingLastPathComponent()))."
     }
   }
 

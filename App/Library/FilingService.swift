@@ -68,6 +68,9 @@ nonisolated enum FilingError: Error, Equatable, Sendable {
   case undoRefused(FilingHistoryError)
   /// The unreadable history file could not be set aside to start a new one.
   case setAsideFailed(url: URL, reason: String)
+  /// The history has no record of how the file at this URL got there: for Move Back, no move of it into the archive
+  /// (its latest active event); for Put Back, no move of it to the Trash.
+  case noHistoryRecord(URL)
 }
 
 /// Moves, trashes and undoes inbox files, keeping the filing history and the recent destinations in step.
@@ -214,6 +217,70 @@ actor FilingService {
     save()
     Logger.filing.notice("Undid filing event \(eventID, privacy: .public)")
     return UndoOutcome(eventID: eventID, restored: restored, status: currentStatus)
+  }
+
+  /// Moves the filed file at `currentURL` back to where it came from: the folder and name it had before its first
+  /// recorded move (`FilingHistory.origin(ofDocument:)`), also after a restart. Records the move in the history (as
+  /// a move of the same document, so it can be undone) and saves it; it does not count as a recent destination.
+  ///
+  /// Throws `.noHistoryRecord` when the history has no move that left the file at `currentURL`, and
+  /// `.fileOperation(.sourceMissing)` or `.fileOperation(.differentItem)` when the file there is gone or is not the
+  /// one moved (it was moved, deleted or replaced outside the app). A taken original name throws
+  /// `.fileOperation(.nameConflict(existing:))` with `.refuse`; retry with `.keepBoth`.
+  func moveBack(_ currentURL: URL, resolution: ConflictResolution) throws(FilingError)
+    -> MoveOutcome
+  {
+    var history = try writableHistory()
+    guard let documentID = history.document(at: currentURL),
+      let origin = history.origin(ofDocument: documentID),
+      case .moved(let latestMove)? = history.latestActiveEvent(ofDocument: documentID)?.action
+    else {
+      throw .noHistoryRecord(currentURL)
+    }
+    // Only the identity of the file at `currentURL` matters here, not an item a Replace sent to the Trash, so the
+    // check uses the move without its replaced item.
+    let placement = MoveRecord(
+      originalURL: latestMove.originalURL, destinationURL: latestMove.destinationURL,
+      createdFolders: [], replaced: nil, movedItem: latestMove.movedItem)
+    if let blocker = fileOperations.undoBlocker(for: placement) { throw .fileOperation(blocker) }
+    let record: MoveRecord
+    do {
+      record = try fileOperations.move(
+        currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
+        resolution: resolution)
+    } catch {
+      throw .fileOperation(error)
+    }
+    let event = history.recordMove(record, at: Date())
+    self.history = history
+    save()
+    Logger.filing.notice(
+      "Moved \(currentURL.lastPathComponent, privacy: .private) back to \(record.destinationURL.deletingLastPathComponent().lastPathComponent, privacy: .private)"
+    )
+    return MoveOutcome(event: event, record: record, status: currentStatus)
+  }
+
+  /// Puts the file at `trashedURL` in the Trash back where it was, by undoing its trash event (see `undo(eventID:)`),
+  /// also after a restart.
+  ///
+  /// Throws `.noHistoryRecord` when the history has no trash event that left a file at `trashedURL` still active,
+  /// and what `undo(eventID:)` throws otherwise.
+  func putBack(_ trashedURL: URL) throws(FilingError) -> UndoOutcome {
+    let history = try writableHistory()
+    guard let documentID = history.document(at: trashedURL),
+      let latestEvent = history.latestActiveEvent(ofDocument: documentID),
+      case .trashed = latestEvent.action
+    else {
+      throw .noHistoryRecord(trashedURL)
+    }
+    return try undo(eventID: latestEvent.id)
+  }
+
+  /// Every event of the filing history in the order recorded (oldest first), active and undone; empty while the
+  /// history cannot be read.
+  func events() -> [FilingEvent] {
+    loadIfNeeded()
+    return history?.events ?? []
   }
 
   // MARK: History file
