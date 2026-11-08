@@ -52,13 +52,14 @@ final class PickerUITests: XCTestCase {
   func testRightArrowStepsInAndTabChoosesThisFolder() throws {
     let host = launchHost()
 
-    host.filter.typeText("gesund")
+    // Not "gesund": the recent `Gesundheit/Konrad/Physiotherapie` gets a boost and can rank above `Gesundheit`.
+    host.filter.typeText("reisen")
     host.filter.typeKey(.rightArrow, modifierFlags: [])
     XCTAssertTrue(
       host.app.descendants(matching: .any)["picker-this-folder"].waitForExistence(timeout: 5))
     host.filter.typeKey(.tab, modifierFlags: [])
 
-    expectLastEvent(host, "chose Gesundheit")
+    expectLastEvent(host, "chose Reisen")
   }
 
   @MainActor
