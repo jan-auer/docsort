@@ -1,0 +1,75 @@
+<div class="page">
+  <header class="intro">
+    <h1>Destination Search Concepts</h1>
+    <div class="controls">
+      <div class="seg big" role="radiogroup" aria-label="Concept" id="conceptSeg">
+        <button type="button" role="radio" data-act="concept" data-concept="A" aria-checked="true" title="Concept A (⌃1)">A · Path field</button>
+        <button type="button" role="radio" data-act="concept" data-concept="B" aria-checked="false" title="Concept B (⌃2)">B · Choice in list</button>
+        <button type="button" role="radio" data-act="concept" data-concept="C" aria-checked="false" title="Concept C (⌃3)">C · Soft scope</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Appearance" id="themeSeg">
+        <button type="button" role="radio" data-act="theme" data-theme-choice="auto" aria-checked="true">Auto</button>
+        <button type="button" role="radio" data-act="theme" data-theme-choice="light" aria-checked="false">Light</button>
+        <button type="button" role="radio" data-act="theme" data-theme-choice="dark" aria-checked="false">Dark</button>
+      </div>
+    </div>
+    <p class="desc" id="conceptDesc"></p>
+  </header>
+
+  <main class="main">
+    <div class="stage">
+      <div class="sidebar-pill" id="sidebar" tabindex="0" role="button" aria-label="Sidebar focus stop: Rechnung_NA-33-08812.pdf selected. Type to search a destination, Tab to go to the picker.">
+        <span class="sb-lbl">Sidebar</span><span class="sb-dot" aria-hidden="true">·</span><span class="sb-file">Rechnung_NA-33-08812.pdf</span>
+      </div>
+      <aside class="panel" id="panel" aria-label="Filing panel">
+        <label class="pn-label" for="filterInput">Destination</label>
+        <div class="search" id="filterBox">
+          <svg class="mag" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.3 10.3l3.7 3.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="apath" id="aPath" hidden></span>
+          <span class="qwrap">
+            <input id="filterInput" type="text" autocomplete="off" spellcheck="false" aria-controls="list" aria-autocomplete="list" aria-label="Destination search">
+            <span class="ghost" id="ghost" aria-hidden="true"></span>
+          </span>
+          <button type="button" class="clear" id="filterClear" data-act="clear" aria-label="Clear" title="Clear" tabindex="-1" hidden></button>
+        </div>
+        <div class="picker" id="picker">
+          <nav class="pathbar" id="pathBar" aria-label="Location" hidden></nav>
+          <div class="list" id="list" role="listbox" aria-label="Destination folders"></div>
+          <div class="pk-bar">
+            <button type="button" class="pk-btn" id="newFolderBtn" data-act="newfolder" tabindex="-1"></button>
+            <span class="pk-hint" id="pickerHint"></span>
+          </div>
+        </div>
+        <div class="pn-label" id="contentsLabel"><span class="contents-path" id="contentsPath">Files</span><span class="cnt" id="contentsCount"></span></div>
+        <div class="contents" id="contents" aria-label="Folder contents"></div>
+        <label class="pn-label" for="nameInput">Name</label>
+        <div class="namewrap">
+          <div class="namebox" id="nameBox">
+            <input id="nameInput" type="text" autocomplete="off" spellcheck="false" aria-label="File name without extension">
+            <span class="ext">.pdf</span>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        </div>
+        <div class="pn-actions">
+          <button type="button" class="btn default" id="moveBtn" data-act="move" tabindex="-1">Move<span class="k">⌘↩</span></button>
+        </div>
+      </aside>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="side">
+      <section class="card tasks" aria-labelledby="tasksTitle">
+        <div class="card-h">
+          <h2 id="tasksTitle">Tasks</h2>
+          <button type="button" class="page-btn" data-act="reset" title="Reset the panel and this concept’s ticks">Reset</button>
+        </div>
+        <p class="note">Ticks when you choose (Tab) or move (⌘Return) to the right folder the right way.</p>
+        <ol id="taskList"></ol>
+      </section>
+      <section class="card keys" aria-labelledby="keysTitle">
+        <h2 id="keysTitle">Keys</h2>
+        <div id="keyRef"></div>
+      </section>
+    </div>
+  </main>
+</div>
