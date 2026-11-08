@@ -262,7 +262,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
             identifier: "picker-create-row", label: createRow.title, highlight: highlight,
             click: { click(row) }, open: { open(row) }))
     case .newFolderDraft:
-      EmptyView()
+      NewFolderRowView(model: model, focus: focus, nameField: field(.newFolderName))
     case .indexing:
       PickerInfoRow(text: "Indexing archive…")
         .padding(.horizontal, 6)
@@ -337,6 +337,24 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   #Preview("Create row") {
     DestinationPickerPreview(model: .sample { $0.filterText = "Kleingarten Am Weidenbach" })
+  }
+
+  #Preview("New folder, existing name") {
+    DestinationPickerPreview(
+      model: .sample { model in
+        model.jump(to: "Reisen")
+        model.beginNewFolder()
+        model.newFolderName = "reiseplanung ideen"
+      })
+  }
+
+  #Preview("New folder, nested") {
+    DestinationPickerPreview(
+      model: .sample { model in
+        model.jump(to: "Reisen")
+        model.beginNewFolder()
+        model.newFolderName = "2032-09 Besuch Matthias Westerholm/Bahn"
+      })
   }
 
   #Preview("Chosen destination") {
