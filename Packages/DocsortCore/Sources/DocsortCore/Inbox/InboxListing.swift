@@ -59,7 +59,7 @@ public enum InboxEntry: Hashable, Sendable, Identifiable {
 }
 
 /// The visible contents of one inbox folder, in display order.
-public struct InboxListing: Sendable {
+public struct InboxListing: Equatable, Sendable {
   /// The scanned inbox folder, as passed to the scanner.
   public let folder: URL
   /// Top-level items and folders, oldest first: an item by its modification date, a folder by its own ``InboxSubfolder/date``;

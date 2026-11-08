@@ -279,7 +279,7 @@ struct InboxChangeTests {
 }
 
 /// The only item named `name` in `listing`.
-private func item(_ name: String, in listing: InboxListing) throws -> InboxItem {
+func item(_ name: String, in listing: InboxListing) throws -> InboxItem {
   let matches = listing.items.filter { $0.name == name }
   return try #require(matches.count == 1 ? matches.first : nil, "one item named \(name)")
 }

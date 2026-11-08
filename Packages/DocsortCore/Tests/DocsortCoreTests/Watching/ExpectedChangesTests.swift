@@ -183,7 +183,7 @@ private struct OperationFailure: Error, Equatable {
 
 /// An operation run through ``ExpectedChanges/perform(_:expecting:)`` on a thread of its own, held inside the
 /// operation until ``release()``.
-private final class HeldOperation: Sendable {
+final class HeldOperation: Sendable {
   private let gate = DispatchSemaphore(value: 0)
   private let finished = AsyncStream<Void>.makeStream()
 
