@@ -195,3 +195,11 @@ names always win from the root; that was the hub's misreading of one example, no
 
 The hub does quick reads itself but hands research (stack, libraries, toolchain) to sessions or subagents.
 Reason: the user corrected the hub for researching inline in the first session.
+
+## picker-inputs-arrive-late
+
+`MainWindowModel` hands the index, recents and ranking to the picker through an `Observations` loop, which delivers
+them on a later main-actor turn than the change that caused them. So after a move, the panel's `picker.reset()` runs
+before the move's recents arrive. The picker therefore remembers where a reset placed the highlight and places it
+there again on new inputs until the user changes the picker; otherwise it keeps the highlight by row id. Reason: kept
+by id, the highlight stayed on the previous top recent, one row below the folder just used.
