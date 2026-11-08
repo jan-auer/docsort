@@ -35,9 +35,10 @@ public struct InboxWatcher: Sendable {
   /// rescan that finds the same state delivers nothing. Inboxes are rescanned one at a time, those affected by the
   /// same batch of changes in the given order:
   /// - after changes in or above the inbox folder, once its folder has been quiet (``WatchTiming``);
-  /// - every ``WatchTiming/retryInterval`` while the inbox is unreachable. An inbox that becomes reachable again is
-  ///   watched anew (all folders are), and rescanned once more, since changes in a folder that was missing when
-  ///   watching started are not reported;
+  /// - every ``WatchTiming/retryInterval`` while the inbox is unreachable. When an inbox becomes reachable again, all
+  ///   folders are watched anew and every inbox is rescanned once more, since changes in a folder that was missing
+  ///   when watching started are not reported, and changes still held for the quiet interval are dropped by the
+  ///   restart;
   /// - every ``WatchTiming/retryInterval``, all inboxes, while folder events are unavailable because watching could
   ///   not be started. Each time, starting is tried again first.
   ///
@@ -158,14 +159,20 @@ private struct InboxWatch {
     }
   }
 
-  /// Rescans the inboxes at `indices` in order. One that became reachable again is rescanned once more, now that
-  /// the restarted watch covers its folder, to pick up what changed before.
+  /// Rescans the inboxes at `indices` in order. When one became reachable again, the folder events were restarted,
+  /// which drops the changes the old watch still held for other inboxes, and the inbox's own folder was not watched
+  /// before. So every inbox is then rescanned once more, now that the restarted watch covers them all.
   private mutating func rescan(_ indices: [Int]) async {
-    for index in indices {
-      guard !Task.isCancelled else { return }
-      if await rescanInbox(at: index) == .becameReachable {
-        _ = await rescanInbox(at: index)
+    var pending = indices
+    while !pending.isEmpty {
+      var restartedEventWatch = false
+      for index in pending {
+        guard !Task.isCancelled else { return }
+        if await rescanInbox(at: index) == .becameReachable {
+          restartedEventWatch = true
+        }
       }
+      pending = restartedEventWatch ? Array(configuration.inboxes.indices) : []
     }
   }
 

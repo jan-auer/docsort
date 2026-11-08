@@ -192,6 +192,35 @@ struct InboxWatcherTests {
       ])
   }
 
+  @Test("rescans every inbox after a restart, so changes the old watch still held are not lost")
+  func restartKeepsHeldChanges() async throws {
+    let missing = WatchedInbox(id: UUID(), folder: directory.url.appending(path: "Missing/"))
+    let updates = watch([scans, missing])
+    try await updates.update(2)
+    await clock.waitForSleepers(1)
+
+    // A change in Scans is held until 5.3 s; the retry at 5 s finds Missing back and restarts the watch first.
+    clock.advance(to: .milliseconds(4800))
+    try directory.createFile("Missing/letter-1.pdf", modified: testDate(40))
+    let arrived = try directory.createFile("Scans/scan-2.pdf", modified: testDate(30))
+    await source.send(arrived.path(percentEncoded: false))
+    await clock.waitForSleepers(2)
+    clock.advance(to: .seconds(5))
+
+    #expect(
+      try await updates.update(3)
+        == InboxUpdate(inboxID: missing.id, state: try currentState(of: missing), changes: []))
+    let listing = try currentListing(of: scans)
+    #expect(
+      try await updates.update(4)
+        == InboxUpdate(
+          inboxID: scans.id, state: .listed(listing),
+          changes: [.arrived(try item("scan-2.pdf", in: listing))]))
+    #expect(
+      source.watchedRoots == [[scans.folder, missing.folder], [scans.folder, missing.folder]])
+    #expect(!source.isTerminated)
+  }
+
   @Test("lists the inboxes when watching cannot start, and rescans them until it can")
   func eventSourceFailingToStart() async throws {
     let flakySource = FlakyEventSource(failingStarts: 2, then: source)
@@ -211,10 +240,11 @@ struct InboxWatcherTests {
           changes: [.arrived(try item("scan-2.pdf", in: listing))]))
     #expect(flakySource.startAttempts == 2)
 
-    // The third attempt starts the watch, and the retry rescans every inbox once more. The file is created before
-    // the retry, so no scan sees it half written.
-    try directory.createFile("Downloads/statement-2.pdf", modified: testDate(40))
+    // The third attempt starts the watch, and the retry rescans every inbox once more. The file is created once the
+    // next retry waits, so the second retry has finished scanning, and before that retry, so no scan sees it half
+    // written.
     await clock.waitForSleepers(1)
+    try directory.createFile("Downloads/statement-2.pdf", modified: testDate(40))
     clock.advance(to: .seconds(10))
 
     let retried = try await updates.update(4)
