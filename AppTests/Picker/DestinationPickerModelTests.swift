@@ -106,6 +106,57 @@ struct DestinationPickerModelTests {
     #expect(model.highlightedRowID == "recent:Reisen")
   }
 
+  @Test(
+    "After a reset, new recents highlight their top row, whether they arrive after the reset or before it"
+  )
+  func resetHighlightFollowsRecents() throws {
+    let model = try makeModel(recents: ["Reisen"])
+    model.highlightFolder("Mobilität")
+    model.chooseHighlighted()
+
+    // Filing advances to the next file and resets the picker before the filing's recents reach it.
+    model.reset()
+    model.recents = RecentDestinations(paths: ["Mobilität", "Reisen"])
+    #expect(model.rowSummaries.prefix(2) == ["Mobilität", "Reisen"])
+    #expect(model.highlightedRowID == "recent:Mobilität")
+
+    model.highlightFolder("Gesundheit")
+    model.chooseHighlighted()
+    model.recents = RecentDestinations(paths: ["Gesundheit", "Mobilität", "Reisen"])
+    model.reset()
+    #expect(model.highlightedRowID == "recent:Gesundheit")
+  }
+
+  @Test("After a reset choosing a folder, new recents keep that folder chosen and highlighted")
+  func resetChoosingFollowsRecents() throws {
+    let model = try makeModel(recents: ["Reisen"])
+    model.reset(choosing: .folder("Mobilität"))
+    #expect(model.highlightedRowID == "all:Mobilität")
+
+    model.recents = RecentDestinations(paths: ["Mobilität", "Reisen"])
+    #expect(model.destination == .folder("Mobilität"))
+    #expect(model.highlightedRowID == "recent:Mobilität")
+  }
+
+  @Test(
+    "Once the highlight was moved or the filter typed after a reset, new recents keep the highlight"
+  )
+  func recentsKeepHighlightAfterInput() throws {
+    let model = try makeModel(recents: ["Reisen", "Mobilität"])
+    model.reset()
+    model.moveHighlight(by: 1)
+    #expect(model.highlightedRowID == "recent:Mobilität")
+    model.recents = RecentDestinations(paths: ["Gesundheit", "Reisen", "Mobilität"])
+    #expect(model.highlightedRowID == "recent:Mobilität")
+
+    model.reset()
+    model.filterText = "rei"
+    let typedHighlight = model.highlightedRowID
+    model.recents = RecentDestinations(paths: ["Mobilität", "Gesundheit", "Reisen"])
+    #expect(model.filterText == "rei")
+    #expect(model.highlightedRowID == typedHighlight)
+  }
+
   // MARK: Choosing
 
   @Test("Choosing keeps the filter, and moving the highlight un-chooses from the chosen row")

@@ -16,9 +16,10 @@ import Observation
 final class DestinationPickerModel {
   // MARK: Inputs
 
-  /// The archive's folders, `nil` while it is being built. Setting a new one keeps the highlight and the chosen
-  /// destination where their folders still exist, turns pending folders that now exist into ordinary ones, and moves
-  /// a scope that no longer exists to its nearest existing ancestor.
+  /// The archive's folders, `nil` while it is being built. Setting a new one keeps the highlight (except right after a
+  /// reset, see ``reset(choosing:)``) and the chosen destination where their folders still exist, turns pending
+  /// folders that now exist into ordinary ones, and moves a scope that no longer exists to its nearest existing
+  /// ancestor.
   var index: DestinationIndex? {
     didSet { indexDidChange() }
   }
@@ -27,14 +28,15 @@ final class DestinationPickerModel {
   /// progress meanwhile.
   var isRebuildingIndex = false
 
-  /// The recent destinations, most recent first.
+  /// The recent destinations, most recent first. Setting new ones keeps the highlight on its row, except right after
+  /// a reset (see ``reset(choosing:)``).
   var recents: RecentDestinations {
-    didSet { update(highlight: .keep) }
+    didSet { inputsDidChange() }
   }
 
   /// The user's "Rank first" setting for search.
   var ranking: ScopedRanking {
-    didSet { update(highlight: .keep) }
+    didSet { inputsDidChange() }
   }
 
   /// Receives the picker's events; set it once, when the panel creates the model.
@@ -54,6 +56,11 @@ final class DestinationPickerModel {
 
   /// The id of the highlighted row; `nil` only when no row is selectable.
   private(set) var highlightedRowID: PickerRow.ID?
+
+  /// Where the last reset placed the highlight, while the user has not changed the picker since; `nil` once they
+  /// have. New inputs place the highlight there again, so a reset ends on the same row whether the inputs it goes
+  /// with (the recents of a move that advanced to the next file) arrive before or after it.
+  @ObservationIgnored private var placementSinceReset: HighlightRequest?
 
   /// The chosen destination, `nil` until the user chooses one.
   private(set) var destination: PickerDestination?
@@ -91,7 +98,7 @@ final class DestinationPickerModel {
     self.index = index
     self.recents = recents
     self.ranking = ranking
-    update(highlight: .first)
+    place(afterReset: .first)
   }
 
   // MARK: Derived state
@@ -208,6 +215,7 @@ final class DestinationPickerModel {
     let current = selectable.firstIndex { $0.id == highlightedRowID } ?? 0
     let target = min(max(current + offset, 0), selectable.count - 1)
     highlightedRowID = selectable[target].id
+    placementSinceReset = nil
     followContents()
   }
 
@@ -217,6 +225,7 @@ final class DestinationPickerModel {
     unchoose()
     guard rows.contains(where: { $0.id == id && $0.isSelectable }) else { return }
     highlightedRowID = id
+    placementSinceReset = nil
     followContents()
   }
 
@@ -297,6 +306,10 @@ final class DestinationPickerModel {
   /// Returns to the archive root with an empty filter, no pending folders and no new-folder row, with `destination`
   /// chosen; call it whenever the panel's selected file changes. A ``PickerDestination/newFolder(_:)`` destination
   /// stays pending.
+  ///
+  /// The highlight goes to `destination`'s first row, else the first row (the top of Recent). Until the user changes
+  /// the picker, new inputs put it there again rather than keeping its row: after a move, the move's recents may
+  /// arrive after the reset, and the folder just used then becomes the top of Recent.
   func reset(choosing destination: PickerDestination? = nil) {
     newFolderDraft = nil
     stateBeforeDraft = nil
@@ -306,9 +319,9 @@ final class DestinationPickerModel {
     if case .newFolder(let path) = destination { pendingFolders = [path] }
     self.destination = destination
     if let path = destination?.path {
-      update(highlight: .anyRow(path, otherwise: .first))
+      place(afterReset: .anyRow(path, otherwise: .first))
     } else {
-      update(highlight: .first)
+      place(afterReset: .first)
     }
   }
 
@@ -631,14 +644,33 @@ final class DestinationPickerModel {
     case anyRow(String, otherwise: HighlightRequest)
   }
 
-  /// Recomputes the rows and places the highlight.
+  /// Recomputes the rows and places the highlight, for a change by the user (or by new inputs, through
+  /// ``inputsDidChange()``): the highlight no longer returns to where the last reset placed it.
   private func update(highlight request: HighlightRequest) {
+    placementSinceReset = nil
     sections = PickerListing(
       index: index, recents: recents, ranking: ranking, scope: scope, query: query,
       pendingFolders: pendingFolders, draft: newFolderDraft
     ).sections()
     highlightedRowID = resolve(request, among: rows.filter(\.isSelectable))
     followContents()
+  }
+
+  /// Recomputes the rows for a reset and places the highlight by `placement`, which new inputs repeat until the user
+  /// changes the picker.
+  private func place(afterReset placement: HighlightRequest) {
+    update(highlight: placement)
+    placementSinceReset = placement
+  }
+
+  /// Recomputes the rows for new inputs (index, recents, ranking): right after a reset the highlight goes where the
+  /// reset placed it, else it stays on its row.
+  private func inputsDidChange() {
+    if let placementSinceReset {
+      place(afterReset: placementSinceReset)
+    } else {
+      update(highlight: .keep)
+    }
   }
 
   private func resolve(_ request: HighlightRequest, among selectable: [PickerRow]) -> PickerRow.ID?
@@ -727,7 +759,7 @@ final class DestinationPickerModel {
     }
     // The folder's files may have changed with the archive (a move adds one), so list them again.
     contentsTarget = nil
-    update(highlight: .keep)
+    inputsDidChange()
   }
 
   /// The child of `ancestor` on the way to `path`, or `nil` when `path` does not lie strictly inside `ancestor`.

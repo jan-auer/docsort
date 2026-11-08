@@ -160,7 +160,8 @@ Three focus stops: sidebar, destination picker, name field. Focus decides what k
      in the window's bottom bar: `Moved to Musik Margit/Noten & Bücher as 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z`.
    - The destination becomes the most recent entry in Recent, and the move is added to the filing history.
    - Selection advances to the next unfiled file below (wrapping to the top of the next inbox section) and **focus
-     returns to the sidebar**, so typing starts the next file's search.
+     returns to the sidebar**, so typing starts the next file's search. The next file's picker starts with an empty
+     filter and the folder just used, now the top of Recent, highlighted.
 
 ⌘Return also works from the destination picker: it moves at once with the pre-filled name, skipping the name stop.
 Esc steps back: name field → picker (filter kept); in the picker a first Esc clears the filter and a second returns to

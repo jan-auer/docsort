@@ -26,7 +26,9 @@ import DocsortCore
 ///   actor (inject a fake in tests).
 /// - ``DestinationPickerModel/reset(choosing:)``: call it whenever the selected inbox file changes. It returns to the
 ///   archive root with an empty filter, drops pending new folders and cancels a new-folder row. Pass the folder a
-///   filed file is in to show it as already chosen.
+///   filed file is in to show it as already chosen. The highlight starts on that folder, else on the first row (the
+///   top of Recent), and stays there when new inputs arrive before the user changes the picker, so the folder a
+///   move just used is highlighted however its recents and the reset are ordered.
 ///
 /// ## Output
 ///
