@@ -31,6 +31,8 @@ nonisolated enum HistoryEntryPlace: Hashable, Sendable {
 nonisolated struct HistoryEntry: Identifiable, Hashable, Sendable {
   /// The filing event the entry shows.
   let id: FilingEvent.ID
+  /// The filing history's document the entry moved or trashed: the file across its moves.
+  let documentID: UUID
   /// When it happened.
   let date: Date
   /// What it did.

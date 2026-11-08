@@ -234,7 +234,7 @@ final class HistoryModel {
   /// inbox list shows it.
   func inboxRowID(for entry: HistoryEntry) -> InboxItemID? {
     guard entry.isCurrent else { return nil }
-    return inboxRowID(at: entry.url)
+    return inboxRowID(of: entry)
   }
 
   /// Moves `entry`'s file back to its inbox, or puts it back from the Trash; see `returnAction(for:)`.
@@ -251,12 +251,13 @@ final class HistoryModel {
     guard canReturnToInbox(entry), let action = returnAction(for: entry) else { return }
     isActionInProgress = true
     defer { isActionInProgress = false }
-    let rowID = inboxRowID(at: entry.url)
+    let rowID = inboxRowID(of: entry)
     let inbox = entry.inboxName ?? "its inbox"
     switch action {
     case .moveBack:
       do {
-        let outcome = try await filing.moveBack(entry.url, resolution: resolution)
+        let outcome = try await filing.moveBack(
+          document: entry.documentID, at: entry.url, resolution: resolution)
         returned(rowID, to: outcome.movedURL)
         await refresh()
         selection = outcome.event.id
@@ -264,6 +265,14 @@ final class HistoryModel {
           "Moved “\(entry.currentName)” back to \(inbox) as \(outcome.movedURL.lastPathComponent)"
       } catch .fileOperation(.nameConflict(let existing)) {
         moveBackConflict = HistoryMoveBackConflict(entry: entry, blockingURL: existing)
+      } catch .fileChangedSinceFiling(let url) {
+        Logger.filing.error(
+          "Refused to move \(url.lastPathComponent, privacy: .private) back from History: another file is there since it was filed"
+        )
+        alert = FilingAlert(
+          title: "“\(entry.currentName)” can’t be moved back to \(inbox)",
+          message: FilingMessages.text(for: .fileChangedSinceFiling(url)))
+        await refresh()
       } catch {
         Logger.filing.error(
           "Moving \(entry.currentName, privacy: .private) back from History failed: \(String(describing: error), privacy: .private)"
@@ -306,16 +315,22 @@ final class HistoryModel {
     }
   }
 
-  /// The main window's row of the file at `url`: the row whose file was filed or trashed to `url`, or an unhandled
-  /// row at `url`.
-  private func inboxRowID(at url: URL) -> InboxItemID? {
-    inboxes.orderedRows.first { row in
-      switch row.mark {
-      case .filed(let newURL, _, _): Self.isSameLocation(newURL, url)
-      case .trashed(let trashedURL, _): Self.isSameLocation(trashedURL, url)
-      case nil: Self.isSameLocation(row.item.url, url)
-      }
-    }?.id
+  /// The main window's row of `entry`'s file. A file in the archive is found by its filing history document, the way
+  /// the filing panel acts on it, so a file that took its place is never taken for it; a trashed file by its place in
+  /// the Trash, and a file back in its inbox by its unhandled row there.
+  private func inboxRowID(of entry: HistoryEntry) -> InboxItemID? {
+    switch entry.kind {
+    case .filed, .renamed, .movedOn:
+      return inboxes.rowIDs(filedAs: entry.documentID).first
+    case .trashed, .replaced, .movedBack:
+      return inboxes.orderedRows.first { row in
+        switch row.mark {
+        case .filed: false
+        case .trashed(let trashedURL, _): Self.isSameLocation(trashedURL, entry.url)
+        case nil: Self.isSameLocation(row.item.url, entry.url)
+        }
+      }?.id
+    }
   }
 
   private static func isSameLocation(_ url: URL, _ other: URL) -> Bool {

@@ -27,7 +27,7 @@ struct HistoryModelTests {
     place: HistoryEntryPlace = .current
   ) -> HistoryEntry {
     HistoryEntry(
-      id: UUID(), date: date, kind: .filed, originalName: originalName,
+      id: UUID(), documentID: UUID(), date: date, kind: .filed, originalName: originalName,
       inboxName: "Web-Downloads", newName: newName, destination: destination,
       url: URL(filePath: "/Archiv/\(destination)/\(newName)"), place: place)
   }
@@ -129,6 +129,7 @@ struct HistoryModelTests {
     let entries = HistoryListing.entries(from: history.events, folders: folders) { _ in true }
 
     #expect(entries.map(\.id) == [filed.id, renamed.id, movedBack.id, trashed.id])
+    #expect(entries.map(\.documentID) == [filed, renamed, movedBack, trashed].map(\.documentID))
     #expect(entries.map(\.kind) == [.filed, .renamed, .movedBack, .trashed])
     #expect(entries.map(\.inboxName) == Array(repeating: "Web-Downloads", count: 4))
     #expect(
@@ -197,7 +198,9 @@ struct HistoryModelTests {
       named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
     inboxes.setMark(
       invoiceRow.id,
-      .filed(newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date))
+      .filed(
+        newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
+        documentID: filed.event.documentID))
     let trashed = try await filing.trash(scan)
     inboxes.setMark(
       scanRow.id, .trashed(trashedURL: trashed.record.trashedURL, date: trashed.event.date))
@@ -245,5 +248,63 @@ struct HistoryModelTests {
     }
     #expect(history.returnAction(for: undoneEntry) == nil)
     #expect(history.alert == nil)
+  }
+
+  @Test("Move Back from a stale entry refuses when a Replace took the filed file's place")
+  func moveBackRefusesReplacedFile() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let filedName = "2033-10-13 Notenhaus Allegretto.pdf"
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let scan = try writeInboxFile(
+      named: "2033-10-13_Notenhaus.pdf", in: environment.scanner, date: october2033(13))
+    let history = await makeModel(environment)
+    let inboxes = history.mainWindow.inboxes
+    let invoiceRow = try #require(
+      inboxes.orderedRows.first { $0.item.name == invoice.lastPathComponent })
+    let scanRow = try #require(inboxes.orderedRows.first { $0.item.name == scan.lastPathComponent })
+    let filing = history.mainWindow.filing
+    let noten = environment.archive.appending(path: notenPath)
+    let filed = try await filing.file(
+      invoice, into: noten, archivePath: notenPath, named: filedName, resolution: .refuse)
+    inboxes.setMark(
+      invoiceRow.id,
+      .filed(
+        newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
+        documentID: filed.event.documentID))
+    await history.refresh()
+    let staleEntry = try #require(history.entries.first)
+    #expect(history.inboxRowID(for: staleEntry) == invoiceRow.id)
+
+    // The main window files the scan under the same name with Replace; the History is not read again.
+    let replacing = try await filing.file(
+      scan, into: noten, archivePath: notenPath, named: filedName, resolution: .replace)
+    let replacedEvent = try #require(replacing.replacedEvent)
+    guard case .trashed(let replacedRecord) = replacedEvent.action else {
+      Issue.record("The Replace should trash the filed file, did \(replacedEvent.action)")
+      return
+    }
+    inboxes.setMark(
+      invoiceRow.id, .trashed(trashedURL: replacedRecord.trashedURL, date: replacedEvent.date))
+    inboxes.setMark(
+      scanRow.id,
+      .filed(
+        newURL: replacing.movedURL, destinationPath: notenPath, date: replacing.event.date,
+        documentID: replacing.event.documentID))
+
+    #expect(staleEntry.url == replacing.movedURL)
+    #expect(history.inboxRowID(for: staleEntry) == nil)
+
+    await history.returnToInbox(staleEntry)
+
+    #expect(exists(replacing.movedURL))
+    #expect(!exists(scan))
+    #expect(!exists(invoice))
+    #expect(
+      history.alert?.message
+        == FilingMessages.text(for: .fileChangedSinceFiling(replacing.movedURL)))
+    #expect(inboxes.row(for: scanRow.id)?.mark?.filedDocumentID == replacing.event.documentID)
+    #expect(history.returnAction(for: try #require(history.entries.first)) == nil)
   }
 }

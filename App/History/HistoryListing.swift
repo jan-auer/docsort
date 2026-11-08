@@ -63,7 +63,7 @@ nonisolated enum HistoryListing {
           .current
         }
       return HistoryEntry(
-        id: event.id, date: event.date, kind: kind,
+        id: event.id, documentID: event.documentID, date: event.date, kind: kind,
         originalName: event.sourceURL.lastPathComponent, inboxName: inboxName,
         newName: kind == .trashed || kind == .replaced ? nil : event.resultURL.lastPathComponent,
         destination: destination(of: event, kind: kind, inboxName: inboxName, folders: folders),
