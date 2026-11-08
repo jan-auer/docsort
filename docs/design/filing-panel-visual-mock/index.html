@@ -1,0 +1,530 @@
+<title>Filing Panel Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  docsort-ui: filing panel visual study, mockup. Static, lightly clickable.
+  Every folder and file name comes from the fictional sample archive in docs/design/sample-data/
+  (decision no-real-data-in-repo). The study itself is docs/design/filing-panel-visual-study.md.
+  Panels are drawn at 1:1 (1 CSS px = 1 pt) at the panel's ideal width of 340 pt.
+-->
+<style>
+/* Layout: a quiet study page; a header with two switches, then rows of panels at true size (Today, A, B, C), one row
+   per appearance, then a notes grid aligned to the same columns. Page chrome stays neutral so the panels carry the
+   colour. */
+:root {
+  --page-bg: #f4f4f2;
+  --page-fg: #1c1c1e;
+  --page-fg2: #5f5f66;
+  --page-rule: rgba(28, 28, 30, 0.12);
+  --page-card: #ffffff;
+  --page-accent: #2a5bd7;
+  --page-chip: rgba(42, 91, 215, 0.10);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page-bg: #161617; --page-fg: #ececee; --page-fg2: #a2a2aa; --page-rule: rgba(236, 236, 238, 0.12);
+    --page-card: #1f1f21; --page-accent: #7ea2ff; --page-chip: rgba(126, 162, 255, 0.14); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page-bg: #161617; --page-fg: #ececee; --page-fg2: #a2a2aa; --page-rule: rgba(236, 236, 238, 0.12);
+  --page-card: #1f1f21; --page-accent: #7ea2ff; --page-chip: rgba(126, 162, 255, 0.14); color-scheme: dark;
+}
+body { background: var(--page-bg); color: var(--page-fg); font-family: var(--font-ui); }
+.page {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+  display: grid; gap: 28px;
+}
+.page > * { min-width: 0; }
+#rows { display: grid; gap: 24px; }
+#rows > div { min-width: 0; }
+header.intro { display: grid; gap: 10px; max-width: 72ch; }
+header.intro h1 { font-family: var(--font-display); font-size: 26px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+header.intro p { margin: 0; color: var(--page-fg2); line-height: 1.5; font-size: 14px; }
+.switches { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.switch { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--page-fg2); }
+.seg { display: inline-flex; border: 1px solid var(--page-rule); border-radius: 8px; overflow: hidden; background: var(--page-card); }
+.seg button { font: inherit; font-size: 13px; color: var(--page-fg); background: transparent; border: 0; padding: 5px 11px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--page-rule); }
+.seg button[aria-pressed="true"] { background: var(--page-chip); color: var(--page-accent); font-weight: 600; }
+.seg button:focus-visible { outline: 2px solid var(--page-accent); outline-offset: -2px; }
+.row-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--page-fg2); margin: 0 0 10px; }
+.strip { display: flex; gap: 28px; overflow-x: auto; padding-bottom: 8px; }
+.col { flex: 0 0 auto; display: grid; gap: 8px; align-content: start; }
+.col h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.col h2 small { font-weight: 400; color: var(--page-fg2); font-size: 13px; margin-left: 6px; }
+.notes { display: flex; gap: 28px; overflow-x: auto; padding-bottom: 8px; }
+.note { flex: 0 0 420px; min-width: 0; background: var(--page-card); border: 1px solid var(--page-rule); border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.45; }
+.note h3 { margin: 0 0 6px; font-size: 14px; }
+.note dl { margin: 0; display: grid; gap: 6px; }
+.note dt { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--page-fg2); }
+.note dd { margin: 0; }
+.note code { font-family: var(--font-mono); font-size: 12px; }
+.foot { font-size: 12px; color: var(--page-fg2); max-width: 80ch; line-height: 1.5; }
+@media (max-width: 480px) { header.intro h1 { font-size: 22px; } }
+
+/* ---------- macOS surfaces: each panel commits to one appearance, independent of the page theme ---------- */
+.mac {
+  --m-window: #ececee; --m-content: #ffffff; --m-control: #ffffff; --m-group: #ffffff; --m-toolbar: #f6f6f7;
+  --m-label: rgba(0, 0, 0, 0.85); --m-label2: rgba(0, 0, 0, 0.50); --m-label3: rgba(0, 0, 0, 0.26);
+  --m-fill: rgba(0, 0, 0, 0.05); --m-fill2: rgba(0, 0, 0, 0.09); --m-sep: rgba(0, 0, 0, 0.10); --m-border: rgba(0, 0, 0, 0.13);
+  --m-accent: #0a7aff; --m-accent-fg: #ffffff; --m-accent-soft: rgba(10, 122, 255, 0.16); --m-unemph: #dcdcde;
+  --m-folder: #3a9bf0; --m-green: #2fb34a; --m-orange: #f59a0b; --m-red: #e5483c; --m-zebra: rgba(0, 0, 0, 0.035);
+  --m-preview: #dfdfe3; --m-paper: #ffffff; --m-glass: rgba(250, 250, 252, 0.82); --m-glass-edge: rgba(0, 0, 0, 0.08);
+  --m-field-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.10); --m-btn: #ffffff; --m-btn-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.18);
+  --m-win-shadow: 0 1px 2px rgba(0, 0, 0, 0.10), 0 10px 30px rgba(0, 0, 0, 0.14);
+  color: var(--m-label); font-family: var(--font-ui); font-size: 13px; line-height: 16px; -webkit-font-smoothing: antialiased;
+}
+.mac.dark {
+  --m-window: #2a2a2c; --m-content: #1e1e1f; --m-control: #1e1e1f; --m-group: rgba(255, 255, 255, 0.055); --m-toolbar: #303032;
+  --m-label: rgba(255, 255, 255, 0.88); --m-label2: rgba(255, 255, 255, 0.55); --m-label3: rgba(255, 255, 255, 0.25);
+  --m-fill: rgba(255, 255, 255, 0.07); --m-fill2: rgba(255, 255, 255, 0.11); --m-sep: rgba(255, 255, 255, 0.10); --m-border: rgba(255, 255, 255, 0.14);
+  --m-accent: #0a84ff; --m-accent-fg: #ffffff; --m-accent-soft: rgba(10, 132, 255, 0.24); --m-unemph: #464648;
+  --m-folder: #4aa8f5; --m-green: #32c752; --m-orange: #ffa514; --m-red: #ff5a4f; --m-zebra: rgba(255, 255, 255, 0.035);
+  --m-preview: #232325; --m-paper: #f4f4f4; --m-glass: rgba(44, 44, 46, 0.82); --m-glass-edge: rgba(255, 255, 255, 0.10);
+  --m-field-shadow: none; --m-btn: rgba(255, 255, 255, 0.14); --m-btn-shadow: none;
+  --m-win-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.mac * { box-sizing: border-box; }
+.mac svg { display: block; flex: 0 0 auto; }
+.win { width: 420px; height: 780px; border-radius: 12px; overflow: hidden; box-shadow: var(--m-win-shadow); background: var(--m-window); display: grid; grid-template-rows: 52px minmax(0, 1fr); grid-template-columns: 80px 340px; border: 0.5px solid var(--m-border); }
+.win .tb { grid-column: 1 / 3; background: var(--m-toolbar); border-bottom: 0.5px solid var(--m-sep); display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 16px; color: var(--m-label2); }
+.win .tb .ttl { margin-right: auto; font-weight: 600; font-size: 13px; color: var(--m-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; }
+.win .pv { background: var(--m-preview); position: relative; overflow: hidden; border-right: 0.5px solid var(--m-sep); }
+.win .pv::after { content: ""; position: absolute; top: 18px; bottom: 18px; right: 16px; width: 240px; background: var(--m-paper); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.panel { position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+
+/* shared bits */
+.ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sec { color: var(--m-label2); }
+.ter { color: var(--m-label3); }
+.grow { flex: 1 1 auto; min-width: 0; }
+.ico-folder { color: var(--m-folder); }
+.on-accent, .on-accent .sec, .on-accent .ico-folder, .on-accent .chev { color: var(--m-accent-fg) !important; }
+.on-accent .sec { opacity: 0.8; }
+.chev { color: var(--m-label2); }
+.focusring { box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--m-accent) 45%, transparent); }
+.kbd { font-size: 11px; color: var(--m-label2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 24px; padding: 0 12px; border-radius: 7px; background: var(--m-btn); box-shadow: var(--m-btn-shadow), inset 0 0 0 0.5px var(--m-border); font-size: 13px; color: var(--m-label); white-space: nowrap; }
+.btn.small { height: 20px; padding: 0 9px; font-size: 12px; border-radius: 6px; }
+.btn.prom { background: var(--m-accent); color: var(--m-accent-fg); box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2); }
+.btn.disabled { opacity: 0.45; }
+.btn.large { height: 30px; padding: 0 18px; border-radius: 15px; font-size: 13px; font-weight: 500; }
+.badge-new { font-size: 9.5px; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; color: var(--m-accent); background: var(--m-accent-soft); }
+
+/* ---------- Today: reconstructed from the code on master ---------- */
+.t { background: var(--m-content); padding: 16px; gap: 12px; }
+.t .lbl { font-size: 11px; font-weight: 600; color: var(--m-label2); line-height: 14px; }
+.t .picker { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 180px; }
+.t .filter { height: 28px; border-radius: 7px; background: var(--m-content); box-shadow: inset 0 0 0 0.5px var(--m-border); display: flex; align-items: center; gap: 5px; padding: 0 6px 0 8px; color: var(--m-label2); }
+.t .filter.focused { box-shadow: inset 0 0 0 2px var(--m-accent); }
+.t .chip { font-size: 12px; height: 20px; line-height: 20px; padding: 0 7px; border-radius: 5px; background: var(--m-unemph); color: var(--m-label); white-space: nowrap; }
+.t .token { font-size: 12px; height: 20px; line-height: 20px; padding: 0 7px; border-radius: 5px; background: var(--m-accent-soft); color: var(--m-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t .path { font-size: 11.5px; display: flex; gap: 2px; align-items: center; min-height: 20px; }
+.t .path span { padding: 1px 4px; }
+.t .box { background: var(--m-control); border-radius: 7px; box-shadow: inset 0 0 0 1px var(--m-sep); display: flex; flex-direction: column; overflow: hidden; }
+.t .list { flex: 1 1 auto; overflow: hidden; padding: 4px; display: flex; flex-direction: column; gap: 1px; }
+.t .sh { font-size: 11px; font-weight: 600; color: var(--m-label2); padding: 6px 6px 3px; }
+.t .r { display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 2px 6px; border-radius: 5px; }
+.t .r.hl { background: var(--m-accent); }
+.t .r.hlu { background: var(--m-unemph); }
+.t .div { height: 1px; background: var(--m-sep); margin: 3px 6px; }
+.t .foot { height: 24px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-top: 1px solid var(--m-sep); font-size: 10.5px; }
+.t .ch { font-size: 11px; display: flex; gap: 4px; }
+.t .files { padding: 3px 4px; }
+.t .f { display: flex; align-items: center; gap: 7px; height: 22px; padding: 0 6px; font-size: 12px; border-radius: 4px; }
+.t .f.z { background: var(--m-zebra); }
+.t .name { height: 24px; border-radius: 6px; background: var(--m-control); box-shadow: inset 0 0 0 0.5px var(--m-border), var(--m-field-shadow); display: flex; align-items: center; padding: 0 7px; gap: 3px; }
+.t .movebar { display: flex; justify-content: flex-end; }
+.t .kc { font-size: 10px; padding: 0 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.2); }
+.t .strip { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: var(--m-fill2); }
+
+/* ---------- A: Tidy pane ---------- */
+.a { background: var(--m-window); }
+.a .body { padding: 18px 20px 0; display: flex; flex-direction: column; gap: 20px; flex: 1 1 auto; min-height: 0; }
+.a .section { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.a .section.fill { flex: 1 1 auto; }
+.a .h { font-size: 13px; font-weight: 600; line-height: 16px; }
+.a .search { height: 28px; border-radius: 14px; background: var(--m-control); box-shadow: inset 0 0 0 0.5px var(--m-border), var(--m-field-shadow); display: flex; align-items: center; gap: 6px; padding: 0 8px 0 9px; color: var(--m-label2); }
+.a .search.focused { box-shadow: inset 0 0 0 0.5px var(--m-accent), 0 0 0 3px color-mix(in srgb, var(--m-accent) 40%, transparent); }
+.a .tok { font-size: 12px; height: 20px; line-height: 20px; padding: 0 8px; border-radius: 10px; background: var(--m-fill2); color: var(--m-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.a .tok.chosen { background: var(--m-accent-soft); }
+.a .path { font-size: 11px; display: flex; gap: 4px; align-items: center; padding: 0 2px; line-height: 14px; }
+.a .well { background: var(--m-control); border-radius: 10px; box-shadow: inset 0 0 0 0.5px var(--m-border); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.a .well.fill { flex: 1 1 auto; }
+.a .list { flex: 1 1 auto; overflow: hidden; padding: 5px; display: flex; flex-direction: column; }
+.a .sh { font-size: 11px; font-weight: 600; color: var(--m-label2); padding: 6px 7px 3px; line-height: 14px; }
+.a .r { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 7px; border-radius: 5px; }
+.a .r.hl { background: var(--m-accent); }
+.a .r.hlu { background: var(--m-unemph); }
+.a .div { height: 1px; background: var(--m-sep); margin: 4px 7px; }
+.a .bar { height: 26px; display: flex; align-items: center; gap: 2px; padding: 0 4px; border-top: 0.5px solid var(--m-sep); }
+.a .bar .ib { width: 24px; height: 20px; display: grid; place-items: center; border-radius: 5px; color: var(--m-label2); }
+.a .bar .hint { margin-left: auto; font-size: 11px; color: var(--m-label3); padding-right: 6px; }
+.a .sub { display: flex; align-items: baseline; gap: 6px; font-size: 11px; line-height: 14px; padding: 0 2px; }
+.a .sub b { font-weight: 600; color: var(--m-label2); }
+.a .files .r { cursor: default; }
+.a .field { height: 28px; border-radius: 8px; background: var(--m-control); box-shadow: inset 0 0 0 0.5px var(--m-border), var(--m-field-shadow); display: flex; align-items: center; padding: 0 9px; gap: 4px; }
+.a .bottom { padding: 12px 20px 16px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.a .callout { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--m-control); box-shadow: inset 0 0 0 0.5px var(--m-border); }
+.a .callout .t1 { font-size: 13px; }
+.a .callout .t2 { font-size: 11px; color: var(--m-label2); }
+
+/* ---------- B: Grouped form ---------- */
+.b { background: var(--m-window); }
+.b .body { padding: 18px 20px 0; display: flex; flex-direction: column; gap: 18px; flex: 1 1 auto; min-height: 0; }
+.b .section { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.b .section.fill { flex: 1 1 auto; }
+.b .h { font-size: 13px; font-weight: 600; padding: 0 10px; line-height: 16px; display: flex; gap: 6px; align-items: baseline; }
+.b .h .cnt { margin-left: auto; font-weight: 400; font-size: 11px; color: var(--m-label2); }
+.b .grp { background: var(--m-group); border-radius: 12px; box-shadow: inset 0 0 0 0.5px var(--m-sep); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.b .grp.fill { flex: 1 1 auto; }
+.b .gr { padding: 8px 10px; display: flex; align-items: center; gap: 8px; }
+.b .gr + .gr, .b .gr + .rows, .b .rows + .gr { border-top: 0.5px solid var(--m-sep); }
+.b .search { flex: 1 1 auto; height: 28px; border-radius: 14px; background: var(--m-fill); display: flex; align-items: center; gap: 6px; padding: 0 8px 0 9px; color: var(--m-label2); min-width: 0; }
+.b .search.focused { box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent) 40%, transparent); background: var(--m-control); }
+.b .tok { font-size: 12px; height: 20px; line-height: 20px; padding: 0 8px; border-radius: 10px; background: var(--m-fill2); color: var(--m-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b .tok.chosen { background: var(--m-accent-soft); }
+.b .path { font-size: 11px; display: flex; gap: 4px; align-items: center; line-height: 14px; }
+.b .rows { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; padding: 4px 6px; }
+.b .sh { font-size: 11px; font-weight: 600; color: var(--m-label2); padding: 6px 6px 2px; line-height: 14px; }
+.b .r { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 6px; border-radius: 6px; position: relative; }
+.b .r + .r::before { content: ""; position: absolute; left: 30px; right: 6px; top: 0; height: 0.5px; background: var(--m-sep); }
+.b .r.hl::before, .b .r.hl + .r::before, .b .r.hlu::before, .b .r.hlu + .r::before { display: none; }
+.b .r.hl { background: var(--m-accent); }
+.b .r.hlu { background: var(--m-unemph); }
+.b .files .r { height: 24px; }
+.b .files .r + .r::before { display: none; }
+.b .field { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 4px; height: 22px; }
+.b .bottom { padding: 12px 20px 16px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.b .status { display: flex; align-items: center; gap: 10px; padding: 10px; }
+.b .status .t1 { font-size: 13px; }
+.b .status .t2 { font-size: 11px; color: var(--m-label2); }
+
+/* ---------- C: List-first pane ---------- */
+.c { background: var(--m-content); }
+.c .head { padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 7px; border-bottom: 0.5px solid var(--m-sep); }
+.c .search { height: 28px; border-radius: 14px; background: var(--m-fill); display: flex; align-items: center; gap: 6px; padding: 0 8px 0 9px; color: var(--m-label2); }
+.c .search.focused { box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent) 40%, transparent); background: var(--m-content); }
+.c .tok { font-size: 12px; height: 20px; line-height: 20px; padding: 0 8px; border-radius: 10px; background: var(--m-fill2); color: var(--m-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c .tok.chosen { background: var(--m-accent-soft); }
+.c .path { font-size: 11px; display: flex; gap: 4px; align-items: center; line-height: 14px; padding: 0 4px; }
+.c .banner { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: color-mix(in srgb, var(--m-green) 12%, var(--m-content)); border-bottom: 0.5px solid var(--m-sep); }
+.c .banner.trash { background: var(--m-fill); }
+.c .banner .t2 { font-size: 11px; color: var(--m-label2); }
+.c .list { flex: 1 1 auto; overflow: hidden; padding: 6px 10px; display: flex; flex-direction: column; min-height: 0; }
+.c .sh { font-size: 11px; font-weight: 600; color: var(--m-label2); padding: 8px 8px 4px; line-height: 14px; }
+.c .r { display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 8px; border-radius: 6px; flex: 0 0 auto; }
+.c .r.hl { background: var(--m-accent); }
+.c .r.hlu { background: var(--m-unemph); }
+.c .div { height: 1px; background: var(--m-sep); margin: 4px 8px; flex: 0 0 auto; }
+.c .drawer { flex: 0 0 auto; border-top: 0.5px solid var(--m-sep); display: flex; flex-direction: column; }
+.c .grip { height: 5px; display: grid; place-items: center; }
+.c .grip::after { content: ""; width: 32px; height: 3px; border-radius: 2px; background: var(--m-fill2); }
+.c .dh { display: flex; align-items: center; gap: 6px; padding: 2px 18px 4px; font-size: 11px; line-height: 14px; }
+.c .dh b { font-weight: 600; color: var(--m-label2); }
+.c .files { padding: 0 10px 6px; display: flex; flex-direction: column; height: 128px; overflow: hidden; }
+.c .files .r { height: 24px; }
+.c .files .r.z { background: var(--m-zebra); }
+.c .bottom { flex: 0 0 auto; background: var(--m-glass); backdrop-filter: blur(20px); border-top: 0.5px solid var(--m-glass-edge); padding: 10px 12px 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.c .namerow { display: flex; align-items: center; gap: 8px; }
+.c .namerow .nl { font-size: 13px; color: var(--m-label); }
+.c .field { flex: 1 1 auto; min-width: 0; height: 28px; border-radius: 8px; background: var(--m-control); box-shadow: inset 0 0 0 0.5px var(--m-border), var(--m-field-shadow); display: flex; align-items: center; padding: 0 9px; gap: 4px; }
+.c .actions { display: flex; align-items: center; gap: 8px; }
+.c .actions .kbd { margin-left: auto; }
+</style>
+
+<div class="page">
+  <header class="intro">
+    <h1>Filing panel: three directions</h1>
+    <p>The panel where every document gets its destination and name, drawn at true size (340 pt wide) beside a sliver of the preview. <b>Today</b> is reconstructed from the code on master; <b>A</b>, <b>B</b> and <b>C</b> are the concepts from the visual study. The search field and folder list are kept neutral here: a parallel study decides how searching and the scope token behave.</p>
+    <div class="switches">
+      <div class="switch"><span id="state-label">Panel state</span>
+        <div class="seg" role="group" aria-labelledby="state-label" id="state-seg">
+          <button type="button" id="st-root" data-state="root" aria-pressed="false">Archive root</button>
+          <button type="button" id="st-folder" data-state="folder" aria-pressed="true">Inside a folder</button>
+          <button type="button" id="st-filed" data-state="filed" aria-pressed="false">Filed file</button>
+        </div>
+      </div>
+      <div class="switch"><span id="app-label">Appearance</span>
+        <div class="seg" role="group" aria-labelledby="app-label" id="app-seg">
+          <button type="button" id="ap-both" data-app="both" aria-pressed="true">Both</button>
+          <button type="button" id="ap-light" data-app="light" aria-pressed="false">Light</button>
+          <button type="button" id="ap-dark" data-app="dark" aria-pressed="false">Dark</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="rows" aria-label="Panels"></section>
+
+  <section aria-label="What each direction changes">
+    <p class="row-title">What changes</p>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <p class="foot">Rough but to scale: system font at macOS text-style sizes, 1 CSS px per point. Colours approximate the macOS 26 system colours and are not sampled from a screen. All folder and file names come from the fictional sample archive (a made-up household in a made-up town, dated 2031–2033).</p>
+</div>
+
+<script>
+(() => {
+  // ---------- sample data (docs/design/sample-data) ----------
+  const RECENT = [
+    "Mobilität/Jahreskarte Regio Plus",
+    "Kommunikation/Ilmnet Internet/Rechnungen",
+    "Arbeit Margit/Gehaltszettel/2033",
+    "Chor Liederkranz/Kassa/2033",
+    "Gesundheit/Konrad/Augenarzt & Brillen",
+  ];
+  const TOP = ["! Abgeschlossen", "Ahnenforschung", "Arbeit Margit", "Bank & Geld", "Chor Liederkranz",
+    "Dokumente & Ausweise", "Einkäufe & Garantien", "Gesundheit", "Hund Fritzi", "Kleingarten Am Weidenbach",
+    "Kommunikation", "Matthias", "Mobilität", "Musik Margit", "Pension Konrad", "Reisen", "Steuern",
+    "Vereine & Ehrenamt", "Versicherungen", "Wohnung Brunnfeldgasse"];
+  const MOBIL = [["Bahntickets", true], ["Fahrgastrechte", false], ["Fahrräder", true],
+    ["Jahreskarte Regio Plus", false], ["rollmit Carsharing", true], ["Rufbus & Taxi", true]];
+  const FILED_NAME = "2033-10-20 Verlängerung Jahreskarte Margit";
+  const FILES_BEFORE = ["2031-10-18 Jahreskarte Konrad.pdf", "2031-10-18 Jahreskarte Margit.pdf",
+    "2032-03-02 Fahrgastrechte Entschädigung.pdf", "2032-10-19 Verlängerung Jahreskarte Konrad.pdf",
+    "2032-10-19 Verlängerung Jahreskarte Margit.pdf", "2033-04-11 Ersatzkarte Margit.pdf"];
+  const FILES_AFTER = FILES_BEFORE.concat([FILED_NAME + ".pdf"]);
+  const DEST = "Mobilität/Jahreskarte Regio Plus";
+
+  // ---------- icons (drawn after SF Symbols, 16 pt grid) ----------
+  const I = {
+    search: (s = 13) => `<svg width="${s}" height="${s}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.8"/><path d="M10.4 10.4 14 14"/></svg>`,
+    clear: () => `<svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor" opacity=".45"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="var(--m-content)" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    folder: () => `<svg class="ico-folder" width="16" height="14" viewBox="0 0 16 14"><path fill="currentColor" d="M1 3.2C1 2 1.9 1 3.1 1h3.2c.5 0 .9.2 1.2.5l.9 1h4.5c1.2 0 2.1.9 2.1 2.1v6.3c0 1.2-.9 2.1-2.1 2.1H3.1C1.9 13 1 12 1 10.9z"/></svg>`,
+    folderHere: () => `<svg class="ico-folder" width="16" height="14" viewBox="0 0 16 14"><path fill="currentColor" d="M1 3.2C1 2 1.9 1 3.1 1h3.2c.5 0 .9.2 1.2.5l.9 1h4.5c1.2 0 2.1.9 2.1 2.1v6.3c0 1.2-.9 2.1-2.1 2.1H3.1C1.9 13 1 12 1 10.9z"/><path d="M8 5.2v4.4M6 7.8l2 2 2-2" fill="none" stroke="var(--m-control)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    chev: () => `<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 1.8 6.8 5 3.5 8.2"/></svg>`,
+    chevDown: () => `<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 3.5 5 6.8 8.2 3.5"/></svg>`,
+    revert: () => `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--m-label2)"><path d="M5 3 2 6l3 3"/><path d="M2.5 6H10a4 4 0 0 1 0 8H7"/></svg>`,
+    newFolder: () => `<svg width="17" height="14" viewBox="0 0 17 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.2 3.2c0-1.1.9-2 2-2h3c.5 0 .9.2 1.2.5l.9 1h4.2c1.1 0 2 .9 2 2v1.5M1.2 3.2v7.6c0 1.1.9 2 2 2h6"/><path d="M13 8.5v5M10.5 11h5" stroke-linecap="round"/></svg>`,
+    check: () => `<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="var(--m-green)"/><path d="M5.3 9.3 7.8 11.7 12.8 6.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    pdf: () => `<svg width="14" height="16" viewBox="0 0 14 16"><path d="M2 1.5h6.5L12 5v9.5H2z" fill="var(--m-paper)" stroke="var(--m-label3)" stroke-width="1"/><path d="M8.5 1.5V5H12" fill="none" stroke="var(--m-label3)" stroke-width="1"/><rect x="2" y="9" width="10" height="3.6" fill="var(--m-red)"/></svg>`,
+    inspector: () => `<svg width="18" height="15" viewBox="0 0 18 15" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="1" width="16" height="13" rx="3"/><path d="M11.5 1v13"/></svg>`,
+  };
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  // A display path with its parent part in secondary colour.
+  const pathText = p => {
+    const k = p.lastIndexOf("/");
+    return k < 0 ? esc(p) : `<span class="sec">${esc(p.slice(0, k + 1))}</span>${esc(p.slice(k + 1))}`;
+  };
+
+  // ---------- the state of the panel, shared by all directions ----------
+  function model(state) {
+    const filed = state === "filed";
+    const root = state === "root";
+    return {
+      filed, root,
+      scope: root ? null : "Mobilität",
+      token: filed ? "Mobilität › Jahreskarte Regio Plus" : null,
+      focused: !filed, // the filter has focus while picking; after filing, focus sits in the sidebar
+      sections: root
+        ? [{ title: "Recent", rows: RECENT.map(p => ({ kind: "folder", text: p, sub: false, hl: p === DEST })) },
+           { title: "All folders", rows: TOP.map(p => ({ kind: "folder", text: p, sub: true })) }]
+        : [{ title: null, rows: [{ kind: "here", text: "Mobilität" }].concat(
+            MOBIL.map(([n, sub]) => ({ kind: "folder", text: n, sub, hl: n === "Jahreskarte Regio Plus" }))) }],
+      files: filed ? FILES_AFTER : FILES_BEFORE,
+      fileHl: filed ? FILED_NAME + ".pdf" : null,
+      name: FILED_NAME,
+      revert: !filed,
+      move: filed ? "Move" : "Move",
+      moveEnabled: !filed,
+    };
+  }
+
+  // A folder-list row's inner content, shared by every direction.
+  function rowInner(r) {
+    if (r.kind === "here")
+      return `${I.folderHere()}<span class="ell">${esc(r.text)}</span><span class="sec" style="font-size:12px">this folder</span><span class="grow"></span>`;
+    return `${I.folder()}<span class="ell grow">${pathText(r.text)}</span>${r.sub ? I.chev() : ""}`;
+  }
+  function rowClass(m, r) {
+    if (!r.hl) return "r";
+    return m.focused ? "r hl on-accent" : "r hlu";
+  }
+  function listRows(m, opts = {}) {
+    let html = "";
+    for (const s of m.sections) {
+      if (s.title) html += `<div class="sh">${s.title}</div>`;
+      s.rows.forEach((r, i) => {
+        html += `<div class="${rowClass(m, r)}">${rowInner(r)}</div>`;
+        if (r.kind === "here" && opts.divider !== false) html += `<div class="div"></div>`;
+      });
+    }
+    return html;
+  }
+  const fileRow = (m, f, extra = "") =>
+    `<div class="${m.fileHl === f ? "r hlu" : "r"} ${extra}">${I.pdf()}<span class="ell">${esc(f)}</span></div>`;
+  const searchInner = (m, tokClass) => {
+    let inner = I.search();
+    if (m.token) inner += `<span class="${tokClass} chosen">${esc(m.token)}</span><span class="grow"></span>${I.clear()}`;
+    else if (m.scope) inner += `<span class="${tokClass}">in ${esc(m.scope)}</span><span class="ter grow ell">Search in ${esc(m.scope)}</span>`;
+    else inner += `<span class="ter grow ell">Search archive</span>`;
+    return inner;
+  };
+  const pathBar = (m, sep = "›") => m.root ? "" :
+    `<span class="sec">Archive</span><span class="ter">${sep}</span><span style="font-weight:600">Mobilität</span>`;
+
+  // ---------- Today ----------
+  function today(m) {
+    const strip = m.filed ? `<div class="strip">${I.check()}<div class="grow" style="display:grid;gap:1px">
+        <div class="ell">Filed to ${esc(DEST)}</div><div class="sec" style="font-size:10px;line-height:13px">today 09:41</div></div>
+        <span class="btn small">Move Back</span></div>` : "";
+    const files = m.files.slice(-6).map((f, i) => `<div class="f ${i % 2 ? "z" : ""}" ${m.fileHl === f ? 'style="background:var(--m-unemph)"' : ""}>${I.pdf()}<span class="ell">${esc(f)}</span></div>`).join("");
+    return `<div class="panel t">${strip}
+      <div class="lbl">Destination</div>
+      <div class="picker">
+        <div class="filter ${m.focused ? "focused" : ""}">${searchInner(m, m.token ? "token" : "chip")}</div>
+        ${m.root ? "" : `<div class="path">${pathBar(m)}</div>`}
+        <div class="box" style="flex:1 1 auto;min-height:0"><div class="list">${listRows(m)}</div>
+          <div class="foot"><span style="display:flex;gap:4px;align-items:center" class="sec">${I.newFolder()}⇧⌘N</span><span class="grow"></span><span class="ter">→ into folder · ← out</span></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;height:170px;flex:0 0 auto">
+        <div class="ch"><b class="sec" style="font-weight:600">In</b><span class="ell grow">${m.filed || !m.root ? "Mobilität › Jahreskarte Regio Plus" : "Mobilität › Jahreskarte Regio Plus"}</span><span class="sec">${m.files.length} files</span></div>
+        <div class="box files" style="flex:1 1 auto">${files}</div>
+      </div>
+      <div class="lbl">Name</div>
+      <div class="name"><span class="ell grow">${esc(m.name)}</span>${m.revert ? I.revert() : ""}<span class="sec">.pdf</span></div>
+      <div class="movebar"><span class="btn prom ${m.moveEnabled ? "" : "disabled"}">Move <span class="kc">⌘↩</span></span></div>
+    </div>`;
+  }
+
+  // ---------- A: Tidy pane ----------
+  function tidy(m) {
+    const callout = m.filed ? `<div class="callout">${I.check()}<div class="grow" style="display:grid;gap:2px;min-width:0">
+        <div class="t1 ell">Filed to ${esc(DEST)}</div><div class="t2">Today at 09:41</div></div><span class="btn small">Move Back</span></div>` : "";
+    return `<div class="panel a"><div class="body">${callout}
+      <div class="section fill">
+        <div class="h">Destination</div>
+        <div class="search ${m.focused ? "focused" : ""}">${searchInner(m, "tok")}</div>
+        ${m.root ? "" : `<div class="path">${pathBar(m)}</div>`}
+        <div class="well fill"><div class="list">${listRows(m)}</div>
+          <div class="bar"><span class="ib" title="New Folder (⇧⌘N)">${I.newFolder()}</span><span class="hint">→ open · ← back</span></div></div>
+      </div>
+      <div class="section" style="height:178px;flex:0 0 auto">
+        <div class="sub"><b>Files in Jahreskarte Regio Plus</b><span class="grow"></span><span class="sec">${m.files.length}</span></div>
+        <div class="well fill"><div class="list files">${m.files.slice(-6).map(f => fileRow(m, f)).join("")}</div></div>
+      </div>
+      <div class="section" style="flex:0 0 auto">
+        <div class="h">Name</div>
+        <div class="field"><span class="ell grow">${esc(m.name)}</span>${m.revert ? I.revert() : ""}<span class="sec">.pdf</span></div>
+      </div></div>
+      <div class="bottom"><span class="kbd">⌘↩</span><span class="btn large prom ${m.moveEnabled ? "" : "disabled"}">${m.move}</span></div>
+    </div>`;
+  }
+
+  // ---------- B: Grouped form ----------
+  function grouped(m) {
+    const status = m.filed ? `<div class="section" style="flex:0 0 auto"><div class="grp"><div class="status">${I.check()}
+        <div class="grow" style="display:grid;gap:2px;min-width:0"><div class="t1 ell">Filed to ${esc(DEST)}</div><div class="t2">Today at 09:41</div></div>
+        <span class="btn small">Move Back</span></div></div></div>` : "";
+    return `<div class="panel b"><div class="body">${status}
+      <div class="section fill">
+        <div class="h">Destination</div>
+        <div class="grp fill">
+          <div class="gr"><div class="search ${m.focused ? "focused" : ""}">${searchInner(m, "tok")}</div></div>
+          ${m.root ? "" : `<div class="gr" style="padding:6px 12px"><div class="path">${pathBar(m)}</div></div>`}
+          <div class="rows">${listRows(m, { divider: false })}</div>
+          <div class="gr" style="padding:6px 10px"><span class="btn small">${I.newFolder()}New Folder</span><span class="grow"></span><span class="ter" style="font-size:11px">→ open · ← back</span></div>
+        </div>
+      </div>
+      <div class="section" style="height:182px;flex:0 0 auto">
+        <div class="h">Files in Jahreskarte Regio Plus<span class="cnt">${m.files.length}</span></div>
+        <div class="grp fill"><div class="rows files">${m.files.slice(-6).map(f => fileRow(m, f)).join("")}</div></div>
+      </div>
+      <div class="section" style="flex:0 0 auto">
+        <div class="h">Name</div>
+        <div class="grp"><div class="gr"><div class="field"><span class="ell grow">${esc(m.name)}</span>${m.revert ? I.revert() : ""}<span class="sec">.pdf</span></div></div></div>
+      </div></div>
+      <div class="bottom"><span class="kbd">⌘↩</span><span class="btn large prom ${m.moveEnabled ? "" : "disabled"}">${m.move}</span></div>
+    </div>`;
+  }
+
+  // ---------- C: List-first pane ----------
+  function listFirst(m) {
+    const banner = m.filed ? `<div class="banner">${I.check()}<div class="grow" style="display:grid;gap:1px;min-width:0">
+        <div class="ell">Filed to ${esc(DEST)}</div><div class="t2">Today at 09:41</div></div><span class="btn small">Move Back</span></div>` : "";
+    return `<div class="panel c">${banner}
+      <div class="head">
+        <div class="search ${m.focused ? "focused" : ""}">${searchInner(m, "tok")}</div>
+        ${m.root ? "" : `<div class="path">${pathBar(m)}</div>`}
+      </div>
+      <div class="list">${listRows(m)}</div>
+      <div class="drawer"><div class="grip"></div>
+        <div class="dh">${I.chevDown()}<b>Jahreskarte Regio Plus</b><span class="grow"></span><span class="sec">${m.files.length} files</span></div>
+        <div class="files">${m.files.slice(-5).map((f, i) => fileRow(m, f, i % 2 ? "z" : "")).join("")}</div>
+      </div>
+      <div class="bottom">
+        <div class="namerow"><span class="nl">Name:</span><div class="field"><span class="ell grow">${esc(m.name)}</span>${m.revert ? I.revert() : ""}<span class="sec">.pdf</span></div></div>
+        <div class="actions"><span class="btn">${I.newFolder()}New Folder</span><span class="kbd">⌘↩</span><span class="btn prom ${m.moveEnabled ? "" : "disabled"}" style="min-width:78px">${m.move}</span></div>
+      </div>
+    </div>`;
+  }
+
+  const DIRECTIONS = [
+    { id: "today", title: "Today", sub: "master, reconstructed", render: today },
+    { id: "a", title: "A · Tidy pane", sub: "same layout, system rules", render: tidy },
+    { id: "b", title: "B · Grouped form", sub: "System Settings idiom", render: grouped },
+    { id: "c", title: "C · List-first", sub: "save-panel anatomy", render: listFirst },
+  ];
+
+  const NOTES = {
+    today: { h: "Today", items: [
+      ["What it is", "An inspector with a white sheet, hand-drawn search field and boxes, eight ad-hoc font sizes, one 12 pt gap everywhere, and a Move button with a key-cap badge in the flow."],
+      ["What feels off", "Boxes are white on white, the three headings look different, both lists style rows differently, and the path shows three times."]] },
+    a: { h: "A · Tidy pane", items: [
+      ["Changes", "Window background with white wells; one heading style (13 pt semibold) with an 8 / 20 pt rhythm; macOS text styles only; concentric radii; the same row style in both lists; Files header shows only the folder name; Move large and pinned to the bottom, its shortcut beside it instead of inside."],
+      ["Standard parts", "<code>TextField</code>/<code>NSSearchField</code> look, <code>.controlSize(.large)</code> + <code>.borderedProminent</code>, <code>safeAreaInset(edge: .bottom)</code>, system text styles. Lists stay custom."],
+      ["Pros / cons", "Smallest step, nothing to relearn, keeps density. Still a custom list inside a custom box."],
+      ["Cost", "Low: 1–2 days, styling only."]] },
+    b: { h: "B · Grouped form", items: [
+      ["Changes", "Sections become System Settings-style groups on the window background, headers outside the groups, rows with inset separators, New Folder as a button row at the group's foot."],
+      ["Standard parts", "<code>Form</code> + <code>.formStyle(.grouped)</code> look, <code>Section</code> headers, small bordered buttons."],
+      ["Pros / cons", "Instantly native, calm. Reads like settings, not a work surface; rows are taller, so fewer folders fit; a real grouped <code>Form</code> scrolls as one and fights a fill-height list."],
+      ["Cost", "Medium: 3–4 days; likely built with custom group containers rather than <code>Form</code>."]] },
+    c: { h: "C · List-first", items: [
+      ["Changes", "The folder list runs edge to edge with standard list sections and selection; search and path bar sit in a header; Folder contents becomes a resizable drawer; name, New Folder and Move live in a bottom bar, laid out like the macOS save panel. Filed status is a full-width banner."],
+      ["Standard parts", "<code>List</code> with <code>.listStyle(.inset)</code> and <code>Section</code>, split-view divider, <code>safeAreaInset</code> bottom bar (glass on macOS 26), regular-size buttons."],
+      ["Pros / cons", "Most room for folders, most like a first-party list column, New Folder becomes a real button. Biggest change; the list must show an accent highlight while the search field has focus, which <code>List</code> does not do by itself."],
+      ["Cost", "Medium–high: 4–6 days, mostly layout; keyboard model unchanged."]] },
+  };
+
+  // ---------- page wiring ----------
+  let state = "folder", app = "both";
+  try { state = localStorage.getItem("fpv-state") || state; app = localStorage.getItem("fpv-app") || app; } catch (e) { /* storage unavailable: defaults */ }
+
+  function render() {
+    const m = model(state);
+    const apps = app === "both" ? ["light", "dark"] : [app];
+    document.getElementById("rows").innerHTML = apps.map(a => `
+      <div><p class="row-title">${a === "light" ? "Light" : "Dark"}</p><div class="strip">
+        ${DIRECTIONS.map(d => `<div class="col"><h2>${d.title}<small>${d.sub}</small></h2>
+          <div class="mac ${a === "dark" ? "dark" : ""}"><div class="win">
+            <div class="tb"><span class="ttl">${esc(FILED_NAME)}.pdf</span>${I.inspector()}</div>
+            <div class="pv"></div>${d.render(m)}</div></div></div>`).join("")}
+      </div></div>`).join("");
+    for (const b of document.querySelectorAll("#state-seg button")) b.setAttribute("aria-pressed", String(b.dataset.state === state));
+    for (const b of document.querySelectorAll("#app-seg button")) b.setAttribute("aria-pressed", String(b.dataset.app === app));
+  }
+  document.getElementById("notes").innerHTML = DIRECTIONS.map(d => {
+    const n = NOTES[d.id];
+    return `<div class="note"><h3>${n.h}</h3><dl>${n.items.map(([t, v]) => `<div><dt>${t}</dt><dd>${v}</dd></div>`).join("")}</dl></div>`;
+  }).join("");
+  document.getElementById("state-seg").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state = b.dataset.state; try { localStorage.setItem("fpv-state", state); } catch (err) { /* ignore */ }
+    render();
+  });
+  document.getElementById("app-seg").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    app = b.dataset.app; try { localStorage.setItem("fpv-app", app); } catch (err) { /* ignore */ }
+    render();
+  });
+  render();
+})();
+</script>
