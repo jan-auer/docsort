@@ -27,9 +27,10 @@ how to use them.
   `Recents`, `Preferences`, `FileSystem`); the module doc in `DocsortCore.swift` lists what each holds.
 - Its one dependency is ordo-one/FuzzyMatch, pinned `exact: "1.4.0"` with `Package.resolved` committed (decision
   `fuzzy-matching-library`). Ranking changes must keep `DestinationRankingTests` passing.
-- Test fixtures use invented names modelled on the real archive, never real folder or file names; generic category
-  words (Rechnungen, Versicherungen) may stay. Tests build file trees with `TemporaryDirectory` and set dates
-  explicitly instead of sleeping.
+- Test fixtures and examples follow `no-real-data-in-repo`: invented from scratch for a fictional household whose life
+  differs from the user's, with every date in clearly different years (2031–2039), never derived from real names.
+  Only generic category words (Rechnungen, Versicherungen) are shared. Sample data gets an independent privacy review
+  before it lands. Tests build file trees with `TemporaryDirectory` and set dates explicitly instead of sleeping.
 
 ## Check Commands
 
