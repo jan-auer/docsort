@@ -77,6 +77,18 @@ attachments. Keep it that way: nothing may capture the screen (`agent-tooling`).
 accessibility identifiers only. Send keystrokes to a window element (`mainWindow.typeKey(…)`), not to the
 `XCUIApplication`: on macOS 27 a key event on the application element aborts the test runner.
 
+What the app exposes, as UI tests see it on macOS 27:
+- A static text (`Text`) carries its text as its `value`; its `label` is empty. Buttons carry theirs as `label`.
+- A plain element with `.accessibilityElement(children: .ignore)` loses its `.accessibilityValue`; give it a trait
+  (the sidebar row uses `.isStaticText`) to keep it.
+- Files that Foundation creates (the fixture's) get decomposed names, so "ä" arrives as "a" + U+0308; match names
+  and texts with umlauts in both normalization forms.
+- XCUITest polls about once a second: check a short-lived element (the two-second filing hint) with one query on
+  identifier and text together.
+- When a test fails on focus, log `window.firstResponder` changes (KVO, with the call stack) and the focus values
+  with `Logger`, and read them with `log show`. Writing a SwiftUI `@FocusState` value for a view that isn't focusable
+  right now (stale, or not laid out yet) resigns whatever is first responder.
+
 ### Hosted tests (unit and UI): lock, hangs, fallback
 
 - Sessions share one Mac and one `testmanagerd`, and every test host is `org.jauer.Docsort`. Wrap every
@@ -90,8 +102,9 @@ accessibility identifiers only. Send keystrokes to a window element (`mainWindow
   `timeout 20 .build/xcode/Build/Products/Debug/Docsort.app/Contents/MacOS/Docsort -docsort-ui-test-fixture` and
   read `/usr/bin/log show --start "<time>" --info --predicate 'subsystem == "org.jauer.Docsort"'` (folders resolved,
   inboxes scanned, archive indexed). Report which tests ran when and which are written but unrun.
-- Launch modes (`AppLaunchMode` in `App/Library/AppEnvironment.swift`): standard (the user's settings), unit-test host
-  and SwiftUI previews (both the inert environment), UI-test fixture. New modes go there and into
+- Launch modes (`AppLaunchMode` in `App/Library/AppEnvironment.swift`): standard (the user's settings), unit-test host,
+  SwiftUI previews and the picker test host (`-docsort-picker-test-host`; all three the inert environment), UI-test
+  fixture. New modes go there and into
   `AppEnvironment.forCurrentProcess()`; nothing but `.standard` may touch the user's settings, folders or Trash.
 
 ## Running the App

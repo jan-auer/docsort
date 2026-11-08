@@ -12,6 +12,24 @@ struct NewFolderRowView<FocusValue: Hashable>: View {
   /// The panel's focus value for the row's field.
   let nameField: FocusValue
 
+  /// Focuses the name field once the row has appeared.
+  ///
+  /// SwiftUI can focus the field only after the list (a lazy stack that scrolls to the new row) has laid it out;
+  /// asked earlier, it moves focus to the first focusable view instead. So it asks, checks a moment later, and asks
+  /// again while focus went elsewhere.
+  private func takeFocus() async {
+    for _ in 0..<5 {
+      focus.wrappedValue = nameField
+      do {
+        try await Task.sleep(for: .milliseconds(50))
+      } catch {
+        // The row went away (the draft ended); nothing left to focus.
+        return
+      }
+      if focus.wrappedValue == nameField { return }
+    }
+  }
+
   var body: some View {
     let draft = model.newFolderDraft
     HStack(alignment: .firstTextBaseline, spacing: 7) {
@@ -33,7 +51,7 @@ struct NewFolderRowView<FocusValue: Hashable>: View {
     .padding(.bottom, 4)
     .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
     .accessibilityElement(children: .contain)
-    .onAppear { focus.wrappedValue = nameField }
+    .task { await takeFocus() }
   }
 }
 

@@ -141,9 +141,9 @@ final class InboxLibrary {
   @ObservationIgnored private var scans: [InboxFolder.ID: ScanResult] = [:]
   /// Rows to keep showing: marked files, and unmarked ones until the next scan of their inbox.
   @ObservationIgnored private var keptRows: [InboxItemID: KeptRow] = [:]
-  /// The rows of `sections` by identity, with the label of their section.
-  @ObservationIgnored private var rowsByID: [InboxItemID: (row: InboxRow, sectionLabel: String)] =
-    [:]
+  /// The rows of `sections` by identity, with the label of their section. Observed like `sections`, so a view that
+  /// looks up one row (the selected file) follows its changes.
+  private var rowsByID: [InboxItemID: (row: InboxRow, sectionLabel: String)] = [:]
   /// Counts scans, so a superseded scan's result is ignored.
   @ObservationIgnored private var scanGeneration = 0
   @ObservationIgnored private var scanTask: Task<Void, Never>?

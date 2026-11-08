@@ -19,6 +19,18 @@ struct AppEnvironmentTests {
         == .swiftUIPreviews)
   }
 
+  @Test("The UI-test launch arguments pick the UI-test fixture and the picker test host")
+  func launchModeFollowsTheUITestArguments() {
+    #expect(
+      AppLaunchMode.current(
+        processEnvironment: [:], arguments: ["Docsort", AppLaunchMode.uiTestFixtureArgument])
+        == .uiTestFixture)
+    #expect(
+      AppLaunchMode.current(
+        processEnvironment: [:], arguments: ["Docsort", AppLaunchMode.pickerTestHostArgument])
+        == .pickerTestHost)
+  }
+
   @Test("This test run's host app uses the inert environment")
   func thisProcessIsTheUnitTestHost() {
     #expect(AppLaunchMode.current() == .unitTestHost)

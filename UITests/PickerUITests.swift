@@ -36,29 +36,30 @@ final class PickerUITests: XCTestCase {
     return Host(app: app, filter: filter, lastEvent: host.staticTexts["picker-test-last-event"])
   }
 
-  /// Waits until the last-event line reads `text`.
+  /// Waits until the last-event line reads `text`. (A static text carries its text as its value on macOS.)
   @MainActor
   private func expectLastEvent(
     _ host: Host, _ text: String, file: StaticString = #filePath, line: UInt = #line
   ) {
-    let reads = NSPredicate(format: "label == %@", text)
+    let reads = NSPredicate(format: "value == %@", text)
     let result = XCTWaiter().wait(
       for: [expectation(for: reads, evaluatedWith: host.lastEvent)], timeout: 5)
-    XCTAssertEqual(
-      result, .completed, "last event is “\(host.lastEvent.label)”", file: file, line: line)
+    let lastEvent = host.lastEvent.exists ? host.lastEvent.value as? String ?? "" : ""
+    XCTAssertEqual(result, .completed, "last event is “\(lastEvent)”", file: file, line: line)
   }
 
   @MainActor
   func testRightArrowStepsInAndTabChoosesThisFolder() throws {
     let host = launchHost()
 
-    host.filter.typeText("gesund")
+    // Not "gesund": the recent `Gesundheit/Konrad/Physiotherapie` gets a boost and can rank above `Gesundheit`.
+    host.filter.typeText("reisen")
     host.filter.typeKey(.rightArrow, modifierFlags: [])
     XCTAssertTrue(
       host.app.descendants(matching: .any)["picker-this-folder"].waitForExistence(timeout: 5))
     host.filter.typeKey(.tab, modifierFlags: [])
 
-    expectLastEvent(host, "chose Gesundheit")
+    expectLastEvent(host, "chose Reisen")
   }
 
   @MainActor

@@ -253,4 +253,40 @@ struct MainWindowModelReturnTests {
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
     #expect(exists(scan))
   }
+
+  @Test("Renaming a filed file keeps it selected and shows its new name")
+  func renameFiledFileShowsNewName() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let (model, _) = await makeModel(environment)
+    let row = try #require(model.inboxes.row(listing: invoice))
+    let folder = environment.archive.appending(path: notenPath)
+    let filed = try await model.filing.file(
+      invoice, into: folder, archivePath: notenPath, named: invoice.lastPathComponent,
+      resolution: .refuse)
+    model.inboxes.setMark(
+      row.id,
+      .filed(
+        newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
+        documentID: filed.event.documentID))
+    model.select(row.id)
+
+    let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
+    model.resolve(
+      FilingConflict(
+        existingName: renamedName,
+        request: MoveRequest(
+          itemID: row.id, source: filed.movedURL, folderURL: folder, archivePath: notenPath,
+          name: renamedName, originalName: invoice.lastPathComponent,
+          kind: .renaming(documentID: filed.event.documentID))),
+      with: .refuse)
+    try await waitUntil { model.statusMessage != nil }
+
+    #expect(model.statusMessage?.text == "Renamed to \(renamedName) · Undo ⌘Z")
+    #expect(model.selectedFile?.id == row.id)
+    #expect(model.selectedFile?.name == renamedName)
+    #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")
+  }
 }

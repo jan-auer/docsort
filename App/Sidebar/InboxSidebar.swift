@@ -34,12 +34,16 @@ struct InboxSidebar: View {
         model.focus = nil
       }
     }
-    .onChange(of: model.focusRequest) { _, request in
-      if request?.target == .sidebar { isFocused = true }
-    }
-    .onChange(of: model.focus) { _, focus in
-      // A text field took focus outside SwiftUI's focus system; keep the focus state in step with it.
-      if focus != nil, focus != .sidebar, isFocused { isFocused = false }
+    .task(id: model.focusRequest) {
+      // Writing this focus state while it is stale (AppKit moved focus to the name field, SwiftUI hasn't noticed)
+      // resigns whatever is first responder, so it is written only to take focus: if it still says "focused",
+      // assigning true again would change nothing; clear it first.
+      guard model.focusRequest?.target == .sidebar else { return }
+      if isFocused {
+        isFocused = false
+        await Task.yield()
+      }
+      isFocused = true
     }
     .onKeyPress(phases: .down, action: handle)
     .accessibilityIdentifier("sidebar-list")

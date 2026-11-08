@@ -4,21 +4,34 @@
   import SwiftUI
 
   /// A debug-only window that hosts the destination picker on its own, for UI tests of the picker before (and
-  /// independently of) the filing panel. Launch the app with ``launchArgument`` to show it.
+  /// independently of) the filing panel. Launch the app with `AppLaunchMode.pickerTestHostArgument` to show it; the
+  /// app then runs in the inert environment (`AppLaunchMode.pickerTestHost`).
   enum PickerTestHost {
-    /// The launch argument that presents ``PickerTestHostScene``.
-    static let launchArgument = "-docsort-picker-test-host"
+    /// The window's scene identifier.
+    static let sceneID = "picker-test-host"
 
-    /// Whether the app was launched with ``launchArgument``.
+    /// Whether the app was launched to show the test host.
     static var isRequested: Bool {
-      ProcessInfo.processInfo.arguments.contains(launchArgument)
+      AppLaunchMode.current() == .pickerTestHost
+    }
+  }
+
+  /// Opens the picker test host's window when the app was launched for it. The main window applies this: a second
+  /// `Window` scene marked `.presented` is not shown at launch on its own.
+  struct PickerTestHostLauncher: ViewModifier {
+    @Environment(\.openWindow) private var openWindow
+
+    func body(content: Content) -> some View {
+      content.onAppear {
+        if PickerTestHost.isRequested { openWindow(id: PickerTestHost.sceneID) }
+      }
     }
   }
 
   /// The test host's window; presented at launch only when ``PickerTestHost/isRequested``.
   struct PickerTestHostScene: Scene {
     var body: some Scene {
-      Window("Picker Test Host", id: "picker-test-host") {
+      Window("Picker Test Host", id: PickerTestHost.sceneID) {
         PickerTestHostView()
       }
       .windowResizability(.contentSize)
