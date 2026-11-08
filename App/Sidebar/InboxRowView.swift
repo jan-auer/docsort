@@ -2,7 +2,7 @@ import AppKit
 import DocsortCore
 import SwiftUI
 
-/// One file row of the inbox list: icon, middle-truncated name and relative date.
+/// One file row of the inbox list: icon, middle-truncated name and compact absolute date (see ``SidebarDateText``).
 ///
 /// A filed file shows a green check and its new name in secondary colour; a trashed file a trash icon and its name
 /// struck through; a file still downloading a cloud icon. The row's accessibility value says which ("filed",
@@ -31,8 +31,9 @@ struct InboxRowView: View {
         .strikethrough(row.mark?.isTrashed == true)
         .foregroundStyle(row.mark == nil ? .primary : .secondary)
       Spacer(minLength: 4)
-      Text(row.item.modificationDate, format: .relative(presentation: .named))
+      Text(SidebarDateText.text(for: row.item.modificationDate, relativeTo: .now))
         .font(.caption)
+        .monospacedDigit()
         .foregroundStyle(.secondary)
         .lineLimit(1)
     }
