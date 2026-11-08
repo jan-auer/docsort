@@ -38,20 +38,21 @@ struct PickerListing {
     return sections.map(insertingDraftRow).filter { !$0.rows.isEmpty }
   }
 
-  /// `section` with the new-folder row at the alphabetical position of the draft name's first component (at the
-  /// end while the name is empty), if this is the section listing the scope's children.
+  /// `section` with the new-folder row directly under its parent, if this is the section listing the scope's
+  /// children: after "this folder", or first among the top-level folders at the root.
+  ///
+  /// The row keeps that place whatever name is typed, so it never jumps while the user types (a lazy list would
+  /// also drop the field, and with it the focus, once the row moved out of view). The new folder takes its sorted
+  /// place among its siblings once its name is confirmed.
   private func insertingDraftRow(into section: PickerSection) -> PickerSection {
-    guard let draft, section.id == (scope.isEmpty ? "all" : "browse") else { return section }
+    guard draft != nil, section.id == (scope.isEmpty ? "all" : "browse") else { return section }
     var rows = section.rows
-    let draftRow = PickerRow(id: "draft", kind: .newFolderDraft)
     let position =
-      NewFolderPath(typed: draft.name).components.first.flatMap { firstComponent in
-        rows.firstIndex { row in
-          guard case .folder(let folder) = row.kind else { return false }
-          return folder.displayPath.localizedStandardCompare(firstComponent) == .orderedDescending
-        }
-      } ?? rows.endIndex
-    rows.insert(draftRow, at: position)
+      rows.firstIndex { row in
+        if case .currentFolder = row.kind { return true }
+        return false
+      }.map { $0 + 1 } ?? rows.startIndex
+    rows.insert(PickerRow(id: "draft", kind: .newFolderDraft), at: position)
     return PickerSection(id: section.id, title: section.title, rows: rows)
   }
 

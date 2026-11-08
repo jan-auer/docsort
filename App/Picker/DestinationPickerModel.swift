@@ -391,7 +391,8 @@ final class DestinationPickerModel {
     onEvent(.chose(created))
   }
 
-  /// The name typed into the new-folder row, bound to its field; setting it updates the row's position and notice.
+  /// The name typed into the new-folder row, bound to its field; setting it updates the row's notice. The row stays
+  /// where it is, directly under its parent.
   var newFolderName: String {
     get { newFolderDraft?.name ?? "" }
     set {
