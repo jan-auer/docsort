@@ -18,10 +18,13 @@ enum FilingPanelStyle {
   /// The space between a row's icon and its text.
   static let rowIconSpacing: CGFloat = 7
 
-  /// The bars' background: the window colour.
+  /// The bars' background: the window colour with a faint tint of the label colour, so the bars read a step darker
+  /// than the lists in light mode and a step lighter in dark mode (the plain window colour was too close to the
+  /// lists' white on macOS 27).
   static let background = Color(nsColor: .windowBackgroundColor)
-  /// The background of the edge-to-edge lists and of fields: the content colour, set off from the bars.
-  static let listBackground = Color(nsColor: .controlBackgroundColor)
+    .mix(with: Color(nsColor: .labelColor), by: 0.05)
+  /// The background of the edge-to-edge lists and of fields: the text background (white, or near black).
+  static let listBackground = Color(nsColor: .textBackgroundColor)
   /// The hairline around fields.
   static let fieldBorder = Color(nsColor: .separatorColor)
 }

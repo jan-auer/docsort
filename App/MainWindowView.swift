@@ -1,7 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it,
+/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it
+/// (340 pt to start, dragged between 300 and 480 pt),
 /// with the selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
@@ -14,6 +15,12 @@ struct MainWindowView: View {
 
   @Environment(\.undoManager) private var undoManager
 
+  /// The filing panel's width, kept with the window.
+  @SceneStorage("filing-panel.width") private var filingPanelWidth = 340.0
+
+  /// The widths the filing panel can be dragged to.
+  private static let filingPanelWidths = 300.0...480.0
+
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
       SidebarColumn {
@@ -24,8 +31,8 @@ struct MainWindowView: View {
       .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
     } detail: {
       // The filing panel is the main work surface, not details about the selection, so it is a pane of the detail
-      // column (HIG: inspectors are for details), resizable against the preview by the split's divider.
-      HSplitView {
+      // column (HIG: inspectors are for details), resizable against the preview by dragging the divider between them.
+      HStack(spacing: 0) {
         VStack(spacing: 0) {
           detailColumn
             .frame(maxHeight: .infinity)
@@ -33,11 +40,13 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         if model.isFilingPanelShown {
+          PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
           FilingPanel(
             model: model,
             locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
           )
-          .frame(minWidth: 300, idealWidth: 340, maxWidth: 480, maxHeight: .infinity)
+          .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
+          .frame(maxHeight: .infinity)
         }
       }
       .toolbar { fileToolbar }

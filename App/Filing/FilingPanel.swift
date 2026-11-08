@@ -187,6 +187,7 @@ struct FilingPanel: View {
           .padding(.horizontal, 6)
           .padding(.vertical, 1)
           .background(.white.opacity(0.22), in: Capsule())
+          .fixedSize()
           .accessibilityHidden(true)
       }
       .padding(.horizontal, 4)

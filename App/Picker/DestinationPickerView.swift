@@ -388,6 +388,23 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     DestinationPickerPreview(model: .sample { $0.filterText = "physio" })
   }
 
+  #Preview("Soft scope: in folder and elsewhere") {
+    DestinationPickerPreview(
+      model: .sample { model in
+        model.jump(to: "Gesundheit")
+        model.filterText = "noten"
+      })
+  }
+
+  #Preview("Soft scope: chosen") {
+    DestinationPickerPreview(
+      model: .sample { model in
+        model.jump(to: "Gesundheit")
+        model.filterText = "physio"
+        model.chooseHighlighted()
+      })
+  }
+
   #Preview("Create row") {
     DestinationPickerPreview(model: .sample { $0.filterText = "Kleingarten Am Weidenbach" })
   }
