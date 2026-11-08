@@ -150,6 +150,9 @@ final class MainWindowModel {
   @ObservationIgnored private var isSidebarCollapsedForWidth = false
   /// Set while the selection moves to the file that replaced the selected one, which keeps the filing panel as it is.
   @ObservationIgnored private var isFollowingReplacement = false
+  /// Whether the first file was selected after the first listing of the inboxes (or there was nothing to select), so
+  /// later listings leave the selection alone.
+  @ObservationIgnored var hasMadeInitialSelection = false
   /// Keeps the picker's index, recents and ranking in step with the app's models.
   @ObservationIgnored private var pickerInputsTask: Task<Void, Never>?
 
@@ -322,6 +325,8 @@ final class MainWindowModel {
           historyFileURL: environment.filingHistoryURL),
         search: SearchSettings(defaults: environment.defaults))
       model.previewSelectedFile = selectedFile
+      // Previews show the selection they are given, not the first file selected at launch.
+      model.hasMadeInitialSelection = true
       model.resetPanel()
       return model
     }

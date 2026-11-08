@@ -46,6 +46,7 @@ struct MainWindowView: View {
       model.windowWidthClassChanged(to: widthClass)
     }
     .onAppear { model.undoManager = undoManager }
+    .task { await model.selectFirstFileAfterInitialScan() }
     .onChange(of: undoManager) { _, undoManager in model.undoManager = undoManager }
     .folderSettingsAlert(for: model.folders)
     .alert(
@@ -135,11 +136,44 @@ struct MainWindowView: View {
     return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"
   }
 
-  /// The app name with the selected file's inbox and name as plain toolbar text (like Finder's folder title), the
-  /// file's actions as one group at the right, and the filing panel toggle on its own at the far right.
+  /// Previous File and Next File as one back/forward pair (like Finder's), then the app name with the selected file's
+  /// inbox and name as plain toolbar text (like Finder's folder title), the file's actions as one group at the right,
+  /// and the filing panel toggle on its own at the far right.
   @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
     ToolbarItem(placement: .navigation) {
       HStack(spacing: 10) {
+        HStack(spacing: 0) {
+          Button {
+            model.selectFile(.previous)
+          } label: {
+            Label("Previous File", systemImage: "chevron.left")
+              .frame(width: 36, height: 36)
+              .contentShape(Rectangle())
+          }
+          .help("Previous File (⌥⌘↑)")
+          .disabled(model.file(.previous) == nil)
+          .accessibilityIdentifier("toolbar-previous-file")
+
+          Button {
+            model.selectFile(.next)
+          } label: {
+            Label("Next File", systemImage: "chevron.right")
+              .frame(width: 36, height: 36)
+              .contentShape(Rectangle())
+          }
+          .help("Next File (⌥⌘↓)")
+          .disabled(model.file(.next) == nil)
+          .accessibilityIdentifier("toolbar-next-file")
+        }
+        // One capsule for the pair, like the toolbar's own groups: the title item hides the shared background, and a
+        // separate navigation item would be placed after the title.
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .font(.body.weight(.medium))
+        .imageScale(.large)
+        .frame(height: 36)
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .padding(.trailing, 4)
         Text("docsort")
           .fontWeight(.bold)
         if let selectedFile = model.selectedFile {
