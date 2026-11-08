@@ -48,6 +48,14 @@ Reason: user's choice; files moving around in the sidebar is disorienting, and t
   acceptable there). Built as its own core piece plus UI integration, after the UI shell.
 Reason: user's feedback in design round 2.
 
+## layering
+
+The core exposes small, clean service interfaces, each owning one concern (filing with its perform/record/save
+orchestration, inbox listing with live updates, destination lookup and search, previews and caching). The UI only
+calls those services; views and view models hold no file-system, history or orchestration logic. After UI increment 1,
+an architecture coordinator reviews the codebase and moves the core toward this before the UI continues. Reason: the
+user found orchestration landing in the UI layer and asked for clean separation.
+
 ## history-save-failure
 
 One `FilingService` actor owns perform → record → save for every move and trash. If saving the filing history fails
