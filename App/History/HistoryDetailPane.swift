@@ -1,23 +1,20 @@
 import SwiftUI
 
-/// The History window's right pane: the selected entry's file at its current place, what the entry did, and the
-/// actions on it: Open, Reveal in Finder, Move Back to Inbox or Put Back, and Show in Main Window. An entry whose file
-/// is no longer where the entry put it offers only Reveal Folder in Finder.
+/// The History window's inspector: the selected entry's file at its current place, taking the height that its details
+/// and actions below leave, what the entry did, and the actions on it (`HistoryEntryActions`).
 struct HistoryDetailPane: View {
   let model: HistoryModel
 
   @State private var previewController = PreviewController()
-  @Environment(\.openWindow) private var openWindow
 
   var body: some View {
     if let entry = model.selectedEntry {
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 12) {
         filePreview(of: entry)
-          .frame(height: 240)
+          .frame(maxWidth: .infinity, minHeight: 160, idealHeight: 240, maxHeight: .infinity)
           .clipShape(RoundedRectangle(cornerRadius: 6))
         facts(of: entry)
-        actions(for: entry)
-        Spacer(minLength: 0)
+        HistoryEntryActions(model: model, entry: entry)
       }
       .padding(12)
       .accessibilityElement(children: .contain)
@@ -58,45 +55,8 @@ struct HistoryDetailPane: View {
           .accessibilityIdentifier("history-detail-notice")
       }
     }
+    .frame(maxWidth: .infinity, alignment: .leading)
     .textSelection(.enabled)
-    .fixedSize(horizontal: false, vertical: true)
-  }
-
-  private func actions(for entry: HistoryEntry) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      if model.canOpen(entry) {
-        HStack(spacing: 6) {
-          Button("Open") { FileActions.open(entry.url) }
-            .keyboardShortcut("o")
-            .accessibilityIdentifier("history-open")
-          Button("Reveal in Finder") { FileActions.revealInFinder(entry.url) }
-            .keyboardShortcut("r", modifiers: [.option, .command])
-            .accessibilityIdentifier("history-reveal")
-        }
-      } else {
-        Button("Reveal Folder in Finder") {
-          FileActions.revealInFinder(entry.url.deletingLastPathComponent())
-        }
-        .accessibilityIdentifier("history-reveal-folder")
-      }
-      if let returnAction = model.returnAction(for: entry) {
-        Button(returnAction == .putBack ? "Put Back" : "Move Back to Inbox") {
-          Task { await model.returnToInbox(entry) }
-        }
-        .keyboardShortcut("z", modifiers: [.option, .command])
-        .disabled(!model.canReturnToInbox(entry))
-        .accessibilityIdentifier("history-return")
-      }
-      if let rowID = model.inboxRowID(for: entry) {
-        Button("Show in Main Window") {
-          model.mainWindow.select(rowID)
-          model.mainWindow.requestFocus(.sidebar)
-          openWindow(id: SceneID.main)
-        }
-        .accessibilityIdentifier("history-show-in-main-window")
-      }
-    }
-    .controlSize(.small)
   }
 
   /// When the entry happened, the inbox the file came from, and its earlier name when the entry renamed it.

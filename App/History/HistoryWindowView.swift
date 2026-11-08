@@ -2,8 +2,8 @@ import DocsortCore
 import SwiftUI
 
 /// The content of the History window: every move and trash in chronological order, newest at the bottom, grouped by
-/// day, with a search field filtering all columns, the selected entry's file and actions in a pane on the right, and
-/// a footer counting the entries.
+/// day, with a search field filtering all columns, the selected entry's file and actions in an inspector, and
+/// a footer under the table counting the entries.
 ///
 /// The list is read when the window appears or becomes active again, and after each action.
 struct HistoryWindowView: View {
@@ -14,14 +14,14 @@ struct HistoryWindowView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      HStack(spacing: 0) {
-        table
-        Divider()
-        HistoryDetailPane(model: model)
-          .frame(width: 280)
-      }
+      table
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       Divider()
       footer
+    }
+    .inspector(isPresented: .constant(true)) {
+      HistoryDetailPane(model: model)
+        .inspectorColumnWidth(min: 260, ideal: 300, max: 440)
     }
     .searchable(text: $model.searchText, placement: .toolbar, prompt: "Search")
     .frame(minWidth: 820, minHeight: 360)
