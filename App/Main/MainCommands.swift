@@ -59,8 +59,9 @@ struct MainCommands: Commands {
     }
 
     CommandGroup(after: .sidebar) {
+      // Lists the inboxes again and rebuilds the archive's folder index.
       Button("Refresh") {
-        mainWindowModel?.inboxes.refresh()
+        mainWindowModel?.refresh()
       }
       .keyboardShortcut("r")
       .disabled(mainWindowModel == nil)

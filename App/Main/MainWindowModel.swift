@@ -1,3 +1,4 @@
+import AppKit
 import DocsortCore
 import Observation
 import SwiftUI
@@ -155,6 +156,9 @@ final class MainWindowModel {
   @ObservationIgnored var hasMadeInitialSelection = false
   /// Keeps the picker's index, recents and ranking in step with the app's models.
   @ObservationIgnored private var pickerInputsTask: Task<Void, Never>?
+  /// The observers telling the archive library when the app becomes or resigns active, so it picks up folders
+  /// created in Finder meanwhile.
+  @ObservationIgnored private var activationObservers: [NotificationCenter.ObservationToken] = []
 
   #if DEBUG
     /// A file shown as selected regardless of the sidebar, for SwiftUI previews.
@@ -175,16 +179,29 @@ final class MainWindowModel {
     inboxes.onExternalChange = { [weak self] change in self?.follow(change) }
     pickerInputsTask = Task { [weak self, archive, filing, search] in
       for await inputs in Observations({
-        PickerInputs(index: archive.index, recents: filing.recents, ranking: search.ranking)
+        PickerInputs(
+          index: archive.index, isRebuildingIndex: archive.isRebuilding, recents: filing.recents,
+          ranking: search.ranking)
       }) {
         guard let self else { return }
         apply(inputs)
       }
     }
+    activationObservers = [
+      NotificationCenter.default.addObserver(of: NSApplication.self, for: .didBecomeActive) {
+        [archive] _ in archive.appBecameActive()
+      },
+      NotificationCenter.default.addObserver(of: NSApplication.self, for: .didResignActive) {
+        [archive] _ in archive.appResignedActive()
+      },
+    ]
   }
 
   isolated deinit {
     pickerInputsTask?.cancel()
+    for observer in activationObservers {
+      NotificationCenter.default.removeObserver(observer)
+    }
   }
 
   /// Hands the archive index, the recent destinations and the ranking setting to the picker, changing only what
@@ -193,8 +210,19 @@ final class MainWindowModel {
     if inputs.index?.root != picker.index?.root || inputs.index?.folders != picker.index?.folders {
       picker.index = inputs.index
     }
+    if inputs.isRebuildingIndex != picker.isRebuildingIndex {
+      picker.isRebuildingIndex = inputs.isRebuildingIndex
+    }
     if inputs.recents != picker.recents { picker.recents = inputs.recents }
     if inputs.ranking != picker.ranking { picker.ranking = inputs.ranking }
+  }
+
+  /// Lists the inboxes again and rebuilds the archive's folder index, for folders and files changed outside docsort
+  /// (View › Refresh, ⌘R, and the picker's refresh button). The picker keeps the previous index, and with it its
+  /// scope, filter and highlight, until the new one is ready.
+  func refresh() {
+    inboxes.refresh()
+    archive.rebuild()
   }
 
   /// Clears the filing panel for the selected file: the name field holds the file's current name; the picker is at
@@ -341,6 +369,7 @@ extension FocusedValues {
 /// What the destination picker takes from the app's models.
 nonisolated private struct PickerInputs: Sendable {
   let index: DestinationIndex?
+  let isRebuildingIndex: Bool
   let recents: RecentDestinations
   let ranking: ScopedRanking
 }

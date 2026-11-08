@@ -19,8 +19,8 @@ import SwiftUI
 /// ## Accessibility
 ///
 /// Identifiers: `picker` (the whole picker), `picker-filter`, `picker-chosen-token`, `picker-path-bar` with
-/// `picker-path-segment-<n>` (0 is Archive), `picker-list`, `picker-new-folder-button`, `picker-new-folder-name`,
-/// `picker-new-folder-notice`. Every list row is one element: folder rows have the identifier `picker-row` and their
+/// `picker-path-segment-<n>` (0 is Archive), `picker-list`, `picker-new-folder-button`, `picker-refresh-button`
+/// (value `refreshing` while the index is rebuilt), `picker-new-folder-name`, `picker-new-folder-notice`. Every list row is one element: folder rows have the identifier `picker-row` and their
 /// display path as label (`Konrad/Physiotherapie`); the "this folder" row is `picker-this-folder` labelled
 /// "<name>, this folder"; the create row is `picker-create-row` labelled "New Folder “…” in …". A highlighted row has
 /// the value `highlighted` and the selected trait; other rows have an empty value. Activating a row (VoiceOver's
@@ -302,7 +302,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   // MARK: Bottom bar
 
-  /// The New Folder button with its shortcut, and the keys that step into and out of folders.
+  /// The New Folder button with its shortcut, the refresh button, and the keys that step into and out of folders.
   private var bottomBar: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
     return HStack(spacing: 8) {
@@ -322,6 +322,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       .accessibilityLabel(title)
       .accessibilityIdentifier("picker-new-folder-button")
       .layoutPriority(1)
+      refreshButton
       Spacer(minLength: 0)
       Text("→ into folder · ← out")
         .font(.system(size: 10.5))
@@ -331,6 +332,34 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     }
     .padding(.horizontal, 4)
     .frame(height: 24)
+  }
+
+  /// A quiet button that rebuilds the archive index, showing a small spinner in its place while that runs; the list
+  /// keeps the previous index meanwhile.
+  private var refreshButton: some View {
+    Button(action: model.requestRefresh) {
+      ZStack {
+        if model.isRebuildingIndex {
+          ProgressView()
+            .controlSize(.mini)
+            .transition(.opacity)
+        } else {
+          Image(systemName: "arrow.clockwise")
+            .imageScale(.small)
+            .foregroundStyle(.secondary)
+            .transition(.opacity)
+        }
+      }
+      .frame(width: 20, height: 20)
+      .contentShape(Rectangle())
+      .animation(.easeInOut(duration: 0.15), value: model.isRebuildingIndex)
+    }
+    .buttonStyle(.borderless)
+    .disabled(model.isRebuildingIndex)
+    .help("Refresh folders (⌘R)")
+    .accessibilityLabel("Refresh folders")
+    .accessibilityValue(model.isRebuildingIndex ? "refreshing" : "")
+    .accessibilityIdentifier("picker-refresh-button")
   }
 }
 

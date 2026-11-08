@@ -47,6 +47,22 @@ struct DestinationPickerNewFolderTests {
     #expect(model.contents == .notOnDisk)
   }
 
+  @Test("The new-folder row keeps its place while the name is typed")
+  func draftRowStaysInPlace() throws {
+    let model = try makeModel()
+    model.highlightFolder("Reisen")
+    model.beginNewFolder()
+    let rowsWhenOpened = model.rowSummaries
+    let highlightWhenOpened = model.highlightedRowID
+
+    for name in ["Z", "Zz Später", "2", "2031 Anfang", "", "Reiseplanung Ideen", "a/b"] {
+      model.newFolderName = name
+      #expect(model.rowSummaries == rowsWhenOpened, "after typing “\(name)”")
+      #expect(model.highlightedRowID == highlightWhenOpened)
+      #expect(model.newFolderDraft != nil)
+    }
+  }
+
   @Test("An invalid name in the create row cannot be chosen")
   func invalidCreateRow() throws {
     let model = try makeModel()
@@ -76,7 +92,7 @@ struct DestinationPickerNewFolderTests {
 
   // MARK: New-folder row
 
-  @Test("A new folder is named inside the highlighted folder, among its siblings")
+  @Test("A new folder is named inside the highlighted folder, directly under it")
   func draftInHighlightedFolder() throws {
     let model = try makeModel()
     model.highlightFolder("Reisen")
@@ -88,17 +104,12 @@ struct DestinationPickerNewFolderTests {
     #expect(model.contents == .notOnDisk)
     #expect(
       model.rowSummaries == [
-        "this:Reisen", "2032-05 Pfingsten Hochalm", "2033-06 Wanderwoche Hochalm",
-        "Reiseplanung Ideen", "draft",
+        "this:Reisen", "draft", "2032-05 Pfingsten Hochalm", "2033-06 Wanderwoche Hochalm",
+        "Reiseplanung Ideen",
       ])
 
     model.newFolderName = "2033-11 Besuch Westerholm"
     #expect(model.newFolderDraft?.notice == nil)
-    #expect(
-      model.rowSummaries == [
-        "this:Reisen", "2032-05 Pfingsten Hochalm", "2033-06 Wanderwoche Hochalm", "draft",
-        "Reiseplanung Ideen",
-      ])
 
     #expect(model.confirmNewFolder())
     #expect(events.events == [.chose(.newFolder(Self.visit))])

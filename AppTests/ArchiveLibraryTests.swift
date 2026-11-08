@@ -64,9 +64,87 @@ struct ArchiveLibraryTests {
     library.rebuild()
     #expect(library.index?.folders == before.folders)
     #expect(library.status != .indexing)
+    #expect(library.isRebuilding)
     await library.waitForIndexing()
 
     #expect(library.index?.contains("Reisen/2033-11 Besuch Westerholm") == true)
+    #expect(!library.isRebuilding)
+  }
+
+  /// A library with an index of the archive in `environment`, which rebuilds `activationDelay` after the app became
+  /// active.
+  private func indexedLibrary(
+    in environment: TestFolderEnvironment, activationDelay: Duration
+  ) async throws -> ArchiveLibrary {
+    try makeArchive(in: environment)
+    let library = ArchiveLibrary(activationDelay: activationDelay)
+    library.update(
+      to: ArchiveIndexRequest(
+        root: environment.archive, excludedFolders: [environment.scanner, environment.webDownloads])
+    )
+    await library.waitForIndexing()
+    return library
+  }
+
+  @Test("Becoming active rebuilds the index, picking up folders created outside the app")
+  func activationRebuilds() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let library = try await indexedLibrary(in: environment, activationDelay: .zero)
+    try FileManager.default.createDirectory(
+      at: environment.archive.appending(path: "Reisen/2032-04 Wanderung"),
+      withIntermediateDirectories: true)
+
+    library.appBecameActive()
+    await library.waitForActivation()
+    #expect(library.isRebuilding)
+    await library.waitForIndexing()
+
+    #expect(library.index?.contains("Reisen/2032-04 Wanderung") == true)
+  }
+
+  @Test("Leaving the app before the delay is over drops the activation rebuild")
+  func resigningCancelsActivationRebuild() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let library = try await indexedLibrary(in: environment, activationDelay: .seconds(3600))
+    try FileManager.default.createDirectory(
+      at: environment.archive.appending(path: "Reisen/2032-04 Wanderung"),
+      withIntermediateDirectories: true)
+
+    library.appBecameActive()
+    library.appResignedActive()
+    await library.waitForActivation()
+
+    #expect(!library.isRebuilding)
+    #expect(library.index?.contains("Reisen/2032-04 Wanderung") == false)
+  }
+
+  @Test("Becoming active while the index is being built starts no second build")
+  func activationDuringBuildIsSkipped() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    try makeArchive(in: environment)
+    let library = ArchiveLibrary(activationDelay: .zero)
+
+    library.update(to: ArchiveIndexRequest(root: environment.archive, excludedFolders: []))
+    library.appBecameActive()
+    await library.waitForActivation()
+
+    #expect(!library.isRebuilding)
+    await library.waitForIndexing()
+    #expect(library.index != nil)
+  }
+
+  @Test("Becoming active without an archive root does nothing")
+  func activationWithoutArchive() async {
+    let library = ArchiveLibrary(activationDelay: .zero)
+
+    library.appBecameActive()
+    await library.waitForActivation()
+
+    #expect(!library.isRebuilding)
+    #expect(library.status == .unavailable)
   }
 
   @Test("A missing archive root fails with a reason, and no request clears the index")
