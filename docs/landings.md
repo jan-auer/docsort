@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/test-fixes-824ce4: hosted test fixes
+- What landed: the first passing run of the full app test suite (all `DocsortTests`, UI tests 20/20 in run 4). App
+  fixes: stale SwiftUI focus values resigned the focused field; the selected file didn't follow its mark after a
+  rename; the new-folder field focused too early. Plus test assertions, a picker test-host launch mode, and the
+  sidebar row's filing state as its accessibility value.
+- Divergence: landed without a separate review; the full suite had passed. The final rerun was interrupted at the
+  user's request.
+- Follow-ups: wire folder watching into the sidebar.
+
 ## 2026-11-08 claude/folder-watch-de5f8d: live inbox watching in the core
 - What landed: `InboxWatcher.updates(for:)` (FSEvents source, 0.5 s coalescing, rescan and diff by identity, then
   path, then the download-name rule; unreachable inboxes retried every 5 s), `ExpectedChanges` so docsort's own
