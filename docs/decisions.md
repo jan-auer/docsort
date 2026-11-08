@@ -79,6 +79,12 @@ No UI-test runs except a single focused test, when it is essential to validate a
 confirmed. No full UI suites, and no UI tests used for diagnosis. Diagnose with unit tests or the log-based launch
 check; list leftovers instead of hunting. Reason: the user found the UI-test runs wasteful and slow (2026-11-08).
 
+## commit-signing
+
+Sessions commit unsigned on their own branches (`git -c commit.gpgsign=false commit`). The hub's merge commits and
+records on master are signed when 1Password allows; if it refuses, the hub may merge unsigned rather than block.
+Reason: 1Password re-locks often and blocked sessions repeatedly (user's choice, 2026-11-08).
+
 ## e2e-first
 
 Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
