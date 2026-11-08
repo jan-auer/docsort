@@ -119,11 +119,12 @@ public struct HandledItem: Sendable {     // originalURL, currentURL, handling: 
   every later command retries the save first; at quit the app calls `retrySave()` and shows "Quit Anyway / Cancel" on
   failure. An unreadable history at launch sets `.historyUnreadable` and every command throws until
   `startNewHistory()`.
-- `handledItems(in:)` is the ledger the inbox listing uses to keep the app's own moves checked off. It is derived
+- `handledItems(in:)` is what the inbox listing uses to keep the app's own moves checked off in place. It is derived
   from this session's events, so it needs no separate bookkeeping anywhere else.
 - Renaming a filed file, moving it on, and Revert name are all `file(_:into:named:)` from its current place; the
   pre-filing name comes from `HandledItem.originalURL`. No separate rename command.
-- Recents are not recorded here; the destination service derives them from the outcome stream (see below).
+- Target: recents are recorded by the destination service from the outcome stream (see below). Until the cleanup,
+  `FilingService` may record them itself.
 - Name checks stay pure functions in the core (`FileNaming`); the conflict check while typing
   (`existingItem(named:in:)`) is a read and may be called through `FilingService` or a `@concurrent` function.
 - Set now: `FilingService` returns values and holds no UI types; keep it in its own file under `App/Library/`.
@@ -131,43 +132,33 @@ public struct HandledItem: Sendable {     // originalURL, currentURL, handling: 
 
 ### Inbox listing with live updates
 
-Owns one section per configured inbox: scanning, watching, and reconciling with what the app filed.
+Owns one section per configured inbox: the watcher, the scanner, and merging in the rows the app handled. The
+folder-watch branch builds the watcher half (`InboxWatcher`, `ExpectedChanges`); this is where it ends up.
 
 ```swift
 public actor InboxService {
-  public init(folders: FolderAccessService, filing: FilingService, watcher: FolderWatching)
+  public init(folders: FolderAccessService, filing: FilingService, watcher: InboxWatcher)
   public func updates() -> AsyncStream<[InboxSection]>
   public func rescan(_ inbox: InboxFolder.ID?)                  // ⌘R; nil rescans all
 }
 public struct InboxSection: Sendable, Identifiable {             // id: InboxFolder.ID, label,
-}                                                               // content: .scanning | .rows([InboxRow]) | .unreachable(FolderAvailability)
-public struct InboxRow: Sendable, Identifiable {                 // id: InboxRow.ID (stable across renames),
-}                                                               // item or group, handling: HandledItem.Handling?, arrivedLive: Bool
+}                                                               // content: .scanning | .rows([InboxRow]) | .unreachable(FolderAccessError)
+public struct InboxRow: Sendable, Identifiable {                 // id: stable across renames (FileIdentity-based),
+}                                                               // item or group, handling: .filed | .trashed | nil, arrivedLive: Bool
 ```
 
-- **Rescan, not patch.** A watcher batch names the inbox roots that changed; the service rescans those inboxes with
-  `InboxScanner` (which owns order and grouping) and reconciles. Inboxes are small, so this is simpler and correct.
-- **Own versus external changes** are decided here, not in the watcher: after a rescan, the service asks
-  `filing.handledItems(in:)`. A file missing from the scan that the ledger lists stays as a handled row in its old
-  place; any other missing file is "removed outside docsort". Because a move happens inside one `FilingService`
-  call and the ledger read queues behind it on that actor, a scan that no longer sees the file always finds it in the
-  ledger. No "expected change" registry is needed in the watcher or in `FileOperations`.
-- **Stable row identity**: a row's ID survives a rename in place (match by `FileIdentity`) and a completed download
-  (the `.download` / `.crdownload` stem becoming the final name). `InboxItem.id` is the URL today; the row ID must not
-  be, because the sidebar selection, the filing panel and the preview all key on it.
-- The watcher is a building block, generic over roots, so the archive can be watched the same way:
-
-```swift
-public protocol FolderWatching: Sendable {
-  func changes(in roots: [URL]) -> AsyncStream<FolderChangeBatch>   // coalesced after a quiet period
-}
-public struct FolderChangeBatch: Sendable {   // changedRoots: Set<URL>, unavailableRoots: Set<URL>,
-}                                             // rescanEverything: Bool (FSEvents dropped events)
-```
-
-- Set now: the watcher stays a dumb change source (roots changed, roots gone); the row ID exists as its own type; the
-  app keys selection on it.
-- Move later: the app-side `InboxLibrary` scan/reconcile logic into `InboxService`.
+- **Rescan, not patch.** Each coalesced FSEvents batch rescans the affected inbox with `InboxScanner` (which owns
+  order and grouping) and diffs old against new by identity, then path, then the download-name rule.
+- **Own versus external changes**: `FilingService` runs every move, trash and undo through `ExpectedChanges.perform`,
+  which holds the watcher's diffs while the operation runs and leaves the operation's own changes out of the next
+  diff. Only `FilingService` sees `ExpectedChanges`; `FileOperations` stays pure and the UI never registers anything.
+- **Handled rows**: a filed or trashed file is gone from the scan but keeps its row, checked off, in its old place.
+  The rows come from `FilingService.handledItems(in:)`, this session's events, not from a second list in the UI.
+- **Stable row identity**: `InboxItem` carries its `FileIdentity`; a row's ID survives a rename in place and a
+  completed download. The sidebar selection, the filing panel and the preview key on the row ID, not the URL.
+- The event source and coalescer are reusable for watching the archive later.
+- Set now: rows and selection keyed on identity; `ExpectedChanges` used only inside `FilingService`.
+- Move later: merging handled rows into the listing (done in the app's `InboxLibrary` until then) into `InboxService`.
 
 ### Destination lookup and search
 
@@ -191,7 +182,8 @@ public struct DestinationCatalog: Sendable {   // index: DestinationIndex, recen
 - Recents: the service consumes `FilingService` outcomes, records the destination's archive-relative path and
   saves; it rebuilds the index when a move created folders (or when the archive watcher reports a change).
 - Suggestions later add a boost input next to recents (`search(_:in:boosting:)`), not a second search path.
-- Set now: the picker depends on a `DestinationCatalog` value (index + recents + ranking), not on three app objects.
+- Now: the picker model (`App/Picker/`) takes `index`, `recents` and `ranking` as separate inputs and reports
+  through `onEvent`. Fine until the cleanup, when the three inputs become one `DestinationCatalog`.
 - Move later: `ArchiveLibrary`'s build/cancel logic and `SearchSettings` into this actor; the ranking preference key
   next to the others (`ScopedRanking.preference(in:)`); symlink classification into `ScanProblem` (the walker knows
   it skipped a link).
@@ -211,6 +203,7 @@ public struct FileFacts: Sendable {   // name, content type, size, dates; read w
 - Folder contents are cached by folder URL and invalidated by `FilingService` outcomes and the archive watcher. Only
   this listing pays for a cache: the picker moves its highlight quickly over the same folders.
 - `DestinationIndex.files(in:)` is a folder listing, not part of the tree index; it moves here.
+- The picker's `FolderFileListing` protocol is this service's seam today; it becomes `FolderContentsService`.
 - Previews render in the app (PDFKit, Quick Look are UI). A `PreviewLoader` in `App/Preview/` loads documents off the
   main actor and may keep a small cache (the current and the next unfiled file). Views ask the loader; they do not
   load files themselves.
