@@ -3,9 +3,10 @@ import SwiftUI
 
 /// The filing panel, the main window's inspector: where the selected file gets its destination and name.
 ///
-/// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the file's name,
-/// the destination picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents,
-/// the name field with the extension as a fixed label, and the Move button (⌘Return, also File › Move).
+/// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the destination
+/// picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents, the name field
+/// with the extension as a fixed label, and the Move button (⌘Return, also File › Move). The file's name is in the
+/// window's toolbar title, not repeated here.
 ///
 /// A filed file opens with a status strip ("Filed to … · today 09:41", **Move Back**) above the same sections, with
 /// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
@@ -56,13 +57,6 @@ struct FilingPanel: View {
         canReturnToInbox: model.canReturnSelectedFileToInbox,
         returnToInbox: { model.returnSelectedFileToInbox() })
     }
-
-    Text(file.originalName)
-      .font(.headline)
-      .lineLimit(2)
-      .truncationMode(.middle)
-      .textSelection(.enabled)
-      .accessibilityIdentifier("filing-panel-file-name")
 
     if file.mark == nil, file.completeness == .downloading {
       Label("This file is still downloading.", systemImage: "icloud.and.arrow.down")
