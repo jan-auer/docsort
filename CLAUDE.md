@@ -61,6 +61,13 @@ changing UI flows:
 xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode -quiet test -only-testing:DocsortUITests
 ```
 
+Every UI test launches the app with `-docsort-ui-test-fixture` (debug builds only, `AppLaunchMode.uiTestFixture`):
+the app then builds an invented archive `Archiv` with the inboxes `_Neu/Web-Downloads` and `_Neu/Scanner` fresh in
+its container's temporary directory (`App/Fixture/UITestFixture.swift`), configures them through real bookmarks in an
+emptied `UserDefaults` suite, keeps its history there and "trashes" into a folder of the fixture. So no UI test
+reads or changes the user's settings, history or Trash. Sidebar rows (`sidebar-row`, labelled with the inbox file
+name) report `unfiled`, `filed`, `trashed` or `downloading` as their accessibility value.
+
 They need a logged-in GUI session. If a run asks for a password to allow UI automation, the user can run
 `sudo automationmodetool enable-automationmode-without-authentication` once to stop the prompt.
 
