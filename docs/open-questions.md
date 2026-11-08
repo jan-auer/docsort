@@ -13,8 +13,12 @@ Collected by the hub while the user is away. Each has the hub's recommendation; 
    defaults. None are planned. Recommendation: revisit after using the app for a while.
 4. **Write-ahead filing history** (record before moving, so a crash can't lose an entry). Not planned; the simple
    "keep and warn" policy is in place. Recommendation: only if a save failure ever bites.
-5. **Allow UI tests without a password prompt.** UI tests (keyboard flow, sandbox bookmark check) can't run while
+5. **Run the hosted tests once you're back.** The screen locked while you were away, so app unit tests and UI tests
+   could not run after about 01:30; work since then landed on lint, builds, core `swift test`, launch logs and review.
+   Recommendation: after unlocking (and item 6), have a session run the full app test suite and UI tests and fix
+   whatever fails.
+6. **Allow UI tests without a password prompt.** UI tests (keyboard flow, sandbox bookmark check) can't run while
    nobody is at the Mac: automation mode needs authentication. Recommendation: run once
    `sudo automationmodetool enable-automationmode-without-authentication`, then have the UI tests rerun.
-6. **Research branch.** `claude/layout-research-068c21` holds the report and is not merged. Recommendation: keep
+7. **Research branch.** `claude/layout-research-068c21` holds the report and is not merged. Recommendation: keep
    until question 3 is settled, then delete.
