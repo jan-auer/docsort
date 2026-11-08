@@ -77,11 +77,13 @@ struct InboxSidebar: View {
           case .row(let row):
             InboxRowView(row: row)
               .tag(SidebarRowID.item(row.id))
+              .contextMenu { rowMenu(for: row.id) }
           case .group(let group):
             DisclosureGroup(isExpanded: expansion(of: group)) {
               ForEach(group.rows) { row in
                 InboxRowView(row: row)
                   .tag(SidebarRowID.item(row.id))
+                  .contextMenu { rowMenu(for: row.id) }
               }
             } label: {
               Label(group.name, systemImage: "folder")
@@ -107,6 +109,29 @@ struct InboxSidebar: View {
     }
   }
 
+  /// The context menu of the file row `id`: Open, Reveal in Finder and Move to Trash for an unhandled file, Open,
+  /// Reveal in Finder and Move Back to Inbox for a filed one, Put Back for a trashed one.
+  @ViewBuilder private func rowMenu(for id: InboxItemID) -> some View {
+    if let file = model.file(id) {
+      if !file.isTrashed {
+        Button("Open") { FileActions.open(file.url) }
+        Button("Reveal in Finder") { FileActions.revealInFinder(file.url) }
+        Divider()
+      }
+      switch file.returnToInboxAction {
+      case .moveBack:
+        Button("Move Back to Inbox") { model.returnToInbox(file) }
+          .disabled(!model.canReturnToInbox(file))
+      case .putBack:
+        Button("Put Back") { model.returnToInbox(file) }
+          .disabled(!model.canReturnToInbox(file))
+      case nil:
+        Button("Move to Trash") { model.trash(file) }
+          .disabled(!model.canTrash(file))
+      }
+    }
+  }
+
   private func expansion(of group: InboxGroup) -> Binding<Bool> {
     Binding {
       !model.collapsedGroups.contains(group.url)
@@ -122,7 +147,7 @@ struct InboxSidebar: View {
   private func handle(_ press: KeyPress) -> KeyPress.Result {
     switch press.key {
     case .return, .tab:
-      guard model.selectedFile != nil else { return .ignored }
+      guard let file = model.selectedFile, !file.isTrashed else { return .ignored }
       model.requestFocus(.destinationFilter)
       return .handled
     case .rightArrow, .leftArrow:
@@ -137,7 +162,7 @@ struct InboxSidebar: View {
       break
     }
     guard press.modifiers.isDisjoint(with: [.command, .control, .option]),
-      Self.isPrintable(press.characters), model.canMoveSelectedFile
+      Self.isPrintable(press.characters), model.canChooseDestination
     else {
       return .ignored
     }

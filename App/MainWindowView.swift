@@ -59,6 +59,18 @@ struct MainWindowView: View {
       Text("Replace moves the existing file to the Trash.")
     }
     .alert(
+      moveBackConflictTitle, isPresented: isMoveBackConflictPresented,
+      presenting: model.moveBackConflict
+    ) { conflict in
+      Button("Keep Both") { model.resolve(conflict) }
+        .keyboardShortcut(.defaultAction)
+      Button("Cancel", role: .cancel) { model.requestFocus(.sidebar) }
+    } message: { conflict in
+      Text(
+        "Something else is now at \(DisplayPath.abbreviating(conflict.blockingURL.path(percentEncoded: false))). Keep Both moves the file back under a numbered name."
+      )
+    }
+    .alert(
       model.alert?.title ?? "", isPresented: isAlertPresented, presenting: model.alert
     ) { _ in
       Button("OK", role: .cancel) {}
@@ -83,6 +95,19 @@ struct MainWindowView: View {
     }
   }
 
+  private var moveBackConflictTitle: String {
+    guard let conflict = model.moveBackConflict else { return "" }
+    return "“\(conflict.request.originalName)” can’t be moved back to \(conflict.request.inboxName)"
+  }
+
+  private var isMoveBackConflictPresented: Binding<Bool> {
+    Binding {
+      model.moveBackConflict != nil
+    } set: {
+      if !$0 { model.moveBackConflict = nil }
+    }
+  }
+
   private var isAlertPresented: Binding<Bool> {
     Binding {
       model.alert != nil
@@ -104,7 +129,7 @@ struct MainWindowView: View {
 
   /// The toolbar title's tooltip: the inbox and name, and where a filed file went.
   private func toolbarHelp(for file: SelectedFile) -> String {
-    guard case .filed(_, let destinationPath) = file.mark else {
+    guard case .filed(_, let destinationPath, _, _) = file.mark else {
       return "\(file.inboxName) › \(file.originalName)"
     }
     return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"

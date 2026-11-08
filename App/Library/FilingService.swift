@@ -30,6 +30,9 @@ nonisolated struct MoveOutcome: Sendable {
   let event: FilingEvent
   /// What the move did, including where the file is now.
   let record: MoveRecord
+  /// The history event recording the trip to the Trash of the item a Replace took the place of; `nil` when the move
+  /// replaced nothing. Its document is the replaced file's, so whatever showed that file can show it as trashed.
+  let replacedEvent: FilingEvent?
   /// The service's state after the move.
   let status: FilingStatus
 
@@ -68,6 +71,12 @@ nonisolated enum FilingError: Error, Equatable, Sendable {
   case undoRefused(FilingHistoryError)
   /// The unreadable history file could not be set aside to start a new one.
   case setAsideFailed(url: URL, reason: String)
+  /// The history has no record of how the file at this URL got there: for Move Back, no move of it into the archive
+  /// (its latest active event); for Put Back, no move of it to the Trash.
+  case noHistoryRecord(URL)
+  /// The history says another document is at this URL now than the filed one asked for (a Replace or a later filing
+  /// took its place), so nothing is moved.
+  case fileChangedSinceFiling(URL)
 }
 
 /// Moves, trashes and undoes inbox files, keeping the filing history and the recent destinations in step.
@@ -136,8 +145,8 @@ actor FilingService {
 
   // MARK: Operations
 
-  /// Moves `source` into `folder` (the archive folder at archive-relative `archivePath`) under `name`, records the
-  /// move and the destination, and saves both.
+  /// Moves the inbox file `source` into `folder` (the archive folder at archive-relative `archivePath`) under `name`,
+  /// records the move and the destination, and saves both.
   ///
   /// A taken name throws `.fileOperation(.nameConflict(existing:))` with `.refuse`; retry with `.keepBoth` or
   /// `.replace`.
@@ -145,7 +154,35 @@ actor FilingService {
     _ source: URL, into folder: URL, archivePath: String, named name: String,
     resolution: ConflictResolution
   ) throws(FilingError) -> MoveOutcome {
-    var history = try writableHistory()
+    let history = try writableHistory()
+    return try move(
+      source, into: folder, archivePath: archivePath, named: name, resolution: resolution,
+      in: history)
+  }
+
+  /// Renames or moves on the filed document `documentID`, which lies at `source`, into `folder` (archive-relative
+  /// `archivePath`) under `name`, records the move and the destination, and saves both.
+  ///
+  /// Refuses, changing nothing, unless `documentID` is still the file at `source` (see `verifyFiledPlacement`):
+  /// `.fileChangedSinceFiling` when the history has another document there, `.fileOperation(.sourceMissing)` or
+  /// `.fileOperation(.differentItem)` when the item on disk is gone or not the one filed. Conflicts as in `file`.
+  func refile(
+    document documentID: UUID, at source: URL, into folder: URL, archivePath: String,
+    named name: String, resolution: ConflictResolution
+  ) throws(FilingError) -> MoveOutcome {
+    let history = try writableHistory()
+    try verifyFiledPlacement(of: documentID, at: source, in: history)
+    return try move(
+      source, into: folder, archivePath: archivePath, named: name, resolution: resolution,
+      in: history)
+  }
+
+  /// Moves `source` into `folder` under `name`, records the move into `history` and the destination, and saves both.
+  private func move(
+    _ source: URL, into folder: URL, archivePath: String, named name: String,
+    resolution: ConflictResolution, in history: FilingHistory
+  ) throws(FilingError) -> MoveOutcome {
+    var history = history
     let record: MoveRecord
     do {
       record = try fileOperations.move(source, into: folder, named: name, resolution: resolution)
@@ -153,12 +190,15 @@ actor FilingService {
       throw .fileOperation(error)
     }
     let event = history.recordMove(record, at: Date())
+    let replacedEvent =
+      record.replaced == nil ? nil : history.events.last { $0.causedBy == event.id }
     self.history = history
     recents.record(archivePath)
     save()
     Logger.filing.notice(
       "Filed \(source.lastPathComponent, privacy: .private) to \(archivePath, privacy: .private)")
-    return MoveOutcome(event: event, record: record, status: currentStatus)
+    return MoveOutcome(
+      event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
   }
 
   /// Moves `url` to the Trash, records it and saves the history.
@@ -214,6 +254,87 @@ actor FilingService {
     save()
     Logger.filing.notice("Undid filing event \(eventID, privacy: .public)")
     return UndoOutcome(eventID: eventID, restored: restored, status: currentStatus)
+  }
+
+  /// Moves the filed document `documentID`, which lies at `currentURL`, back to where it came from: the folder and
+  /// name it had before its first recorded move (`FilingHistory.origin(ofDocument:)`), also after a restart. Records
+  /// the move in the history (as a move of the same document, so it can be undone) and saves it; it does not count as
+  /// a recent destination.
+  ///
+  /// Refuses, changing nothing, unless `documentID` is still the file at `currentURL` (see `verifyFiledPlacement`):
+  /// `.noHistoryRecord` when the history has no move that left a file there, `.fileChangedSinceFiling` when it has
+  /// another document there, and `.fileOperation(.sourceMissing)` or `.fileOperation(.differentItem)` when the file
+  /// there is gone or is not the one moved (it was moved, deleted or replaced outside the app). A taken original name
+  /// throws `.fileOperation(.nameConflict(existing:))` with `.refuse`; retry with `.keepBoth`.
+  func moveBack(
+    document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
+  ) throws(FilingError) -> MoveOutcome {
+    var history = try writableHistory()
+    try verifyFiledPlacement(of: documentID, at: currentURL, in: history)
+    guard let origin = history.origin(ofDocument: documentID) else {
+      throw .noHistoryRecord(currentURL)
+    }
+    let record: MoveRecord
+    do {
+      record = try fileOperations.move(
+        currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
+        resolution: resolution)
+    } catch {
+      throw .fileOperation(error)
+    }
+    let event = history.recordMove(record, at: Date())
+    self.history = history
+    save()
+    Logger.filing.notice(
+      "Moved \(currentURL.lastPathComponent, privacy: .private) back to \(record.destinationURL.deletingLastPathComponent().lastPathComponent, privacy: .private)"
+    )
+    return MoveOutcome(event: event, record: record, replacedEvent: nil, status: currentStatus)
+  }
+
+  /// Checks that the filed document `documentID` is the file at `url`, before it is moved again: the history has it
+  /// there (its latest active event is a move that left it at `url`), and the item on disk is the one that move left.
+  ///
+  /// Throws `.noHistoryRecord` when the history has no document at `url` or the document's latest event is not a
+  /// move, `.fileChangedSinceFiling` when another document is there (a Replace or a later filing took its place), and
+  /// `.fileOperation(.sourceMissing)` or `.fileOperation(.differentItem)` when the item on disk is gone or another one.
+  private func verifyFiledPlacement(
+    of documentID: UUID, at url: URL, in history: FilingHistory
+  ) throws(FilingError) {
+    guard let documentAtURL = history.document(at: url) else { throw .noHistoryRecord(url) }
+    guard documentAtURL == documentID else { throw .fileChangedSinceFiling(url) }
+    guard case .moved(let latestMove)? = history.latestActiveEvent(ofDocument: documentID)?.action
+    else {
+      throw .noHistoryRecord(url)
+    }
+    // Only the identity of the file at `url` matters here, not an item a Replace sent to the Trash, so the check uses
+    // the move without its replaced item.
+    let placement = MoveRecord(
+      originalURL: latestMove.originalURL, destinationURL: latestMove.destinationURL,
+      createdFolders: [], replaced: nil, movedItem: latestMove.movedItem)
+    if let blocker = fileOperations.undoBlocker(for: placement) { throw .fileOperation(blocker) }
+  }
+
+  /// Puts the file at `trashedURL` in the Trash back where it was, by undoing its trash event (see `undo(eventID:)`),
+  /// also after a restart.
+  ///
+  /// Throws `.noHistoryRecord` when the history has no trash event that left a file at `trashedURL` still active,
+  /// and what `undo(eventID:)` throws otherwise.
+  func putBack(_ trashedURL: URL) throws(FilingError) -> UndoOutcome {
+    let history = try writableHistory()
+    guard let documentID = history.document(at: trashedURL),
+      let latestEvent = history.latestActiveEvent(ofDocument: documentID),
+      case .trashed = latestEvent.action
+    else {
+      throw .noHistoryRecord(trashedURL)
+    }
+    return try undo(eventID: latestEvent.id)
+  }
+
+  /// Every event of the filing history in the order recorded (oldest first), active and undone; empty while the
+  /// history cannot be read.
+  func events() -> [FilingEvent] {
+    loadIfNeeded()
+    return history?.events ?? []
   }
 
   // MARK: History file

@@ -18,7 +18,7 @@ struct InboxRowView: View {
       Text(shownName)
         .lineLimit(1)
         .truncationMode(.middle)
-        .strikethrough(row.mark == .trashed)
+        .strikethrough(row.mark?.isTrashed == true)
         .foregroundStyle(row.mark == nil ? .primary : .secondary)
       Spacer(minLength: 4)
       Text(row.item.modificationDate, format: .relative(presentation: .named))
@@ -59,7 +59,7 @@ struct InboxRowView: View {
 
   private var tooltip: String {
     switch row.mark {
-    case .filed(_, let destinationPath): "→ \(destinationPath)/\(shownName)"
+    case .filed(_, let destinationPath, _, _): "→ \(destinationPath)/\(shownName)"
     case .trashed: "\(row.item.name) (moved to the Trash)"
     case nil: row.item.name
     }

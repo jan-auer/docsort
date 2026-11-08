@@ -7,7 +7,7 @@ import Observation
 /// One per main window. `MainWindowModel` resets it whenever the selection changes and after each move.
 @Observable
 final class FilingPanelModel {
-  /// The name field's text: the name without its extension. Empty keeps the original name.
+  /// The name field's text: the name without its extension. Empty keeps the file's current name.
   var nameText = ""
   /// An error to show in the panel, for example why the last move failed.
   var notice: String?
@@ -17,11 +17,11 @@ final class FilingPanelModel {
   /// meanwhile still reach the sidebar and are appended to the filter instead of starting it again.
   var isFilterFocusPending = false
 
-  /// Clears everything entered and pre-fills the name with `originalName` without its extension.
-  func reset(originalName: String?) {
+  /// Clears everything entered and pre-fills the name with `currentName` without its extension.
+  func reset(currentName: String?) {
     notice = nil
     hint = nil
-    nameText = originalName.map { FileNameParts($0).stem } ?? ""
+    nameText = currentName.map { FileNameParts($0).stem } ?? ""
   }
 }
 

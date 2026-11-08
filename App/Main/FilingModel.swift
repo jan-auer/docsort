@@ -50,6 +50,23 @@ final class FilingModel {
     }
   }
 
+  /// Renames or moves on the filed document `documentID` at `source`; see `FilingService.refile`.
+  func refile(
+    document documentID: UUID, at source: URL, into folder: URL, archivePath: String,
+    named name: String, resolution: ConflictResolution
+  ) async throws(FilingError) -> MoveOutcome {
+    do {
+      let outcome = try await service.refile(
+        document: documentID, at: source, into: folder, archivePath: archivePath, named: name,
+        resolution: resolution)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
   /// Moves `url` to the Trash; see `FilingService.trash`.
   func trash(_ url: URL) async throws(FilingError) -> TrashOutcome {
     do {
@@ -72,6 +89,38 @@ final class FilingModel {
       await refreshStatus()
       throw error
     }
+  }
+
+  /// Moves the filed document `documentID` at `currentURL` back to its inbox; see `FilingService.moveBack`.
+  func moveBack(
+    document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
+  ) async throws(FilingError) -> MoveOutcome {
+    do {
+      let outcome = try await service.moveBack(
+        document: documentID, at: currentURL, resolution: resolution)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
+  /// Puts the file at `trashedURL` back from the Trash; see `FilingService.putBack`.
+  func putBack(_ trashedURL: URL) async throws(FilingError) -> UndoOutcome {
+    do {
+      let outcome = try await service.putBack(trashedURL)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
+  /// Every event of the filing history, oldest first; see `FilingService.events`.
+  func events() async -> [FilingEvent] {
+    await service.events()
   }
 
   /// Tries the pending history save again.

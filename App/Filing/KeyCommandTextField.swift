@@ -67,6 +67,10 @@ struct KeyCommandTextField: NSViewRepresentable {
       field.stringValue = text
     }
     field.placeholderString = placeholder
+    // An AppKit control doesn't follow SwiftUI's `disabled(_:)` on its own.
+    if field.isEnabled != context.environment.isEnabled {
+      field.isEnabled = context.environment.isEnabled
+    }
     guard let focusRequestID, focusRequestID != context.coordinator.handledFocusRequestID else {
       return
     }

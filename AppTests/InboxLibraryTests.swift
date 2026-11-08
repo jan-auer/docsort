@@ -51,23 +51,24 @@ struct InboxLibraryTests {
       at: renewal, to: archived.appending(path: renewal.lastPathComponent))
     try FileManager.default.removeItem(
       at: environment.webDownloads.appending(path: "Uni Westerholm"))
-    library.markFiled(
-      renewalRow.id, newURL: archived.appending(path: renewal.lastPathComponent),
-      destinationPath: "Mobilität/Jahreskarte Regio Plus")
-    library.markTrashed(groupRow.id)
+    let filedMark = InboxItemMark.filed(
+      newURL: archived.appending(path: renewal.lastPathComponent),
+      destinationPath: "Mobilität/Jahreskarte Regio Plus", date: october2033(21),
+      documentID: UUID())
+    let trashedMark = InboxItemMark.trashed(
+      trashedURL: environment.root.appending(path: "Trash/Rechnung_Collegegeld_1e-termijn.pdf"),
+      date: october2033(21))
+    library.setMark(renewalRow.id, filedMark)
+    library.setMark(groupRow.id, trashedMark)
 
     library.refresh()
     await library.waitForScan()
 
     #expect(names(library) == before)
-    #expect(
-      library.row(for: renewalRow.id)?.mark
-        == .filed(
-          newURL: archived.appending(path: renewal.lastPathComponent),
-          destinationPath: "Mobilität/Jahreskarte Regio Plus"))
-    #expect(library.row(for: groupRow.id)?.mark == .trashed)
+    #expect(library.row(for: renewalRow.id)?.mark == filedMark)
+    #expect(library.row(for: groupRow.id)?.mark == trashedMark)
 
-    library.unmark(renewalRow.id)
+    library.setMark(renewalRow.id, nil)
     #expect(library.row(for: renewalRow.id)?.mark == nil)
     library.refresh()
     await library.waitForScan()
@@ -87,9 +88,12 @@ struct InboxLibraryTests {
     try FileManager.default.createDirectory(at: archived, withIntermediateDirectories: true)
     try FileManager.default.moveItem(
       at: invoice, to: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"))
-    library.markFiled(
-      invoiceRow.id, newURL: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"),
-      destinationPath: "Musik Margit/Noten & Bücher")
+    library.setMark(
+      invoiceRow.id,
+      .filed(
+        newURL: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"),
+        destinationPath: "Musik Margit/Noten & Bücher", date: october2033(13),
+        documentID: UUID()))
     _ = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(20))
 
@@ -119,7 +123,12 @@ struct InboxLibraryTests {
     #expect(rows.count == 3)
 
     #expect(library.nextUnhandledRow(after: rows[0].id)?.id == rows[1].id)
-    library.markTrashed(rows[1].id)
+    library.setMark(
+      rows[1].id,
+      .trashed(
+        trashedURL: environment.root.appending(
+          path: "Trash/2033-10-20 Verlängerung Jahreskarte Konrad.pdf"),
+        date: october2033(21)))
     #expect(library.nextUnhandledRow(after: rows[0].id)?.id == rows[2].id)
     #expect(library.nextUnhandledRow(after: rows[2].id)?.id == rows[0].id)
     #expect(library.firstRow(inSection: 1)?.item.name == "2033-10-11_Optik Klarblick.pdf")

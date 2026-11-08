@@ -5,9 +5,13 @@ import SwiftUI
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the file's name,
 /// the destination picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents,
-/// the name field with the extension as a fixed label, and the Move button (⌘Return, also File › Move). A filed or
-/// trashed file shows what happened to it instead. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the filing history
-/// can't be read (with **Start New History** and **Show in Finder**).
+/// the name field with the extension as a fixed label, and the Move button (⌘Return, also File › Move).
+///
+/// A filed file opens with a status strip ("Filed to … · today 09:41", **Move Back**) above the same sections, with
+/// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
+/// changed and is disabled while nothing did. A trashed file shows the strip ("Moved to Trash", **Put Back**) above
+/// the sections shown inactive. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the
+/// filing history can't be read (with **Start New History** and **Show in Finder**).
 struct FilingPanel: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
@@ -44,6 +48,13 @@ struct FilingPanel: View {
 
   /// The panel's content for a selected file.
   @ViewBuilder private func selectedFileSections(for file: SelectedFile) -> some View {
+    if let status = stripStatus(for: file) {
+      FilingStatusStrip(
+        status: status, inboxName: file.inboxName,
+        canReturnToInbox: model.canReturnSelectedFileToInbox,
+        returnToInbox: { model.returnSelectedFileToInbox() })
+    }
+
     Text(file.originalName)
       .font(.headline)
       .lineLimit(2)
@@ -51,24 +62,34 @@ struct FilingPanel: View {
       .textSelection(.enabled)
       .accessibilityIdentifier("filing-panel-file-name")
 
-    switch file.mark {
-    case .filed(_, let destinationPath):
-      handledStrip(
-        systemImage: "checkmark.circle.fill", color: .green,
-        text: "Filed to \(destinationPath) as \(file.name)")
-    case .trashed:
-      handledStrip(systemImage: "trash", color: .secondary, text: "Moved to Trash")
-    case nil:
-      if file.completeness == .downloading {
-        Label("This file is still downloading.", systemImage: "icloud.and.arrow.down")
-          .foregroundStyle(.secondary)
-      } else {
-        filingSections(for: file)
-      }
+    if file.mark == nil, file.completeness == .downloading {
+      Label("This file is still downloading.", systemImage: "icloud.and.arrow.down")
+        .foregroundStyle(.secondary)
+    } else {
+      // One branch for unhandled, filed and trashed files, so the picker keeps its identity (and focus handling)
+      // when the selected file's state changes; a trashed file's sections are shown inactive.
+      filingSections(for: file)
+        .disabled(file.isTrashed)
     }
   }
 
-  @ViewBuilder private func filingSections(for file: SelectedFile) -> some View {
+  /// What the status strip shows for `file`; `nil` while it is unhandled.
+  private func stripStatus(for file: SelectedFile) -> FilingStatusStrip.Status? {
+    switch file.mark {
+    case .filed(_, let destinationPath, let date, _):
+      .filed(destinationPath: destinationPath, date: date)
+    case .trashed(_, let date): .trashed(date: date)
+    case nil: nil
+    }
+  }
+
+  private func filingSections(for file: SelectedFile) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      filingControls(for: file)
+    }
+  }
+
+  @ViewBuilder private func filingControls(for file: SelectedFile) -> some View {
     Text("Destination")
       .font(.subheadline.weight(.semibold))
       .foregroundStyle(.secondary)
@@ -98,7 +119,7 @@ struct FilingPanel: View {
         // sidebar's own focus state); keep it in step, so the picker stops treating its fields as focused.
         if focus == .nameField || focus == .sidebar, focusedField != nil { focusedField = nil }
       }
-    FolderContentsView(model: model.picker, conflictingName: model.finalName)
+    FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
       .frame(minHeight: 80, maxHeight: 200)
 
     Text("Name")
@@ -119,7 +140,7 @@ struct FilingPanel: View {
         model.moveSelectedFile()
       } label: {
         HStack(spacing: 6) {
-          Text("Move")
+          Text(moveButtonTitle)
           Text("⌘↩")
             .font(.caption)
             .padding(.horizontal, 4)
@@ -130,24 +151,15 @@ struct FilingPanel: View {
       .buttonStyle(.borderedProminent)
       .controlSize(.large)
       .disabled(!model.canMoveSelectedFile)
-      .help("Move (⌘Return)")
+      .help("\(moveButtonTitle) (⌘Return)")
+      .accessibilityLabel(moveButtonTitle)
       .accessibilityIdentifier("move-button")
     }
   }
 
-  private func handledStrip(systemImage: String, color: Color, text: String) -> some View {
-    Label {
-      Text(text)
-        .lineLimit(3)
-    } icon: {
-      Image(systemName: systemImage)
-        .foregroundStyle(color)
-    }
-    .padding(8)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
-    .accessibilityElement(children: .combine)
-    .accessibilityIdentifier("filing-panel-handled")
+  /// The bottom button's title: **Rename** when only a filed file's name changed, **Move** otherwise.
+  private var moveButtonTitle: String {
+    model.filedFileChange == .rename ? "Rename" : "Move"
   }
 
   private var inactiveMessage: some View {
@@ -212,6 +224,26 @@ struct FilingPanel: View {
       model: .preview(
         folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
         selectedFile: SampleInboxes.selectedInvoice()),
+      locateArchive: {}
+    )
+    .frame(width: 340, height: 600)
+  }
+
+  #Preview("Filed file") {
+    FilingPanel(
+      model: .preview(
+        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
+        selectedFile: SampleInboxes.filedInvoice()),
+      locateArchive: {}
+    )
+    .frame(width: 340, height: 600)
+  }
+
+  #Preview("Trashed file") {
+    FilingPanel(
+      model: .preview(
+        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
+        selectedFile: SampleInboxes.trashedInvoice()),
       locateArchive: {}
     )
     .frame(width: 340, height: 600)
