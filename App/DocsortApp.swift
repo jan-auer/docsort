@@ -17,6 +17,10 @@ struct DocsortApp: App {
   @State private var archive: ArchiveLibrary
   /// The destination-search settings.
   @State private var search: SearchSettings
+  /// The inbox rows, rescanned whenever the inboxes change.
+  @State private var inboxes: InboxLibrary
+  /// Moving, trashing and undoing, with the filing history.
+  @State private var filing: FilingModel
   /// The state of the one main window.
   @State private var mainWindowModel: MainWindowModel
 
@@ -27,9 +31,18 @@ struct DocsortApp: App {
     let environment = AppEnvironment.forCurrentProcess()
     let folders = FolderLibrary(environment: environment)
     _folders = State(initialValue: folders)
-    _archive = State(initialValue: ArchiveLibrary(folders: folders))
-    _search = State(initialValue: SearchSettings(defaults: environment.defaults))
-    _mainWindowModel = State(initialValue: MainWindowModel(folders: folders))
+    let archive = ArchiveLibrary(folders: folders)
+    let search = SearchSettings(defaults: environment.defaults)
+    let inboxes = InboxLibrary(folders: folders)
+    let filing = FilingModel(
+      service: .make(environment: environment), historyFileURL: environment.filingHistoryURL)
+    _archive = State(initialValue: archive)
+    _search = State(initialValue: search)
+    _inboxes = State(initialValue: inboxes)
+    _filing = State(initialValue: filing)
+    _mainWindowModel = State(
+      initialValue: MainWindowModel(
+        folders: folders, inboxes: inboxes, archive: archive, filing: filing, search: search))
   }
 
   var body: some Scene {

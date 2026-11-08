@@ -1,28 +1,39 @@
+import DocsortCore
 import SwiftUI
 
 /// The content of the main window: the inbox sidebar, the preview and the filing panel as an inspector, with the
 /// selected file's name and actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
-/// quiet "No file selected" while nothing is selected. Below `MainWindowModel.sidebarCollapseWidth` the sidebar
+/// quiet "No file selected" while nothing is selected, with the bottom bar (confirmations, history save warning)
+/// under it. Name conflicts and failed actions are shown as alerts. Below `MainWindowModel.sidebarCollapseWidth` the sidebar
 /// collapses first, so the preview keeps its room.
 struct MainWindowView: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
 
+  @Environment(\.undoManager) private var undoManager
+
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
-      SidebarColumn {}
-        .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
+      SidebarColumn {
+        if model.areFoldersConfigured {
+          InboxSidebar(model: model)
+        }
+      }
+      .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
     } detail: {
-      detailColumn
-        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-        .toolbar { fileToolbar }
+      VStack(spacing: 0) {
+        detailColumn
+          .frame(maxHeight: .infinity)
+        WindowBottomBar(model: model)
+      }
+      .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      .toolbar { fileToolbar }
     }
     .inspector(isPresented: $model.isFilingPanelShown) {
       FilingPanel(
-        selectedFile: model.selectedFile,
-        archiveAvailability: model.archiveAvailability,
+        model: model,
         locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
       )
       .inspectorColumnWidth(min: 280, ideal: 340, max: 480)
@@ -34,10 +45,50 @@ struct MainWindowView: View {
     } action: { widthClass in
       model.windowWidthClassChanged(to: widthClass)
     }
+    .onAppear { model.undoManager = undoManager }
+    .onChange(of: undoManager) { _, undoManager in model.undoManager = undoManager }
     .folderSettingsAlert(for: model.folders)
+    .alert(
+      conflictTitle, isPresented: isConflictPresented, presenting: model.conflict
+    ) { conflict in
+      Button("Keep Both") { model.resolve(conflict, with: .keepBoth) }
+        .keyboardShortcut(.defaultAction)
+      Button("Replace", role: .destructive) { model.resolve(conflict, with: .replace) }
+      Button("Cancel", role: .cancel) { model.cancelConflict() }
+    } message: { _ in
+      Text("Replace moves the existing file to the Trash.")
+    }
+    .alert(
+      model.alert?.title ?? "", isPresented: isAlertPresented, presenting: model.alert
+    ) { _ in
+      Button("OK", role: .cancel) {}
+    } message: { alert in
+      Text(alert.message)
+    }
     .focusedSceneValue(\.mainWindowModel, model)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("main-window")
+  }
+
+  private var conflictTitle: String {
+    guard let conflict = model.conflict else { return "" }
+    return "“\(conflict.existingName)” already exists in \(conflict.request.archivePath)."
+  }
+
+  private var isConflictPresented: Binding<Bool> {
+    Binding {
+      model.conflict != nil
+    } set: {
+      if !$0 { model.conflict = nil }
+    }
+  }
+
+  private var isAlertPresented: Binding<Bool> {
+    Binding {
+      model.alert != nil
+    } set: {
+      if !$0 { model.alert = nil }
+    }
   }
 
   @ViewBuilder private var detailColumn: some View {
@@ -51,6 +102,14 @@ struct MainWindowView: View {
     }
   }
 
+  /// The toolbar title's tooltip: the inbox and name, and where a filed file went.
+  private func toolbarHelp(for file: SelectedFile) -> String {
+    guard case .filed(_, let destinationPath) = file.mark else {
+      return "\(file.inboxName) › \(file.originalName)"
+    }
+    return "\(file.inboxName) › \(file.originalName) → \(destinationPath)/\(file.name)"
+  }
+
   /// The selected file's inbox and name, its actions, and the filing panel toggle.
   @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
     ToolbarItem(placement: .navigation) {
@@ -59,11 +118,10 @@ struct MainWindowView: View {
           .lineLimit(1)
           .truncationMode(.middle)
           .frame(minWidth: 120, maxWidth: 480, alignment: .leading)
-          .help("\(selectedFile.inboxName) › \(selectedFile.name)")
+          .help(toolbarHelp(for: selectedFile))
           .accessibilityIdentifier("toolbar-file-title")
       }
     }
-    // Move to Trash joins this group after Reveal in Finder once trashing is built.
     ToolbarItemGroup(placement: .primaryAction) {
       Button {
         if let selectedFile = model.selectedFile { FileActions.open(selectedFile.url) }
@@ -82,6 +140,15 @@ struct MainWindowView: View {
       .help("Reveal in Finder (⌥⌘R)")
       .disabled(model.selectedFile == nil)
       .accessibilityIdentifier("toolbar-reveal")
+
+      Button {
+        model.trashSelectedFile()
+      } label: {
+        Label("Move to Trash", systemImage: "trash")
+      }
+      .help("Move to Trash (⌘⌫)")
+      .disabled(!model.canTrashSelectedFile)
+      .accessibilityIdentifier("toolbar-trash")
     }
     ToolbarItem(placement: .primaryAction) {
       Button {
@@ -98,45 +165,36 @@ struct MainWindowView: View {
 #if DEBUG
   #Preview("First launch") {
     MainWindowView(
-      model: MainWindowModel(folders: .preview(archiveRoot: nil, inboxes: []))
+      model: .preview(folders: .preview(archiveRoot: nil, inboxes: []))
     )
     .frame(width: 1280, height: 800)
   }
 
-  #Preview("Nothing selected") {
+  #Preview("Inboxes, nothing selected") {
     MainWindowView(
-      model: MainWindowModel(
-        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes)
-      )
+      model: .preview(
+        folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
+        inboxes: SampleInboxes.library())
     )
     .frame(width: 1280, height: 800)
   }
 
   #Preview("PDF selected") {
     MainWindowView(
-      model: MainWindowModel(
+      model: .preview(
         folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
-        selectedFile: SelectedFile(
-          url: PreviewSampleFiles.invoicePDF(),
-          inboxName: "Web-Downloads",
-          completeness: .complete
-        )
-      )
+        inboxes: SampleInboxes.library(),
+        selectedFile: SampleInboxes.selectedInvoice())
     )
     .frame(width: 1280, height: 800)
   }
 
   #Preview("Archive unreachable") {
     MainWindowView(
-      model: MainWindowModel(
+      model: .preview(
         folders: .preview(
           archiveRoot: SampleFolders.missingArchiveRoot, inboxes: SampleFolders.inboxes),
-        selectedFile: SelectedFile(
-          url: PreviewSampleFiles.textNote(),
-          inboxName: "Scanner",
-          completeness: .complete
-        )
-      )
+        selectedFile: SampleInboxes.selectedInvoice())
     )
     .frame(width: 1280, height: 800)
   }

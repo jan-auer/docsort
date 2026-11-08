@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The main window's menu-bar commands: Open and Reveal in Finder (File), the filing panel toggle and the preview zoom
-/// (View), the sidebar toggle, and History (Window).
+/// The main window's menu-bar commands: Open, Reveal in Finder, Move and Move to Trash (File), Refresh, the filing
+/// panel toggle and the preview zoom (View), the sidebar toggle, and History (Window). Undo and Redo (Edit) come
+/// from the window's undo manager.
 ///
 /// The file and view commands act on the key main window through the `mainWindowModel` focused value and are
 /// disabled when it is not key or when they do not apply. History is always available.
@@ -24,9 +25,32 @@ struct MainCommands: Commands {
       }
       .keyboardShortcut("r", modifiers: [.option, .command])
       .disabled(selectedFile == nil)
+
+      Divider()
+
+      Button("Move") {
+        mainWindowModel?.moveSelectedFile()
+      }
+      .keyboardShortcut(.return, modifiers: .command)
+      .disabled(!(mainWindowModel?.canMoveSelectedFile ?? false))
+
+      // Disabled while a text field has focus, so ⌘⌫ deletes text there instead of trashing the file.
+      Button("Move to Trash") {
+        mainWindowModel?.trashSelectedFile()
+      }
+      .keyboardShortcut(.delete, modifiers: .command)
+      .disabled(
+        !(mainWindowModel?.canTrashSelectedFile ?? false)
+          || (mainWindowModel?.isTextFieldFocused ?? false))
     }
 
     CommandGroup(after: .sidebar) {
+      Button("Refresh") {
+        mainWindowModel?.inboxes.refresh()
+      }
+      .keyboardShortcut("r")
+      .disabled(mainWindowModel == nil)
+
       Button(filingPanelToggleTitle) {
         mainWindowModel?.isFilingPanelShown.toggle()
       }
