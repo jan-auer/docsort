@@ -22,6 +22,13 @@ need to share configuration.
 Prefer a mature fuzzy-matching library over writing one; whoever implements destination search researches the
 options and proposes one. Reason: user's guidance; matching quality is the CLI's best-liked feature.
 
+Chosen: ordo-one/FuzzyMatch 1.4.0 (Smith-Waterman mode), wrapped with query trimming, bonuses for whole and last
+path segments, a recent-destinations boost and an ue/ae/oe/ss → ü/ä/ö/ß fallback. The user's rule was "nucleo if it
+is significantly better for my use, otherwise FuzzyMatch". On 66 CLI-style queries over the real archive, nucleo put
+the target first 41 times and FuzzyMatch 38, and both found it in the top 10 about equally (49 vs 48). FuzzyMatch
+only misses low-scoring scattered-letter matches. Revisit with nucleo through a Rust static library (the user
+accepts a Rust toolchain) if ranking falls short in daily use. Test fixtures follow `no-real-data-in-repo`.
+
 ## inbox-and-history-behaviour
 
 Settled from the user's first mockup review:
@@ -31,6 +38,15 @@ Settled from the user's first mockup review:
   time. A History view lists all filed files in chronological order.
 - A filed file can still be renamed, and "revert name" restores the name it had before filing.
 Reason: user's choice; files moving around in the sidebar is disorienting, and the history makes filing auditable.
+
+## deferred-and-wanted-features
+
+- Deferred: shortcuts that insert a date into the name field. Today's date is rarely the document's date; revisit
+  together with inferring the document date from its content.
+- Wanted: live watching of inbox folders. Files added or removed by something other than the app update the sidebar
+  live. Files the app moved stay checked off in place; files moved or deleted elsewhere disappear (a layout shift is
+  acceptable there). Built as its own core piece plus UI integration, after the UI shell.
+Reason: user's feedback in design round 2.
 
 ## app-sandbox
 
@@ -48,12 +64,40 @@ Drive) are not covered and need their own grant.
 ## agent-tooling
 
 Agents use built-in tools wherever they work: `xcodebuild` and `swift test` stay the check commands, XCUITest
-covers keyboard flows, `log stream` reads the app's `os.Logger` output, and the Claude app's computer use handles
-visual checks of the running app. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
+covers keyboard flows (asserting on elements and accessibility identifiers), and `log stream` reads the app's
+`os.Logger` output. Nothing may capture the screen or audio: no computer use, no `screencapture`, no
+ScreenCaptureKit, no screenshots in UI tests. Each of these makes macOS ask the user for Screen & System Audio
+Recording, which the user does not want to grant. Visual checks use Xcode's `RenderPreview`; when only a look at the
+running app will do, ask the user. Xcode's own MCP server (`xcrun mcpbridge`) is used where it brings a significant
 benefit and works. Tested with worktrees, it qualifies only for rendering SwiftUI previews (`RenderPreview`). Its
 build and test tools are not used: a build started right after a file changed reported success on the old code, and
 otherwise they add nothing over `xcodebuild`. No third-party automation tools (Peekaboo, MobileBuildMCP). Reason:
 user's choice after a tooling survey in the first session.
+
+## no-real-data-in-repo
+
+Test fixtures, mockups and examples never contain names, dates or details from the user's real archive. Write them
+from scratch in the archive's style. Don't derive them from real names by swapping parts out: twice such a
+transformation kept real dates, items and listing details. The real tree may serve as a private, uncommitted
+benchmark. Anything that may contain sample data gets an independent privacy review before it is published as an
+artifact or landed. The author's own check is not enough. Briefs must not invite drawing sample names from the real
+archive. How to write sample data so it stays clean:
+- A fresh subagent writes it from an abstract spec: the shapes and situations needed, no concrete names, dates or
+  examples. It never reads the real archive, the old sample data, or notes from sessions that have seen the archive.
+  A session whose context holds real data drifts back to it even when it means to invent.
+- The fictional household has a different life situation from the user's.
+- Its dates sit in clearly different years (for example 2031–2033). The real archive has files on most days of recent
+  years, so invented recent dates collide with real documents of the same kind.
+Reason: the user asked for made-up names; reviews caught leaks five times (core fixtures three times, the design
+mockups twice), and the first design brief allowed real names.
+
+## search-scoped-ranking
+
+The destination search ranks closer folders first by default: at comparable match quality, a folder fewer levels
+below the current scope wins, even over a deeper folder whose name matches exactly (the user types a common prefix,
+not scattered letters). The archive root is a scope like any other. It is a setting, so the user can switch to
+"exact name first" later. Reason: user's choice in the core review. (An earlier version of this entry said exact
+names always win from the root; that was the hub's misreading of one example, not the user's decision.)
 
 ## hub-delegates-research
 
