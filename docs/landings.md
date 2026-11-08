@@ -2,6 +2,13 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/ui-history-600ca2 (32bcac9) + claude/app-icon-985d1b: History actions and app icon
+- What landed: History inspector pattern B (an icon-only Reveal on the destination line; Open and Move Back side by
+  side; Show in Main Window in the menus only). The app icon is concept C2: ink-blue tray with an amber check and a
+  simplified 16/32 px drawing; source SVGs in `docs/design/icon/`.
+- Divergence: None.
+- Follow-ups: check the icon in the Dock and Finder.
+
 ## 2026-11-08 claude/ui-main-window, ui-filing-panel, ui-history: UI polish from the first review
 - What landed:
   - Toolbar: the panel toggle at the far right, with Open, Reveal and Trash as their own group; a plain
