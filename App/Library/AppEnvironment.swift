@@ -11,6 +11,8 @@ import OSLog
 ///   the user's settings, bookmarks or filing history. The app then starts with no folders configured. Tests build
 ///   their own environments (with fake bookmarks) for the models they test.
 ///
+/// - `.swiftUIPreviews`: `inert(named:)` as well. Rendering a `#Preview` launches the whole app, whose launch must not
+///   resolve the user's bookmarks, scan their inboxes, index their archive or save renewed bookmarks.
 /// - `.uiTestFixture` (debug builds only): `UITestFixture.makeEnvironment()`, a freshly built invented archive and
 ///   inboxes in the app's temporary directory, for the UI tests.
 ///
@@ -65,6 +67,10 @@ struct AppEnvironment {
       Logger.lifecycle.notice(
         "Running as the unit-test host: using an inert environment, not the user's settings")
       return inert(named: "unit-test-host")
+    case .swiftUIPreviews:
+      Logger.lifecycle.notice(
+        "Running for SwiftUI previews: using an inert environment, not the user's settings")
+      return inert(named: "previews")
     case .uiTestFixture:
       #if DEBUG
         Logger.lifecycle.notice("Running with the UI-test fixture, not the user's settings")
@@ -83,6 +89,8 @@ nonisolated enum AppLaunchMode: Equatable, Sendable {
   case standard
   /// The app hosts the `DocsortTests` unit tests: XCTest has set `XCTestConfigurationFilePath` in its environment.
   case unitTestHost
+  /// Xcode launched the app to render SwiftUI previews: it has set `XCODE_RUNNING_FOR_PREVIEWS` to `1`.
+  case swiftUIPreviews
   /// A UI test launched the app with `uiTestFixtureArgument` (debug builds only).
   case uiTestFixture
 
@@ -98,6 +106,7 @@ nonisolated enum AppLaunchMode: Equatable, Sendable {
     #if DEBUG
       if arguments.contains(uiTestFixtureArgument) { return .uiTestFixture }
     #endif
+    if processEnvironment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return .swiftUIPreviews }
     return processEnvironment["XCTestConfigurationFilePath"] == nil ? .standard : .unitTestHost
   }
 }

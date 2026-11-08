@@ -74,6 +74,35 @@ struct InboxLibraryTests {
     #expect(library.row(for: renewalRow.id) == nil)
   }
 
+  @Test("A new file arriving under a filed file's name is listed unfiled after a rescan")
+  func newFileUnderFiledNameIsUnfiled() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let library = await makeLibrary(environment)
+    let invoiceRow = try #require(library.orderedRows.first)
+
+    let archived = environment.archive.appending(path: "Musik Margit/Noten & Bücher")
+    try FileManager.default.createDirectory(at: archived, withIntermediateDirectories: true)
+    try FileManager.default.moveItem(
+      at: invoice, to: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"))
+    library.markFiled(
+      invoiceRow.id, newURL: archived.appending(path: "2033-10-13 Notenhaus Allegretto.pdf"),
+      destinationPath: "Musik Margit/Noten & Bücher")
+    _ = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(20))
+
+    library.refresh()
+    await library.waitForScan()
+
+    #expect(names(library) == ["Rechnung_NA-33-08812.pdf"])
+    let newRow = try #require(library.orderedRows.first)
+    #expect(newRow.mark == nil)
+    #expect(
+      newRow.currentURL == environment.webDownloads.appending(path: "Rechnung_NA-33-08812.pdf"))
+  }
+
   @Test("The next unhandled file skips handled ones and wraps across sections")
   func nextUnhandledWraps() async throws {
     let environment = try TestFolderEnvironment()

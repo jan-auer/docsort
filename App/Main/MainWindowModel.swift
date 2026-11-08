@@ -216,7 +216,10 @@ final class MainWindowModel {
   }
 
   /// Asks the views to move keyboard focus to `target`.
+  ///
+  /// Focus in the filing panel shows the panel first, so typed text never goes into a filter the user can't see.
   func requestFocus(_ target: MainWindowFocus) {
+    if target == .destinationFilter || target == .nameField { isFilingPanelShown = true }
     if target == .destinationFilter { panel.isFilterFocusPending = true }
     focusRequest = FocusRequest(target: target)
   }

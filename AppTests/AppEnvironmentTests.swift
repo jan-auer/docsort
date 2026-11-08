@@ -14,6 +14,9 @@ struct AppEnvironmentTests {
         "XCTestConfigurationFilePath": "/tmp/x.xctestconfiguration"
       ])
         == .unitTestHost)
+    #expect(
+      AppLaunchMode.current(processEnvironment: ["XCODE_RUNNING_FOR_PREVIEWS": "1"])
+        == .swiftUIPreviews)
   }
 
   @Test("This test run's host app uses the inert environment")

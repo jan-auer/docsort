@@ -11,6 +11,8 @@ enum SceneID {
 
 @main
 struct DocsortApp: App {
+  /// Saves a pending filing history at quit, asking before quitting when that fails.
+  @NSApplicationDelegateAdaptor private var quitSaveDelegate: QuitSaveDelegate
   /// The configured folders, loaded and resolved at launch.
   @State private var folders: FolderLibrary
   /// The index of archive folders, rebuilt whenever the folders change.
@@ -48,6 +50,7 @@ struct DocsortApp: App {
   var body: some Scene {
     Window("docsort", id: SceneID.main) {
       MainWindowView(model: mainWindowModel)
+        .onAppear { quitSaveDelegate.filing = filing }
     }
     .defaultSize(width: 1280, height: 800)
     .commands {

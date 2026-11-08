@@ -205,6 +205,13 @@ final class InboxLibrary {
       scans[id] = result
       // The scan shows what is on disk now; rows kept only for an undo are no longer needed.
       keptRows = keptRows.filter { $0.value.sectionID != id || $0.value.mark != nil }
+      // A filed or trashed file is no longer at its inbox URL (an undo unmarks it before it comes back), so an item
+      // listed there is a new file that reuses the name: it must not inherit the old file's mark.
+      if case .listed(let listing) = result {
+        for item in listing.items {
+          keptRows[InboxItemID(item)] = nil
+        }
+      }
     }
     rebuildSections()
     let itemCount = sections.reduce(0) { $0 + $1.rows.count }

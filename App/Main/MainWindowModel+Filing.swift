@@ -119,10 +119,16 @@ extension MainWindowModel {
   /// File › Move (⌘Return): moves the selected file to the chosen destination under the entered name.
   ///
   /// With no destination chosen, the picker's highlighted folder is chosen first when the picker is in use;
-  /// otherwise focus goes to the filter and nothing moves. (While a picker field has focus, the picker handles
+  /// otherwise focus goes to the filter and nothing moves. With the filing panel hidden, it shows the panel and moves
+  /// nothing. (While a picker field has focus, the picker handles
   /// ⌘Return itself and reports `.moveRequested`.)
   func moveSelectedFile() {
     guard canMoveSelectedFile else { return }
+    guard isFilingPanelShown else {
+      // The destination and name are not visible: show them instead of moving to something the user can't see.
+      requestFocus(.destinationFilter)
+      return
+    }
     if let destination = picker.destination {
       move(to: destination)
     } else if focus == .destinationFilter || !picker.filterText.isEmpty,
