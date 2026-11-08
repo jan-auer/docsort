@@ -2,6 +2,13 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/architecture-60c7c1: target architecture
+- What landed: `docs/architecture.md`: layers, core services (folder access, filing, inbox listing, destinations,
+  folder contents) with intended signatures, the concurrency model, and per service what to set now and what to move
+  during the cleanup.
+- Divergence: None. It records non-UI Apple frameworks in the core, which `core-apple-frameworks` has since approved.
+- Follow-ups: the architect keeps reviewing branches against it; the cleanup comes once the app works end to end.
+
 ## 2026-11-08 claude/core-engine-79f2d6: core engine
 - What landed: `Packages/DocsortCore`, with 249 tests:
   - settings with security-scoped bookmarks and per-folder status;
