@@ -2,6 +2,22 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/app-ui-b54b29 (fc94b93) + claude/picker-3b43e7: end-to-end app
+- What landed, the first usable app:
+  - Settings with security-scoped folders and the ranking option;
+  - inbox sidebar (oldest first, groups) and preview (PDFKit / Quick Look);
+  - the drill-down destination picker with scoped search, new folders and folder contents;
+  - a name field, ⌘Return move with check-off and next file, Keep Both / Replace, ⌘⌫ Trash, ⌘Z/⇧⌘Z;
+  - a persistent history with the save-failure policy and quit-time save;
+  - `FilingService`, `InboxLibrary`, `ArchiveLibrary`.
+  Landed while the user was away (`autonomous-while-away`), after two reviews: one blocker in the e2e flow and three
+  in the picker integration were fixed.
+- Divergence: the picker component was merged into the UI branch rather than landing on its own. The name field and
+  filter use AppKit text fields. Hosted tests (app unit tests after 01:30, all UI tests) are written but unrun,
+  because the screen was locked; verified by lint, builds, core tests, launch-log checks and review.
+- Follow-ups: run the hosted tests (`docs/open-questions.md`); `docs/backlog.md`; History window, status strips with
+  Move Back, revert name, and wiring in live folder watching.
+
 ## 2026-11-08 claude/architecture-60c7c1: target architecture
 - What landed: `docs/architecture.md`: layers, core services (folder access, filing, inbox listing, destinations,
   folder contents) with intended signatures, the concurrency model, and per service what to set now and what to move
