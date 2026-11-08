@@ -65,12 +65,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         Divider()
         bottomBar
       }
-      .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
-      .overlay {
-        RoundedRectangle(cornerRadius: 7).strokeBorder(
-          Color(nsColor: .separatorColor), lineWidth: 0.5)
-      }
-      .clipShape(RoundedRectangle(cornerRadius: 7))
+      .pickerBox()
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
@@ -307,20 +302,32 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   // MARK: Bottom bar
 
+  /// The New Folder button with its shortcut, and the keys that step into and out of folders.
   private var bottomBar: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
-    return HStack {
+    return HStack(spacing: 8) {
       Button(action: beginNewFolder) {
-        Image(systemName: "folder.badge.plus")
-          .frame(width: 26, height: 20)
-          .contentShape(Rectangle())
+        HStack(spacing: 4) {
+          Image(systemName: "folder.badge.plus")
+          Text("⇧⌘N")
+            .font(.system(size: 10.5))
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 20)
+        .contentShape(Rectangle())
       }
       .buttonStyle(.borderless)
       .disabled(model.newFolderDraft != nil)
       .help("\(title) (⇧⌘N)")
       .accessibilityLabel(title)
       .accessibilityIdentifier("picker-new-folder-button")
-      Spacer()
+      .layoutPriority(1)
+      Spacer(minLength: 0)
+      Text("→ into folder · ← out")
+        .font(.system(size: 10.5))
+        .foregroundStyle(.tertiary)
+        .lineLimit(1)
+        .accessibilityIdentifier("picker-navigation-hint")
     }
     .padding(.horizontal, 4)
     .frame(height: 24)
