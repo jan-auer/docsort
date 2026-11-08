@@ -77,6 +77,23 @@ attachments. Keep it that way: nothing may capture the screen (`agent-tooling`).
 accessibility identifiers only. Send keystrokes to a window element (`mainWindow.typeKey(…)`), not to the
 `XCUIApplication`: on macOS 27 a key event on the application element aborts the test runner.
 
+### Hosted tests (unit and UI): lock, hangs, fallback
+
+- Sessions share one Mac and one `testmanagerd`, and every test host is `org.jauer.Docsort`. Wrap every
+  `xcodebuild … test` in the shared lock:
+  `until mkdir /tmp/docsort-xctest.lock 2>/dev/null; do sleep 15; done; xcodebuild … test …; rc=$?; rmdir /tmp/docsort-xctest.lock; exit $rc`
+- A run that hangs before any test starts has one of two causes: another `Docsort.app` is running (check
+  `ps -axo pid,command | grep Docsort.app/Contents/MacOS`; a preview host is quit by `XcodeCloseWorkspace`), or the
+  screen is locked (`ioreg -n Root -d1 -a | grep -A1 CGSSessionScreenIsLocked`). Neither fixes itself; don't retry
+  in a loop.
+- While hosted tests can't run, a launch check still works: under the lock, run
+  `timeout 20 .build/xcode/Build/Products/Debug/Docsort.app/Contents/MacOS/Docsort -docsort-ui-test-fixture` and
+  read `/usr/bin/log show --start "<time>" --info --predicate 'subsystem == "org.jauer.Docsort"'` (folders resolved,
+  inboxes scanned, archive indexed). Report which tests ran when and which are written but unrun.
+- Launch modes (`AppLaunchMode` in `App/Library/AppEnvironment.swift`): standard (the user's settings), unit-test host
+  and SwiftUI previews (both the inert environment), UI-test fixture. New modes go there and into
+  `AppEnvironment.forCurrentProcess()`; nothing but `.standard` may touch the user's settings, folders or Trash.
+
 ## Running the App
 
 ```
