@@ -54,3 +54,12 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - The core's `testDate()` base is around May 2026; move it into 2031–2039 (`no-real-data-in-repo`).
 - `ExpectedChanges` keeps recorded changes under paths no inbox covers for the whole session (harmless).
 - Every filing operation discards in-flight scans of all inboxes, not only the touched one (costs time only).
+
+## From the watcher-wiring review (2026-11-08)
+
+- Arrivals above the visible sidebar area don't keep the scroll position (spec: rows on screen don't jump).
+- `InboxItemID` (volume UUID + file ID): hard links in one inbox share an ID; UUID-less volumes (SMB, exFAT) can
+  collide across inboxes. Document it, or disambiguate.
+- `InboxRowView` sets the "New" accessibility hint even when the row is marked.
+- Tests: `.replaced` moving selection; trash/undo/Move Back/Put Back not reported as external; an external arrival
+  clearing a filed mark; ⌘R ignoring the superseded stream.
