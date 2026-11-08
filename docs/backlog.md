@@ -24,3 +24,15 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - History window, filed/trashed status strips with Move Back / Put Back, revert name.
 - Date shortcuts in the name field (`deferred-and-wanted-features`).
 - Ideas from the layout research (see `docs/open-questions.md`).
+
+## From the filing-extras review (2026-11-08)
+
+- Put Back into a taken inbox name only shows an error; the spec wants Keep Both / Cancel (needs core support in
+  `undo(TrashRecord)`).
+- Undo of Put Back and redo of Trash send whatever is at the inbox URL to the Trash without an identity check.
+- Folder contents highlights a filed file's own name as a conflict when its folder is highlighted but not chosen.
+- The status strip shows the time on a second line; the spec has one line ("Filed to … · today 09:41").
+- Move Back of a file filed with Replace leaves the replaced item in the Trash (deliberate; ⌘Z on the filing restores it).
+- A public "is this still the same item" check in the core would replace `FilingService.moveBack`'s synthetic
+  `MoveRecord` workaround.
+- Re-filing a filed file still records a recent destination.
