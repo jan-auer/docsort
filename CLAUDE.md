@@ -100,6 +100,10 @@ Steps that work:
    `workspaceIdentifier`. Other worktrees have their own path and identifier; never open another worktree's project.
 2. Pass that `workspaceIdentifier` to every tool. The tool list advertises `tabIdentifier`, but the tools reject it.
 3. Give `RenderPreview` navigator-relative file paths (`App/MainWindowView.swift`), not absolute paths.
+4. When done, call `XcodeCloseWorkspace`. Rendering a preview of this macOS app launches the real `Docsort.app` from
+   Xcode's own DerivedData and leaves it running. While it runs, `xcodebuild test` hangs before any test starts,
+   because the test host has the same bundle identifier. Closing the workspace quits it.
+5. Snapshots are static: content that loads asynchronously (PDF pages, Quick Look) does not appear in them.
 
 Xcode asks the user to allow each agent and each folder (worktree) the first time, and the grant lasts 24 hours. The
 user, not an agent, can grant the whole repository with
