@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// The main window's menu-bar commands: Open, Reveal in Finder, Move, Revert Name, Move to Trash and Move Back to
-/// Inbox (Put Back for a trashed file) (File), Refresh, the filing
-/// panel toggle and the preview zoom (View), the sidebar toggle, Previous File and Next File (Go), and History
-/// (Window). Undo and Redo (Edit) come
-/// from the window's undo manager.
+/// The main window's menu-bar commands: Open, Reveal in Finder, Open Destination in Finder, Move, Revert Name, Move
+/// to Trash and Move Back to Inbox (Put Back for a trashed file) (File), Refresh, the filing panel toggle and the
+/// preview zoom (View), the sidebar toggle, Previous File and Next File (Go), and History (Window). Undo and Redo
+/// (Edit) come from the window's undo manager.
 ///
 /// The file and view commands act on the key main window through the `mainWindowModel` focused value and are
 /// disabled when it is not key or when they do not apply. History is always available.
@@ -27,6 +26,13 @@ struct MainCommands: Commands {
       }
       .keyboardShortcut("r", modifiers: [.option, .command])
       .disabled(selectedFile == nil)
+
+      // The filing panel's chosen or highlighted folder; ⇧ marks the folder variant, as in ⇧⌘N (New Folder).
+      Button("Open Destination in Finder") {
+        if let destinationFolder { FileActions.open(destinationFolder) }
+      }
+      .keyboardShortcut("o", modifiers: [.shift, .command])
+      .disabled(destinationFolder == nil)
 
       Divider()
 
@@ -118,6 +124,15 @@ struct MainCommands: Commands {
   /// The file selected in the key main window.
   private var selectedFile: SelectedFile? {
     mainWindowModel?.selectedFile
+  }
+
+  /// Where the folder the key main window's filing panel would file into (chosen, else highlighted) is on disk; `nil`
+  /// while the panel is hidden or does not take a destination for the selected file, and for a pending new folder.
+  private var destinationFolder: URL? {
+    guard let mainWindowModel, mainWindowModel.isFilingPanelShown,
+      mainWindowModel.canChooseDestination
+    else { return nil }
+    return mainWindowModel.picker.destinationFolderURL
   }
 
   /// The title of the command returning the selected file to its inbox: "Put Back" for a trashed file, "Move Back to

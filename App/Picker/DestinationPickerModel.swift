@@ -158,6 +158,27 @@ final class DestinationPickerModel {
     destination != nil && row.id == highlightedRowID
   }
 
+  /// Where the destination line's folder (the chosen destination, else the highlighted folder) is on disk, for
+  /// File › Open Destination in Finder; `nil` when there is none, while it is a pending new folder and while the
+  /// archive is being indexed.
+  var destinationFolderURL: URL? {
+    guard let destinationPath, !destinationPath.isNew else { return nil }
+    return locationOnDisk(of: destinationPath.path)
+  }
+
+  /// Where the folder `row` stands for is on disk, for the row's Open in Finder and Reveal in Finder; `nil` for a row
+  /// that stands for no folder, for a pending new folder and while the archive is being indexed.
+  func folderURL(of row: PickerRow) -> URL? {
+    guard let path = row.folderPath else { return nil }
+    return locationOnDisk(of: path)
+  }
+
+  /// The location of the indexed folder at `path`; `nil` for a pending new folder or a path the index lacks.
+  private func locationOnDisk(of path: String) -> URL? {
+    guard let index, !pendingFolders.contains(path), index.contains(path) else { return nil }
+    return index.url(for: path)
+  }
+
   /// Whether the archive is still being indexed (``index`` is `nil`).
   var isIndexing: Bool { index == nil }
 

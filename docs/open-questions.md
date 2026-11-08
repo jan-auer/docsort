@@ -1,5 +1,10 @@
 # Open questions for the user
 
+**Planned (decided 2026-11-08), after the README lands:** rename GitHub repo `jan-auer/docsort` to `docsort-llm`
+(update the remote in `~/Coding/docsort` and rename that folder), rename `jan-auer/docsort-ui` to `docsort`, make it
+public after a last privacy check, add a description, and update this checkout's remote. Confirm each GitHub step
+with the user before running it.
+
 Collected by the hub while the user is away. Each has the hub's recommendation; nothing here blocks work.
 
 1. **Drop old commits holding real data.** Pre-rewrite commits of the design and core branches are unreachable but

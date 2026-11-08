@@ -24,7 +24,8 @@ import SwiftUI
 /// `picker-this-folder` labelled "<name>, this folder"; the create row is `picker-create-row` labelled "New Folder “…”
 /// in …". A highlighted row has the value `highlighted` (`chosen` when it is the chosen destination) and the
 /// selected trait; other rows have an empty value. Activating a row (VoiceOver's
-/// default action) does what a double click does; folders with subfolders also offer "Show subfolders".
+/// default action) does what a double click does; folders with subfolders also offer "Show subfolders". Rows whose
+/// folder is on disk have a context menu with Open in Finder and Reveal in Finder (``PickerFolderMenu``).
 struct DestinationPickerView<FocusValue: Hashable>: View {
   @Bindable var model: DestinationPickerModel
   let focus: FocusState<FocusValue?>.Binding
@@ -257,7 +258,9 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       .modifier(
         PickerRowChrome(
           identifier: "picker-this-folder", label: "\(title), this folder", highlight: highlight,
-          isChosen: model.isChosen(row), click: { click(row) }, open: { open(row) }))
+          isChosen: model.isChosen(row), click: { click(row) }, open: { open(row) })
+      )
+      .modifier(PickerFolderMenu(folderURL: model.folderURL(of: row)))
     case .folder(let folder):
       PickerFolderRow(folder: folder, isChosen: model.isChosen(row), highlight: highlight) {
         stepIn(row)
@@ -266,7 +269,9 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         PickerRowChrome(
           identifier: "picker-row", label: folder.displayPath, highlight: highlight,
           isChosen: model.isChosen(row), click: { click(row) }, open: { open(row) },
-          namedActions: folder.hasSubfolders ? [("Show subfolders", { stepIn(row) })] : []))
+          namedActions: folder.hasSubfolders ? [("Show subfolders", { stepIn(row) })] : [])
+      )
+      .modifier(PickerFolderMenu(folderURL: model.folderURL(of: row)))
     case .createFolder(let name, let parent, let problem):
       let createRow = PickerCreateFolderRow(
         name: name, parent: parent, problem: problem, highlight: highlight)
