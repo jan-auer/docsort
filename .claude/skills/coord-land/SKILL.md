@@ -30,5 +30,8 @@ coordinator's worktree.
    - Follow-ups: <or "None">
    ```
 
-8. **Clean up** only on the user's yes: remove the worktree (`git worktree remove`), delete the branch, and mark the
+8. **Push.** `git push origin master` after the record commit, so every landing is on GitHub. If the push fails
+   (credentials, a diverged remote), tell the user; never force-push `master`. Delete the landed branch on `origin`
+   too, if it was pushed.
+9. **Clean up** only on the user's yes: remove the worktree (`git worktree remove`), delete the branch, and mark the
    coordinator's session as done (archive it when the session tools allow it).

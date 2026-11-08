@@ -64,7 +64,9 @@ Two files in the project carry what sessions learn. Read both before planning; k
    report is a claim, not proof.
 7. Commit often on your branch: each independent change separately, each verified step as soon as it passes, and
    any work in progress (as a `WIP:` commit) before you end a turn or wait on the hub. Never leave a turn with
-   uncommitted work; squash or reword before reporting if the history needs tidying.
+   uncommitted work; squash or reword before reporting if the history needs tidying. Push your branch to `origin`
+   after every major step and before reporting. The repository is public, so a branch that adds or changes sample
+   data is pushed only after its independent privacy check (`no-real-data-in-repo`). Never force-push `master`.
 8. Finish with a report (below). Do not merge; the hub lands your branch.
 
 ## Model and effort
