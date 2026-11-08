@@ -101,7 +101,7 @@ public actor FilingService {
   public func trash(_ item: URL) throws(FilingError) -> FilingOutcome
   public func undo(_ event: FilingEvent.ID, resolution: UndoConflictResolution) throws(FilingError) -> FilingOutcome
   public func moveBack(document documentID: UUID, resolution: UndoConflictResolution)
-    throws(FilingError) -> FilingOutcome    // to the document's origin; also reverts a filed file's name
+    throws(FilingError) -> FilingOutcome    // back to the document's inbox origin
   public func undoBlocker(for event: FilingEvent.ID) -> FilingError?   // history and disk checks, no side effects
   public func handledItems(in inbox: URL) -> [HandledItem]             // this session's filed/trashed inbox files
   public func retrySave() throws(FilingHistoryStoreError)
@@ -121,6 +121,8 @@ public struct HandledItem: Sendable {     // originalURL, currentURL, handling: 
   `startNewHistory()`.
 - `handledItems(in:)` is the ledger the inbox listing uses to keep the app's own moves checked off. It is derived
   from this session's events, so it needs no separate bookkeeping anywhere else.
+- Renaming a filed file, moving it on, and Revert name are all `file(_:into:named:)` from its current place; the
+  pre-filing name comes from `HandledItem.originalURL`. No separate rename command.
 - Recents are not recorded here; the destination service derives them from the outcome stream (see below).
 - Name checks stay pure functions in the core (`FileNaming`); the conflict check while typing
   (`existingItem(named:in:)`) is a read and may be called through `FilingService` or a `@concurrent` function.
