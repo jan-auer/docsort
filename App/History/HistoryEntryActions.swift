@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The actions on the History window's selected entry, stacked at equal width under its details: Open and Reveal in
-/// Finder while the file is at the entry's place (otherwise Reveal Folder in Finder), Move Back to Inbox or Put Back,
-/// and Show in Main Window while the file is in this session's list.
+/// The actions on the History window's selected entry, stacked at equal width under its details: Open (prominent) and
+/// Reveal in Finder while the file is at the entry's place (otherwise Reveal Folder in Finder), Move Back to Inbox or
+/// Put Back, and Show in Main Window while the file is in this session's list.
 struct HistoryEntryActions: View {
   let model: HistoryModel
   let entry: HistoryEntry
@@ -13,6 +13,7 @@ struct HistoryEntryActions: View {
     VStack(spacing: 6) {
       if model.canOpen(entry) {
         Button("Open") { FileActions.open(entry.url) }
+          .buttonStyle(.borderedProminent)
           .keyboardShortcut("o")
           .accessibilityIdentifier("history-open")
         Button("Reveal in Finder") { FileActions.revealInFinder(entry.url) }
