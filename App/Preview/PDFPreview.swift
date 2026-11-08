@@ -2,11 +2,16 @@ import OSLog
 import PDFKit
 import SwiftUI
 
-/// A PDF shown with PDFKit: continuous vertical scroll, fit-to-width, visible page breaks.
+/// A PDF shown with PDFKit: continuous vertical scroll, fit-to-width with a margin around each page, visible page
+/// breaks.
 ///
 /// The view is reused when `document` changes, which resets the zoom to fit-to-width and scrolls to the first page.
 /// While on screen, the `PDFView` is attached to `controller`, so the window's zoom and scroll commands reach it.
 struct PDFPreview: NSViewRepresentable {
+  /// The margin around each page, in page units, so it scales with the zoom. At fit-to-width in a typical preview
+  /// column it comes to about 16–25 points beside the page.
+  static let pageMargins = NSEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+
   /// The document to show, loaded with `loadDocument(at:)`.
   let document: PDFDocument
   /// The controller the PDF view is attached to while it is on screen.
@@ -31,6 +36,7 @@ struct PDFPreview: NSViewRepresentable {
     view.displayMode = .singlePageContinuous
     view.displayDirection = .vertical
     view.displaysPageBreaks = true
+    view.pageBreakMargins = Self.pageMargins
     view.autoScales = true
     view.document = document
     controller.attach(view)

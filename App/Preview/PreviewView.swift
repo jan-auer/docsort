@@ -69,7 +69,7 @@ struct PreviewView: View {
         }
       }
     }
-    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("preview")
     .task(id: document) {
