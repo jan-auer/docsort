@@ -9,7 +9,7 @@ struct OwnChanges: Hashable, Sendable {
   var arrivals: Set<String>
 
   /// No changes of docsort's own.
-  static let none = OwnChanges(removals: [], arrivals: [])
+  static let empty = OwnChanges(removals: [], arrivals: [])
 
   /// The absolute, standardised path by which own changes and listed items are compared: `FolderReference.path(of:)`
   /// of the nearest ancestor that exists (or the item itself), followed by the remaining components.

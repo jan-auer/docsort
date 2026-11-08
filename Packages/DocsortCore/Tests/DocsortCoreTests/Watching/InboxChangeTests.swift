@@ -16,7 +16,7 @@ struct InboxChangeTests {
     let before = try scanner.scan(inbox.url)
     let after = try scanner.scan(inbox.url)
 
-    #expect(InboxChange.changes(from: before, to: after, excluding: .none) == [])
+    #expect(InboxChange.changes(from: before, to: after, excluding: .empty) == [])
   }
 
   @Test("reports a new file as arrived and a deleted one as removed")
@@ -31,7 +31,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .removed(try item("scan-1.pdf", in: before)),
         .arrived(try item("Invoice.pdf", in: after)),
       ])
@@ -48,7 +48,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .changed(from: try item("scan-1.pdf", in: before), to: try item("Invoice.pdf", in: after))
       ])
   }
@@ -68,7 +68,7 @@ struct InboxChangeTests {
       at: betweenFolders, to: inbox.url.appending(path: "B/scan-3.pdf"))
     let after = try scanner.scan(inbox.url)
 
-    let changes = InboxChange.changes(from: before, to: after, excluding: .none)
+    let changes = InboxChange.changes(from: before, to: after, excluding: .empty)
 
     #expect(Set(changes.map(\.summary)) == ["scan-1.pdf → B", "A → scan-2.pdf", "A/Tief → B"])
     #expect(changes.count == 3)
@@ -90,7 +90,7 @@ struct InboxChangeTests {
     let new = try item("scan-1.pdf", in: after)
     #expect(new.identity == old.identity)
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .changed(from: old, to: new)
       ])
   }
@@ -109,7 +109,7 @@ struct InboxChangeTests {
     let new = try item("scan-1.pdf", in: after)
     #expect(new.identity != old.identity)
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .changed(from: old, to: new)
       ])
   }
@@ -134,7 +134,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .changed(
           from: try item("Report.pdf.download", in: before), to: try item("Report.pdf", in: after)),
         .changed(from: try item("b.pdf.CRDOWNLOAD", in: before), to: try item("b.pdf", in: after)),
@@ -158,7 +158,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .removed(try item("a.pdf.part", in: before)),
         .removed(try item("b.pdf.bak", in: before)),
         .arrived(try item("b.pdf", in: after)),
@@ -178,7 +178,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .removed(try item("a-scan.pdf", in: before))
       ])
   }
@@ -268,7 +268,7 @@ struct InboxChangeTests {
     let after = try scanner.scan(inbox.url)
 
     #expect(
-      InboxChange.changes(from: before, to: after, excluding: .none) == [
+      InboxChange.changes(from: before, to: after, excluding: .empty) == [
         .removed(try item("a-removed.pdf", in: before)),
         .removed(try item("z-removed.pdf", in: before)),
         .arrived(try item("new-early.pdf", in: after)),
