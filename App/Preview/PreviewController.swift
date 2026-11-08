@@ -40,10 +40,10 @@ final class PreviewController {
   @ObservationIgnored private weak var pdfView: PDFView?
   /// Notification observers on `pdfView`, removed when it detaches.
   @ObservationIgnored private var pdfViewObservers: [any NSObjectProtocol] = []
-  /// The clip view of `pdfView`'s scroll view, whose scrolling `clipViewObserver` follows.
-  @ObservationIgnored private weak var observedClipView: NSClipView?
-  /// The observer of `observedClipView`'s bounds changes.
-  @ObservationIgnored private var clipViewObserver: (any NSObjectProtocol)?
+  /// `pdfView`'s scroll view, whose scrolling and pinch zooming `scrollViewObservers` follow.
+  @ObservationIgnored private weak var observedScrollView: NSScrollView?
+  /// The observers of `observedScrollView`: its clip view's bounds changes and the start of a pinch.
+  @ObservationIgnored private var scrollViewObservers: [any NSObjectProtocol] = []
 
   /// Enlarges the PDF by one step and leaves fit-to-width.
   func zoomIn() {
@@ -104,16 +104,34 @@ final class PreviewController {
     }
   }
 
-  /// Observes scrolling of the PDF view's clip view, which `PDFViewPageChanged` does not report for programmatic
-  /// scrolling. PDFView may set up its scroll view only once it has a document, so this is checked on every refresh.
-  private func observeClipView() {
-    let clipView = pdfView?.documentView?.enclosingScrollView?.contentView
-    guard clipView !== observedClipView else { return }
-    if let clipViewObserver {
-      NotificationCenter.default.removeObserver(clipViewObserver)
+  /// Observes the PDF view's scroll view: scrolling of its clip view, which `PDFViewPageChanged` does not report for
+  /// programmatic scrolling, and the start of a pinch. PDFView may set up its scroll view only once it has a
+  /// document, so this is checked on every refresh.
+  private func observeScrollView() {
+    let scrollView = pdfView?.documentView?.enclosingScrollView
+    guard scrollView !== observedScrollView else { return }
+    removeScrollViewObservers()
+    observedScrollView = scrollView
+    guard let scrollView else { return }
+    scrollViewObservers = [
+      observeOnMain(NSView.boundsDidChangeNotification, of: scrollView.contentView),
+      // A pinch magnifies the scroll view but leaves `autoScales` on, so the next layout would snap the page back to
+      // fit-to-width. Leaving fit-to-width when the pinch starts keeps the scale the reader pinched to, also below
+      // fit-to-width. Delivered synchronously (no queue), before the gesture changes the scale.
+      NotificationCenter.default.addObserver(
+        forName: NSScrollView.willStartLiveMagnifyNotification, object: scrollView, queue: nil
+      ) { [weak self] _ in
+        MainActor.assumeIsolated { self?.pdfView?.autoScales = false }
+      },
+    ]
+  }
+
+  private func removeScrollViewObservers() {
+    for observer in scrollViewObservers {
+      NotificationCenter.default.removeObserver(observer)
     }
-    observedClipView = clipView
-    clipViewObserver = clipView.map { observeOnMain(NSView.boundsDidChangeNotification, of: $0) }
+    scrollViewObservers = []
+    observedScrollView = nil
   }
 
   private func removeObservers() {
@@ -121,11 +139,7 @@ final class PreviewController {
       NotificationCenter.default.removeObserver(observer)
     }
     pdfViewObservers = []
-    if let clipViewObserver {
-      NotificationCenter.default.removeObserver(clipViewObserver)
-    }
-    clipViewObserver = nil
-    observedClipView = nil
+    removeScrollViewObservers()
   }
 
   /// The page under the centre of the PDF view, which is the page the reader is looking at. `PDFView.currentPage`
@@ -138,7 +152,7 @@ final class PreviewController {
   /// Copies the PDF view's state into the observed properties, assigning only what changed so that observers are
   /// not woken for nothing.
   private func refreshState() {
-    observeClipView()
+    observeScrollView()
     let document = pdfView?.document
     let hasDocument = document != nil
     let newPagePosition: PDFPagePosition? =
