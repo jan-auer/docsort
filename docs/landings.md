@@ -2,6 +2,13 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/archive-refresh-3fda5f: archive refresh, stable new-folder row
+- What landed: ⌘R refreshes inboxes and the archive folder index; a subtle ↻ button in the picker footer; a debounced
+  rebuild when the app becomes active. The new-folder row stays under its parent with focus kept while its name is
+  typed, and keystrokes no longer reach the search.
+- Divergence: None. Not tried in the running app.
+- Follow-ups: None.
+
 ## 2026-11-08 claude/ui-toolbar-title-77f493: system window title
 - What landed: the hand-built "docsort  Inbox › file" title is replaced by the system window title (file name) and
   subtitle (inbox), Finder-style; "docsort" shows when nothing is selected.
