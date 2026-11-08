@@ -22,8 +22,8 @@ Core (Packages/DocsortCore, nonisolated by default)               Building block
 - Dependencies point down only: views → view models → core services → building blocks. The core never imports
   SwiftUI or AppKit and knows nothing of views, windows, focus, selection or user-facing strings.
 - The core may use Apple's non-UI frameworks when a service needs them (CoreServices for FSEvents; later PDFKit's
-  `PDFDocument` text, Vision, Spotlight metadata for suggestions). This widens "Foundation only" in the module doc;
-  the hub confirms it before the first such import.
+  `PDFDocument` text, Vision, Spotlight metadata for suggestions), never SwiftUI or AppKit (decision
+  `core-apple-frameworks`).
 - Only services are called by the app. Building blocks stay public for tests and for the services, but app code
   should not combine them (for example call `FileOperations.move` and then `FilingHistory.recordMove`): that
   combination is a service's job.
