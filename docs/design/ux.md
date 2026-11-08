@@ -1,0 +1,486 @@
+# docsort-ui: UX design
+
+Status: approved by the user on 2026-11-08. The interactive mockup is `docs/design/mockup.html`, built from
+`docs/design/mockup-src/`; the destination-picker comparison is `docs/design/picker.html`, built from
+`docs/design/picker-src/`. Both use the fictional sample archive in `docs/design/sample-data/`: an invented household
+written from scratch in the style of a German-language document archive, describing no real archive
+(`no-real-data-in-repo`). All names in this document's examples come from that sample archive.
+
+docsort-ui files documents from inbox folders (Downloads, Scans) into an existing archive folder tree. It replaces
+the TUI `~/Coding/docsort-cli` and keeps what made the TUI good (every action on the keyboard, fuzzy folder search,
+recent destinations first, existing files visible while choosing) while fixing what it lacked: a large, side-by-side
+preview of the file being filed.
+
+## Principles
+
+1. **Preview never hides.** The file being filed is always visible, large, while you choose a folder and type a
+   name. No step covers it.
+2. **Only ⌘Return files.** Moving a file is always a deliberate ⌘Return (or a click on Move). Tab and Return only
+   advance between steps, so a stray Return never files anything.
+3. **The list stands still.** Inbox files keep their place in the sidebar; filing checks a file off instead of
+   moving its row.
+4. **Nothing is lost.** Every change (move, rename, new folder, trash) can be undone. Delete moves to the Trash. A
+   replaced file goes to the Trash. A persistent filing history records every move.
+5. **Native first.** Standard macOS controls, menu commands with their shortcuts, Full Keyboard Access, VoiceOver
+   labels, light and dark mode. Shortcuts follow macOS conventions where one exists.
+
+## Window layout
+
+One main window, three columns (a `NavigationSplitView` with an inspector). Accepted by the user in round 1.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● ● ●  ◧  Web-Downloads › Rechnung_NA-33-08812.pdf       [Open] [Finder] [Trash]      ◨  │  toolbar
+├────────────────┬───────────────────────────────────────────┬─────────────────────────────┤
+│ WEB-DOWNLOADS 9│                                           │ Destination                 │
+│   Gehaltszett… │                                           │ [🔍 noten               ]   │
+│ ✓ 2033-10-20 … │                                           │  destination picker         │
+│ ▸ Rechnung_NA… │                                           │  (see "Destination picker") │
+│ ▾ Uni Westerh… │              large preview                │ In Musik Margit/Noten & Bü… │
+│     Rechnung_… │      (PDF pages, image, Quick Look)       │  …                          │
+│ SCANNER      4 │                                           │  …                          │
+│   2033-10-11_… │                                           │ Name                        │
+│   2033-10-16_… │                                           │ [2033-10-13 Notenha… ↺].pdf │
+│ ────────────── │                                           │                             │
+│ ⏱ History  ⌘Y  │  page 1 of 2 · 94 KB · PDF · 13 Oct 2033  │         [ Move  ⌘↩ ]        │
+└────────────────┴───────────────────────────────────────────┴─────────────────────────────┘
+```
+
+- **Sidebar: inbox list** (260 pt, resizable, collapsible with ⌃⌘S). One section per configured inbox, in the order
+  set in Settings, each listing its files **oldest first** by modification date. Files inside subfolders of an inbox
+  are grouped under a disclosure row for that subfolder, placed by the folder's date. The disclosure triangle
+  expands and collapses on click, and → / ← do the same from the keyboard. Each row shows the file icon, the file
+  name (middle-truncated) and a relative date.
+  - **Row anatomy, as in Finder's list view**: every row starts with the same narrow disclosure gutter (about 12 pt).
+    A folder row puts its chevron there; a file row leaves it empty. So file and folder icons line up in one column,
+    and the chevron costs no extra width. Files inside an expanded group are indented by one step (about 16 pt), so
+    their icons sit under the folder's name.
+  - **New-file marker**: a small accent dot (6 pt, with a ring in the sidebar colour) on the top-leading corner of
+    the row's icon, not in a column of its own. It works the same on a file and on a folder that has both a chevron
+    and new content, and it never shifts the icon or the name.
+  - **Handled files**: filed and trashed files stay in their row (see "Files handled this session").
+  - **History row**: at the very bottom, below the inbox sections and separated by a hairline, a fixed **History** row
+    (clock icon, "⌘Y" in secondary colour) opens the History window.
+- **Centre: preview** (takes the remaining width, at least 420 pt). PDFs render with PDFKit: continuous scroll,
+  fit-to-width. Images render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A
+  thin footer shows page count, size, kind and dates.
+- **Right: filing panel** (340 pt, resizable, toggled with ⌥⌘I like an inspector). Top to bottom:
+  1. **Suggestions slot.** Reserved, empty and hidden for now. Later work (PDF text, OCR, download source) puts up to
+     three suggested destinations and a suggested name here as clickable chips, above the picker.
+  2. **Destination picker**: filter field and folder browser.
+  3. **Folder contents**: the files already in the highlighted destination.
+  4. **Name field** with the extension as a fixed suffix, a revert control, and the conflict notice under it.
+  5. **Move button**: the default (accent-filled) button, with its shortcut shown inside it as a small rounded inset
+     key-cap badge to the right of the label: `Move  ⌘↩`. For a filed file the label reads Rename or Move.
+
+  The panel is always visible but inactive until a file is selected; it never covers the preview.
+- **Toolbar**: sidebar toggle, the selected file's inbox and name, then the three actions on that file (Open, Reveal
+  in Finder, Move to Trash), then the inspector toggle. Everything in the toolbar is about the selected file; History,
+  which is about all files, sits at the bottom of the sidebar instead (see "Toolbar and History placement"). All
+  toolbar items have menu equivalents.
+
+Minimum window size 1000 × 640 pt. Below about 1180 pt wide the sidebar collapses first; the preview keeps priority.
+
+## Filing flow
+
+Three focus stops: sidebar, destination picker, name field. Focus decides what keys do.
+
+1. **Pick a file.** Select it in the sidebar with ↑/↓. The preview follows the selection at once.
+2. **Choose the destination.** Start typing: with a file selected in the sidebar, any printable key goes straight
+   into the destination filter (Return, Tab or ⌘L also move focus there without typing). See "Destination picker"
+   for browsing, filtering, Recent and creating folders.
+   - The **folder contents** list follows the highlighted folder (see below).
+   - **Tab** (or Return) chooses the highlighted folder. The filter field then shows it as a token
+     (`Rechnungen › Elektronik`) and focus moves to the name field.
+3. **Name the file.** The name field is pre-filled with the file's current name without extension, fully selected,
+   so typing replaces it and → keeps it for editing. The extension is a fixed label after the field and is never
+   doubled: typing `Rechnung.pdf` for a PDF gives `Rechnung.pdf`. An empty field means "keep the original name".
+   - **Revert**: a small ↺ button at the trailing end of the field, shown only when the name differs from the
+     original, restores the original name (also ⇧⌘R). For a filed file the original is the name it had before
+     filing.
+   - **Take a name from the folder**: clicking a file in Folder contents copies its name (without extension) into the
+     name field, selected, so it can be edited from there. From the keyboard, ⌥↑ in the name field takes the last
+     name in the list, and repeated ⌥↑ / ⌥↓ walk up and down the list.
+   - Characters macOS forbids in names (`:` and `/`) are refused with an inline notice.
+4. **Move.** **⌘Return** from anywhere in the window, or a click on Move, files the file. Return in the name field
+   does not file; it shows a brief hint "Press ⌘Return to move" as a small toast that floats just below the name field
+   for about two seconds. The toast overlays what is below it and takes no layout space, so nothing shifts. Tab in
+   the name field does not file either: it wraps focus back to the sidebar, as focus does in any macOS window.
+   - **⌘Return before a destination is chosen**: in the picker, ⌘Return takes the highlighted folder as the
+     destination and moves at once with the pre-filled name. Anywhere else (for example in the sidebar right after
+     selecting a file), it moves nothing: focus goes to the picker and the toast says "Choose a destination first".
+   - The row stays in place in the sidebar, gets a check mark and shows its new name; a short confirmation appears
+     in the window's bottom bar: `Moved to Musik Margit/Noten & Bücher as 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z`.
+   - The destination becomes the most recent entry in Recent, and the move is added to the filing history.
+   - Selection advances to the next unfiled file below (wrapping to the top of the next inbox section) and **focus
+     returns to the sidebar**, so typing starts the next file's search.
+
+⌘Return also works from the destination picker: it moves at once with the pre-filled name, skipping the name stop.
+Esc steps back: name field → picker (filter kept); in the picker a first Esc clears the filter and a second returns to
+the sidebar. ⇧Tab steps back one stop without clearing anything.
+
+### Folder contents
+
+The files already in the highlighted destination folder, sorted **alphabetically** and **scrolled to the bottom** when
+the highlight changes. With the archive's `YYYY-MM-DD Beschreibung` names, the bottom shows the newest files, and
+the list reads in date order upwards. Subfolders are not listed here (the picker shows them). A file whose name
+conflicts with the current name field is highlighted in the warning colour and scrolled into view.
+
+### New folder
+
+The user usually knows the parent. So creating a folder starts from the folder that is highlighted in the picker:
+
+1. Highlight the parent (by filtering or browsing).
+2. Press **⇧⌘N** (Finder's New Folder) or click the **New Folder** button (folder-with-plus icon) in the picker's
+   bottom bar. The button's tooltip names the parent: "New Folder in Reisen".
+3. An editable row appears inside the parent, where the new folder will sit among its siblings, with an empty name
+   field active (placeholder "Folder name").
+4. Type the name. A slash creates nested folders (`2033-11 Besuch Westerholm/Bahn`). An existing sibling with the same
+   name (ignoring case) is shown inline ("Reisen already contains a folder named …") and Return selects that
+   existing folder instead.
+5. **Tab or Return** confirms. The new folder becomes the chosen destination, marked with a **New** badge, and focus
+   moves to the name field. Esc cancels and removes the row.
+
+When the filter matches nothing, the empty picker shows **New Folder "…" in <parent>** using the filter text as the
+name. The parent is the folder you are browsing in, or the archive root at the top level; never the closest fuzzy
+match, which would be arbitrary. ⇧⌘N or a click confirms it.
+
+The new folder is created on disk only when the file is moved, so cancelling leaves no empty folder behind. Undoing
+the move also removes the folder if it is still empty.
+
+### Name conflicts and overwrite
+
+The panel checks the target path while you type the name:
+
+- **No conflict**: nothing shown.
+- **Same name exists** in the destination: an inline notice under the name field, in the warning colour:
+  `"2033-10-04 Rechnung Oktober.pdf" already exists in this folder.` The matching row in Folder contents is highlighted.
+  Pressing ⌘Return then opens a sheet in Finder's wording: **Keep Both** (adds ` 2`, ` 3`, … before the extension; the
+  default button), **Replace** (moves the existing file to the Trash, then moves this one; undoable; never the
+  default), **Cancel** (back to the name field).
+- **Names differ only in case** (`rechnung.pdf` vs `Rechnung.pdf`): treated as a conflict, because the archive volume
+  is case-insensitive.
+- **The source file changed or vanished** before the move (renamed in Finder, download still in progress): the move
+  is refused with an error notice in the panel; the list refreshes.
+
+### Undo
+
+- ⌘Z / ⇧⌘Z undo and redo the session's actions in order: move (with its rename), rename of a filed file, new folder,
+  move to Trash, replace. Each undo is named in the Edit menu ("Undo Move of 'Rechnung_NA-33…'"). It uses the window's
+  `UndoManager`, so it behaves like Finder's. Undo lasts for the session.
+- For any filed file, **Move Back** (File › Move Back to Inbox, ⌥⌘Z, also in the row's context menu and in History) returns that one file
+  to its original inbox path and name, including after a restart, through the filing history.
+- An undo or move-back that cannot complete (the original path is now taken, or the file was moved again outside the
+  app) shows an alert that names the path in the way, offering **Keep Both** or **Cancel**.
+
+### Delete, open, reveal
+
+- **Move to Trash**: ⌘⌫ on the selected file (outside text fields, where ⌘⌫ edits text). No confirmation dialog,
+  matching Finder, because it is undoable. The row stays in place with a trash icon and struck-through name. **Put
+  Back** (⌘Z, or context menu) restores it.
+- **Open** in the default app: ⌘O. Works for unfiled and filed files (filed files open from their new location).
+- **Reveal in Finder**: ⌥⌘R. Same rule.
+- **Quick Look**: Space in the sidebar opens the standard Quick Look panel for a full-screen look (Space or Esc
+  closes it). Space never starts a search.
+
+## Files handled this session
+
+Filed and trashed files **stay where they are** in their inbox section, so the list never reorders while you work
+(user decision `inbox-and-history-behaviour`):
+
+- **Filed**: a green check mark replaces the file icon, the row shows the **new name** in secondary colour, and the
+  tooltip and toolbar show the destination (`→ Mobilität/Jahreskarte Regio Plus`).
+- **Trashed**: a trash icon, the original name struck through.
+
+Filed rows stay selectable. Selecting one shows its preview from the new location, and the filing panel shows the
+file as it is now: the picker holds its current folder as the chosen destination, the name field holds its current
+name. Changing either and pressing ⌘Return renames it or moves it on (the button reads **Rename** or **Move**
+accordingly). Revert (↺) restores the name it had in the inbox.
+
+For a filed file the panel opens with a slim status strip at its top, above the picker: a green check,
+"Filed to Mobilität/Jahreskarte Regio Plus · today 09:41", and a small bordered **Move Back** button at its trailing end. The
+status and the action that undoes it sit together, and the bottom of the panel keeps one button: **Rename ⌘↩** or
+**Move ⌘↩**, disabled until the name or folder changes (the disabled state says "nothing to change", so no extra
+label). A separate "Move back or file again" panel was considered earlier and rejected: it looked cleaner but made
+changing a filed file a two-step detour.
+
+A trashed file shows the same strip in the same place and layout: a trash icon, "Moved to Trash · today 09:41", and a
+small bordered **Put Back** button at its trailing end (tooltip "Put back in Web-Downloads (⌥⌘Z)"), which returns the file
+to its inbox under its original name. The picker and name field below stay inactive for a trashed file.
+
+A filed row stays checked off for the session even if its archive copy is later moved, renamed or deleted by someone
+else (History then shows "Moved or deleted since"). An unfiled inbox file that someone else moves away simply
+disappears from the list (see "Live folder watching").
+
+The selection-advance rule skips filed and trashed rows. After a restart, the sidebar shows only what is in the inbox
+folders now; earlier work is in History.
+
+## History
+
+Every move is recorded persistently: original path and name, destination folder, new name, time. Renames of filed
+files and move-backs are recorded as their own entries. Trash is recorded too.
+
+**Window › History** (⌘Y, as in Safari) opens a separate window; so does the History row at the bottom of the sidebar:
+
+- A table, newest at the bottom (chronological order), grouped by day, with columns *Filed* (time), *Original name*,
+  *Inbox*, *New name*, *Destination*. A search field filters all columns.
+- Selecting an entry shows a preview of the file at its current place in a pane on the right.
+- Actions on the selected entry: Open (⌘O), Reveal in Finder (⌥⌘R), Move Back to Inbox (⌥⌘Z), and "Show in Main
+  Window" when the file is still in this session's list.
+- An entry whose file is no longer at the recorded place shows "Moved or deleted since" and offers only Reveal of the
+  folder.
+
+## Destination picker
+
+The most important control: a **drill-down list with a scoped filter** (chosen by the user in round 2 from two
+clickable candidates in `docs/design/picker.html`).
+
+```
+ Destination
+ [🔍 in Gesundheit │ physio           ]
+ Archive › Gesundheit
+ ┌───────────────────────────────────┐
+ │ ⤓ Gesundheit        this folder   │   ← choose the folder you are in
+ │ ───────────────────────────────── │
+ │   Konrad/Physiotherapie           │
+ │   Margit/Physiotherapie           │
+ └───────────────────────────────────┘
+ [⊕ New Folder]
+```
+
+- **One list at the panel's normal width**, with a path bar above it (`Archive › Gesundheit`) while you are inside a
+  folder. Clicking a path-bar segment jumps there.
+- **Empty filter at the archive root**: Recent first (up to 20, most recent first), then the top-level folders.
+- **Stepping**: ↑/↓ move the highlight; → steps into the highlighted folder (the list now shows its subfolders, the path
+  bar grows); ← or Backspace in an empty filter steps out and highlights the folder you came from; ⌘↑ jumps to the
+  archive root. Folders with subfolders show a chevron. Double-click steps in; double-click on a folder without
+  subfolders chooses it. → and ← move the text caret while the filter has text, so they never fight typing: → steps
+  in only with the caret at the end, ← steps out only when the filter is empty.
+- **"This folder" row**: inside a folder, the first row stands for the folder itself, highlighted on entry, so Tab
+  chooses it without stepping back out. It must read as "choose the folder I'm in", not as one more child: it uses a
+  different icon (a folder with a downward "file here" arrow instead of the plain folder), the folder's name followed
+  by the secondary label "this folder", no chevron, and a hairline separator under it before the subfolders.
+- **Scoped filter**: typing filters the **subtree of the current folder**; at the root that is the whole archive. A scope chip in the field ("in Gesundheit") and the placeholder "Search in Gesundheit" make the scope
+  visible. Rows show the path relative to the scope, with the parent part in secondary colour. So `gesund`, →, `physio`
+  narrows to `Gesundheit/Konrad/Physiotherapie` and `Gesundheit/Margit/Physiotherapie`. → on a result steps into it and clears the filter.
+- **Matching**: space-separated words match independently in any order (`margit physio` finds `Gesundheit/Margit/Physiotherapie`);
+  case and diacritics are ignored (`einkaufe` finds `Einkäufe & Garantien`). The matching library is `fuzzy-matching-library`'s choice.
+- **Ranking rule** (for the core to implement, `search-scoped-ranking`): among results of comparable match quality,
+  **closer folders come first** by default: a folder fewer levels below the current scope wins, even over a deeper
+  folder whose name matches exactly, then shorter paths. The archive root is a scope like any other. So inside
+  Mobilität, `bahn` ranks `Mobilität/Bahntickets` above `Mobilität/Bahntickets/2033`, and from the root `dienstreisen`
+  ranks `Arbeit Margit/Dienstreisen & Exkursionen` above the exactly named
+  `! Abgeschlossen/Dienst Vermessungsamt bis 2032/Dienstreisen`. This is a setting: **Settings › Search › Rank
+  first:** *Closer folders* (default) or *Exact name matches*. Recent destinations get a boost.
+- **Highlighting**: matched characters are bold, and when the typed text matches more than one segment of a path, the
+  highlight marks the **first** one (typing `chor` against `Chor Liederkranz/Chorreisen/2033-09 Chorfest Hochalm` bolds
+  `Chor Liederkranz`, not a later segment).
+- Tab or Return chooses the highlighted folder and moves to the name field. ⌘Return moves the file at once.
+- ⇧⌘N or the New Folder button creates a folder inside the highlighted folder (see "New folder").
+- Inbox folders inside the archive are left out.
+
+**Considered and rejected: columns with filter.** Finder's column view inside the panel, with the filter narrowing the
+columns to matching branches. It shows best where a match sits in the tree, but: the panel had to widen to about 520 pt
+while picking, so panel and preview jumped in width on every focus change, and at the minimum window size the preview
+fell to about 220 pt; ← / → fought the text caret while typing; Recent filled the whole first column; and only one
+match was visible at a time (⌘G to step). The drill-down list keeps the tree visible through its path bar and the
+relative paths in results, at a fixed width.
+
+## Toolbar and History placement
+
+The toolbar mixed actions on the selected file (Open, Reveal in Finder, Move to Trash) with History, which is about all
+files. Two fixes were considered:
+
+- **History at the bottom of the sidebar (chosen).** The sidebar is where the app's places live; History is another
+  place, and the bottom row is where macOS apps put such fixed entries. The toolbar then holds only the selected file's
+  name and its actions, which reads as one unit. Nothing covers the preview.
+- **File actions floating over the preview** (Liquid Glass capsule). It ties the actions visually to the document, but
+  it covers part of the page (against "preview never hides"), needs hover or a reserved strip to stay out of the way,
+  and leaves History alone in an otherwise empty toolbar.
+
+## Keyboard map
+
+Every command is in the menu bar, so it is discoverable and rebindable in System Settings → Keyboard → Shortcuts.
+
+### The rule
+
+| Key | Effect everywhere |
+| --- | --- |
+| **⌘Return** | Move (file) the selected file now. The only key that files. |
+| **Tab / Return** | Go to the next step: sidebar → picker → name. Never files. |
+| **⇧Tab** | Go back one step, keeping what was entered. |
+| **Esc** | In the picker: clear the filter; with an empty filter, back to the sidebar. In the name field: back to the picker. |
+
+### Anywhere in the main window
+
+| Keys | Command | Menu |
+| --- | --- | --- |
+| ⌘Return | Move with the chosen destination and name | File › Move |
+| ⌘L | Focus the destination filter | File › Choose Destination… |
+| ⌘O | Open selected file in its default app | File › Open |
+| ⌥⌘R | Reveal selected file in Finder | File › Reveal in Finder |
+| ⌘⌫ | Move selected file to Trash (outside text fields) | File › Move to Trash |
+| ⌘Z / ⇧⌘Z | Undo / Redo last action | Edit |
+| ⌥⌘Z | Move selected filed file back to its inbox | File › Move Back to Inbox |
+| ⌘Y | Show History | Window › History |
+| ⌘R | Rescan inboxes and archive (normally automatic) | View › Refresh |
+| ⌃⌘S | Show/hide sidebar | View |
+| ⌥⌘I | Show/hide filing panel | View |
+| ⌘1 … ⌘9 | Jump to inbox section 1…9 | Go |
+| ⌥⌘↓ / ⌥⌘↑ | Select next / previous unfiled file, from any focus | Go |
+| ⌘+ / ⌘− / ⌘0 | Zoom preview in / out / to fit | View |
+| ⌘, | Settings | docsort |
+| ⌘/ | Show keyboard shortcuts overlay | Help |
+
+### Sidebar focused
+
+| Keys | Command |
+| --- | --- |
+| ↑ / ↓ | Previous / next file (preview follows) |
+| → / ← | Expand / collapse an inbox subfolder group |
+| type | Start the destination filter with that text |
+| Tab / Return | Go to the destination picker |
+| Space | Quick Look panel |
+| PgUp / PgDn (fn↑ / fn↓) | Scroll the preview without leaving the list |
+
+### Destination picker focused
+
+| Keys | Command |
+| --- | --- |
+| type | Fuzzy filter; empty shows Recent first |
+| ↑ / ↓ | Move highlight |
+| → / ← | Into the highlighted folder / out to its parent (← only with an empty filter) |
+| ⌫ in an empty filter | Out to the parent folder |
+| ⌘↑ | To the archive root |
+| Tab / Return | Choose highlighted folder, go to name |
+| ⇧⌘N | New folder inside highlighted folder |
+| ⌘Return | Move now with pre-filled name |
+| Esc | Clear filter; with an empty filter, back to sidebar |
+
+### Name field focused
+
+| Keys | Command |
+| --- | --- |
+| type | Edit name (extension fixed) |
+| ⌥↑ / ⌥↓ | Take the previous / next name from Folder contents |
+| ⇧⌘R | Revert to the original name |
+| ⌘Return | Move |
+| Return | Shows the toast "Press ⌘Return to move"; does not file |
+| ⇧Tab / Esc | Back to the picker |
+| Tab | Back to the sidebar without moving (focus wraps, as in any macOS window) |
+
+### Sheets and alerts
+
+Standard macOS: Return presses the default button (Keep Both), Esc cancels. The destructive Replace is never the
+default; reach it with Tab and Space.
+
+## Edge states
+
+| State | What the user sees |
+| --- | --- |
+| **First launch, nothing configured** | The window shows a welcome view in place of the preview: "Choose your archive folder and inbox folders to start." with **Open Settings…** (⌘,). Sidebar and panel are empty. |
+| **All inboxes empty** | Preview area: "All filed" with the count filed this session and the inbox names. Sidebar sections read "No files". |
+| **One inbox empty** | Its section shows a single dimmed "No files" row; other sections work normally. |
+| **Inbox folder unreachable** (missing, renamed, drive not mounted, permission denied) | Its section header gets a warning icon; one row explains the cause ("Folder not found: ~/Archiv/_Neu/Scanner") with **Locate…** and **Settings…** buttons. Other inboxes work. The app watches the path and recovers by itself when it reappears. |
+| **Inbox needs its own access grant** (a symlinked folder that points outside the granted archive, see `app-sandbox`) | The section row reads "docsort needs permission to open Gemeinsam" with **Grant Access…**, which opens a folder picker at that path. |
+| **Archive root unreachable** | The filing panel shows "Archive folder not available: ~/Archiv" with **Locate…**; Move is disabled. Preview, open, reveal and trash still work. |
+| **Archive indexing** | The first scan of an archive with a few thousand folders takes well under a second; until it finishes the filter field shows "Indexing archive…" and Recent is already usable. Later changes arrive via FSEvents without a visible state. |
+| **File still downloading or syncing** (`.download`, `.crdownload`, iCloud placeholder) | Row shows a progress or cloud icon; preview shows "Downloading…"; Move is disabled until it is complete. |
+| **No preview for the type** | Large file icon, name, kind, size, dates and **Open with <App>** (⌘O). |
+| **Preview loading** | Spinner in the preview area after 200 ms; the panel works meanwhile. |
+| **Files added or removed outside docsort** | The sidebar updates live; see "Live folder watching". |
+| **Move or trash failed** (permissions, disk full, destination gone) | A red notice in the filing panel with the system's reason in plain words and **Try Again**; the file stays selected and in its inbox. Nothing is half-done: a cross-volume move copies first and deletes the source only after the copy succeeded. |
+| **Undo or move-back failed** | Alert naming the blocking path, with **Keep Both** and **Cancel**. |
+| **Inbox lies inside the archive** (for example `~/Archiv/_Neu/…`) | Inbox folders are excluded from the destination picker automatically. |
+
+## Live folder watching
+
+The inbox folders are watched (FSEvents), so the sidebar always shows what is in them, without ⌘R. The core builds the
+watcher as its own piece; this is the behaviour the UI expects.
+
+- **Who changed it decides how the row behaves.** Files that docsort moves, renames or trashes stay in their row,
+  checked off or marked trashed (see "Files handled this session"). Changes made by anything else (Finder, a browser,
+  the scanner, a sync client) are applied as they come, and the list may shift for those.
+- **A new file arrives**: its row is inserted at its date position in its inbox section. With oldest-first order, a
+  fresh download or scan lands at the bottom of its section; a file copied in with an older date lands further up.
+  A new file in a new inbox subfolder creates the subfolder's group row at the folder's date position. The row shows a
+  small accent dot on its icon's corner (like an unread marker) until it is first selected.
+- **The selection never moves because of an arrival.** If the selected row is visible, the visible rows above it stay
+  where they are on screen: insertions above the viewport adjust the scroll position so nothing on screen jumps.
+- **A file disappears** (moved or deleted by someone else): its row is removed. If it was the selected file, the
+  selection moves to the next unfiled file below (as after a move), the preview follows, and the bottom bar says
+  "'2033-10-11_Optik Klarblick.pdf' was removed from Scanner outside docsort." Anything typed in the filing panel
+  for that file is discarded.
+- **A file is renamed in place by someone else**: it keeps its row and position (same file identity), and shows the new
+  name. If it was being filed, the name field is left as the user typed it.
+- **A file's content changes** (a scan finishes writing, a download completes from `.crdownload` to `.pdf`): same row,
+  the preview reloads, and Move becomes available when the file is complete.
+- **Bursts** (a scanner writing several pages, a folder being copied in) are coalesced: updates are applied together
+  after the folder has been quiet for about half a second.
+- **An inbox folder itself disappears or reappears**: the section switches to the "unreachable" state and back (see
+  "Edge states").
+- **Filed files changed later** (moved or deleted in the archive by someone else): their row stays checked off for the
+  session; History shows "Moved or deleted since".
+- The archive tree is watched too, so new or renamed folders appear in the picker without a rescan.
+
+## Settings window
+
+A standard Settings scene (⌘,) with two panes. **Folders**:
+
+- **Archive folder**: a path control showing `~/Archiv` with **Choose…**. Below it, the folder count once indexed
+  ("576 folders" in the sample archive).
+- **Inboxes**: a table with columns *Name* (editable, defaults to the folder name), *Folder* (path), *Status* (OK, or a
+  warning such as "Not found" or "Needs access"). **+** opens a folder picker; **−** removes the selected inbox (files
+  are untouched). Drag to reorder; the order is the sidebar order and the ⌘1…⌘9 order.
+- Footnote: "Inbox folders inside the archive folder are left out of destination search."
+
+**Search**: one option, "Rank first:" with *Closer folders* (default) and *Exact name matches*
+(`search-scoped-ranking`). It applies inside a folder and at the archive root alike.
+
+Folders are stored as security-scoped bookmarks in the app's preferences (`config-in-settings`, `app-sandbox`);
+nothing is read from `.docsort.toml`. Changes apply immediately, with no Save button.
+
+## Later
+
+Kept free, not designed here:
+
+- **Document dates.** Inferring the document's own date (from PDF text, OCR or metadata) and shortcuts that insert a
+  date into the name or a new folder name (⌘D / ⌥⌘D were drafted and dropped: today's date and the file's creation date
+  are rarely the document's date). They return together with date inference.
+
+- The suggestions slot at the top of the filing panel (destination chips and a name chip).
+- A Suggested group above Recent in the picker.
+- A ranking hook in fuzzy search for boosting suggested folders.
+- The preview footer can later show the detected source (for example the download URL from Spotlight metadata).
+
+## Not in this version
+
+- Filing several selected files to one destination in one go. The sidebar uses single selection; multi-selection can
+  be added later without changing the panel.
+- Merging, splitting or rotating PDF pages.
+- Renaming or moving folders inside the archive.
+
+## Decisions
+
+Settled by the user:
+
+- Three columns with the filing panel always beside the preview.
+- Each inbox is its own sidebar section; files oldest first.
+- Filed files stay in place, checked off; no Filed section. A persistent filing history with a History view.
+- Filed files can be renamed; revert restores the pre-filing name.
+- Typing in the sidebar goes straight into the destination filter (no type-to-select in the sidebar).
+- Clicking a file in Folder contents copies its name; Folder contents sorted alphabetically, scrolled to the bottom.
+- After a move, focus returns to the sidebar with the next unfiled file selected, so typing starts its search at once.
+- The name field starts with the current name, fully selected.
+- Move to Trash has no confirmation, because it is undoable.
+
+- Destination picker: a drill-down list with a scoped filter; columns were considered and rejected.
+- Key scheme: only ⌘Return files; Tab and Return advance; ⇧Tab goes back; Esc clears the filter, then goes back. The
+  Return hint is a toast that takes no layout space; the Move button shows ⌘↩ as a key-cap badge.
+- New folder: ⇧⌘N or the button creates an editable row inside the highlighted folder; a slash nests folders.
+- History is a separate window (⌘Y).
+- No date shortcuts for now; they come back with document-date inference.
+- Inbox folders are watched live; outside changes may shift the list, docsort's own changes never do.
+- History is a fixed row at the bottom of the sidebar; the toolbar holds only the selected file's actions.
+- Filed and trashed files show a status strip at the top of the filing panel with Move Back or Put Back.
+- Sidebar rows share a Finder-style disclosure gutter; the new-file dot sits on the icon's corner.

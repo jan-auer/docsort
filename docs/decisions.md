@@ -27,7 +27,7 @@ path segments, a recent-destinations boost and an ue/ae/oe/ss → ü/ä/ö/ß fa
 is significantly better for my use, otherwise FuzzyMatch". On 66 CLI-style queries over the real archive, nucleo put
 the target first 41 times and FuzzyMatch 38, and both found it in the top 10 about equally (49 vs 48). FuzzyMatch
 only misses low-scoring scattered-letter matches. Revisit with nucleo through a Rust static library (the user
-accepts a Rust toolchain) if ranking falls short in daily use. Test fixtures use made-up names close to the real ones.
+accepts a Rust toolchain) if ranking falls short in daily use. Test fixtures follow `no-real-data-in-repo`.
 
 ## inbox-and-history-behaviour
 
@@ -81,14 +81,23 @@ from scratch in the archive's style. Don't derive them from real names by swappi
 transformation kept real dates, items and listing details. The real tree may serve as a private, uncommitted
 benchmark. Anything that may contain sample data gets an independent privacy review before it is published as an
 artifact or landed. The author's own check is not enough. Briefs must not invite drawing sample names from the real
-archive. Reason: the user asked for made-up names; reviews caught leaks three times (core fixtures twice, the design
-mockups once), and the first design brief allowed real names.
+archive. How to write sample data so it stays clean:
+- A fresh subagent writes it from an abstract spec: the shapes and situations needed, no concrete names, dates or
+  examples. It never reads the real archive, the old sample data, or notes from sessions that have seen the archive.
+  A session whose context holds real data drifts back to it even when it means to invent.
+- The fictional household has a different life situation from the user's.
+- Its dates sit in clearly different years (for example 2031–2033). The real archive has files on most days of recent
+  years, so invented recent dates collide with real documents of the same kind.
+Reason: the user asked for made-up names; reviews caught leaks five times (core fixtures three times, the design
+mockups twice), and the first design brief allowed real names.
 
 ## search-scoped-ranking
 
-Inside a folder, the destination search ranks direct children first by default (the user types a common prefix,
-not scattered letters). It is a setting, so the user can switch to "exact name first" later. From the archive root,
-exact names win either way. Reason: user's choice in the core review.
+The destination search ranks closer folders first by default: at comparable match quality, a folder fewer levels
+below the current scope wins, even over a deeper folder whose name matches exactly (the user types a common prefix,
+not scattered letters). The archive root is a scope like any other. It is a setting, so the user can switch to
+"exact name first" later. Reason: user's choice in the core review. (An earlier version of this entry said exact
+names always win from the root; that was the hub's misreading of one example, not the user's decision.)
 
 ## hub-delegates-research
 
