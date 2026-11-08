@@ -53,7 +53,8 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
   set in Settings, each listing its files **oldest first** by modification date. Files inside subfolders of an inbox
   are grouped under a disclosure row for that subfolder, placed by the folder's date. The disclosure triangle
   expands and collapses on click, and → / ← do the same from the keyboard. Each row shows the file icon, the file
-  name (middle-truncated) and a relative date.
+  name (middle-truncated) and a compact absolute date, as Finder and Mail show it: day and abbreviated month
+  ("12 Oct"), with the year only when it isn't the current one ("12 Oct 2033").
   - **Row anatomy, as in Finder's list view**: every row starts with the same narrow disclosure gutter (about 12 pt).
     A folder row puts its chevron there; a file row leaves it empty. So file and folder icons line up in one column,
     and the chevron costs no extra width. Files inside an expanded group are indented by one step (about 16 pt), so
