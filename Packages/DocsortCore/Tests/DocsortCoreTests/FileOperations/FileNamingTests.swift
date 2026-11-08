@@ -17,7 +17,7 @@ struct FileNamingTests {
       ("Rechnung", "README", "Rechnung"),
       ("Rechnung.pdf", "README", "Rechnung.pdf"),
       ("v1.2 Rechnung", "scan.pdf", "v1.2 Rechnung.pdf"),
-      ("2019-03-14 Rechnung v1.2", "scan.pdf", "2019-03-14 Rechnung v1.2.pdf"),
+      ("2034-03-14 Rechnung v1.2", "scan.pdf", "2034-03-14 Rechnung v1.2.pdf"),
       ("Rechnung", "v1.2 Rechnung", "Rechnung"),
       ("Rechnung", "archive.tar.gz", "Rechnung.gz"),
       ("Rechnung", ".hidden", "Rechnung"),
@@ -47,7 +47,7 @@ struct FileNamingTests {
   @Test(
     "validationProblem accepts ordinary names",
     arguments: [
-      "2019-03-14 Rechnung.pdf", "v1.2 Rechnung", "Kündigung.pdf", "Name.", "a",
+      "2034-03-14 Rechnung.pdf", "v1.2 Rechnung", "Kündigung.pdf", "Name.", "a",
       String(repeating: "a", count: 255),
     ])
   func validName(name: String) {

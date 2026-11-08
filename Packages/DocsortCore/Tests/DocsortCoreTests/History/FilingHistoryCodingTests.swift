@@ -9,11 +9,11 @@ struct FilingHistoryCodingTests {
   func moveRecordRoundTrip() throws {
     let record = MoveRecord(
       originalURL: location("/Inbox/scan.pdf"),
-      destinationURL: location("/Archiv/2026-11 Monitor/Lieferschein/Lieferschein.pdf"),
+      destinationURL: location("/Archiv/2033-11 Monitor/Lieferschein/Lieferschein.pdf"),
       createdFolders: [
-        location("/Archiv/2026-11 Monitor/"), location("/Archiv/2026-11 Monitor/Lieferschein/"),
+        location("/Archiv/2033-11 Monitor/"), location("/Archiv/2033-11 Monitor/Lieferschein/"),
       ],
-      replaced: trashRecord(of: "/Archiv/2026-11 Monitor/Lieferschein/Lieferschein.pdf"),
+      replaced: trashRecord(of: "/Archiv/2033-11 Monitor/Lieferschein/Lieferschein.pdf"),
       movedItem: FileIdentity(volumeUUID: nil, fileID: 42))
 
     let decoded = try JSONDecoder().decode(
