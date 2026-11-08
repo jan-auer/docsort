@@ -99,6 +99,43 @@ struct LiveInboxTests {
       ])
   }
 
+  @Test("A row being filed survives an update applied before its mark, and the mark finds it")
+  func updateBeforeMarkKeepsRow() async throws {
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    await startWatching()
+    let invoiceRow = try #require(row(named: "Rechnung_NA-33-08812.pdf"))
+    let destination = environment.archive.appending(path: "Musik Margit")
+    try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    let service = FilingService(
+      historyURL: environment.root.appending(path: "FilingHistory.json"),
+      recentsPreference: RecentDestinations.preference(in: environment.defaults),
+      fileOperations: FileOperations(), expectedChanges: expectedChanges)
+
+    let outcome = try await library.keepingRow(invoiceRow.id) { () async throws -> MoveOutcome in
+      let outcome = try await service.file(
+        invoice, into: destination, archivePath: "Musik Margit", named: "Notenhaus.pdf",
+        resolution: .refuse)
+      // The watcher delivers the inbox without the file before the caller gets to mark the row.
+      _ = try writeInboxFile(
+        named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf", in: environment.webDownloads,
+        date: october2033(20))
+      #expect(
+        await eventually { row(named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf") != nil })
+      #expect(library.row(for: invoiceRow.id) != nil)
+      return outcome
+    }
+    library.setMark(
+      invoiceRow.id,
+      .filed(
+        newURL: outcome.movedURL, destinationPath: "Musik Margit", date: outcome.event.date,
+        documentID: outcome.event.documentID))
+
+    #expect(library.row(for: invoiceRow.id)?.mark?.filedDocumentID == outcome.event.documentID)
+    #expect(reported.changes.isEmpty)
+  }
+
   @Test("A file docsort files keeps its checked-off row, and its move is not reported as a removal")
   func ownMoveIsNotReported() async throws {
     defer { environment.remove() }

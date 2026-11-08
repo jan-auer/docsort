@@ -153,8 +153,11 @@ final class InboxLibrary {
   @ObservationIgnored private var inboxes: [ConfiguredInbox] = []
   /// The latest scan result per inbox.
   @ObservationIgnored private var scans: [InboxFolder.ID: ScanResult] = [:]
-  /// Rows to keep showing: marked files, and unmarked ones until the next scan of their inbox.
+  /// Rows to keep showing: marked files, files with an operation in flight, and unmarked ones until the next scan of
+  /// their inbox.
   @ObservationIgnored private var keptRows: [InboxItemID: KeptRow] = [:]
+  /// Rows whose file an operation is moving out of its inbox right now (`keepingRow(_:during:)`).
+  @ObservationIgnored private var pinnedRows: Set<InboxItemID> = []
   /// The rows of `sections` by identity, with the label of their section. Observed like `sections`, so a view that
   /// looks up one row (the selected file) follows its changes.
   private var rowsByID: [InboxItemID: (row: InboxRow, sectionLabel: String)] = [:]
@@ -172,10 +175,18 @@ final class InboxLibrary {
   @ObservationIgnored private var firstUpdateWaiters: [CheckedContinuation<Void, Never>] = []
   @ObservationIgnored private var observationTask: Task<Void, Never>?
 
-  /// An inbox library that is told its inboxes through `update(inboxes:)` and watches them with `watcher`.
-  init(watcher: InboxWatcher = InboxWatcher(expectedChanges: ExpectedChanges())) {
+  /// An inbox library that is told its inboxes through `update(inboxes:)` and watches them with `watcher`, which must
+  /// use the `ExpectedChanges` the app's `FilingService` registers its operations with.
+  init(watcher: InboxWatcher) {
     self.watcher = watcher
   }
+
+  #if DEBUG
+    /// A library with a watcher of its own, for previews and tests that file nothing through a `FilingService`.
+    convenience init() {
+      self.init(watcher: InboxWatcher(expectedChanges: ExpectedChanges()))
+    }
+  #endif
 
   /// An inbox library listing `folders`' inboxes with `watcher`, resubscribing whenever they change.
   convenience init(folders: FolderLibrary, watcher: InboxWatcher) {
@@ -263,8 +274,11 @@ final class InboxLibrary {
     case .listed(let listing): scans[id] = .listed(listing)
     case .unreachable(let error): scans[id] = .failed(Self.problem(for: error))
     }
-    // The update shows what is on disk now; rows kept only for an undo are no longer needed.
-    keptRows = keptRows.filter { $0.value.sectionID != id || $0.value.mark != nil }
+    // The update shows what is on disk now; rows kept only for an undo are no longer needed. Rows with an operation
+    // in flight stay until the operation's outcome marks them.
+    keptRows = keptRows.filter {
+      $0.value.sectionID != id || $0.value.mark != nil || pinnedRows.contains($0.key)
+    }
     rebuildSections()
     if inboxesAwaitingFirstUpdate.remove(id) != nil, inboxesAwaitingFirstUpdate.isEmpty {
       resumeFirstUpdateWaiters()
@@ -317,6 +331,24 @@ final class InboxLibrary {
   }
 
   // MARK: Marks
+
+  /// Runs `operation`, which moves the file `id` out of its inbox (filing, trashing, an undo or redo), keeping the row
+  /// while it runs.
+  ///
+  /// The watcher may deliver the inbox's new listing before the caller marks the row with the outcome: without the
+  /// pin, that update would drop the row and the mark would find none. The caller marks the row right after this
+  /// returns, on the main actor, so no update comes in between. After a failure the row goes with the next update
+  /// that no longer lists the file, as an unmarked row does.
+  func keepingRow<T, E: Error>(
+    _ id: InboxItemID, during operation: () async throws(E) -> T
+  ) async throws(E) -> T {
+    if keptRows[id] == nil, let kept = keptRow(for: id) {
+      keptRows[id] = kept
+    }
+    pinnedRows.insert(id)
+    defer { pinnedRows.remove(id) }
+    return try await operation()
+  }
 
   /// Sets what happened to the file `id` in this session: `mark`, or, for `nil`, nothing (after an undo, Move Back or
   /// Put Back returned it to its inbox). An unmarked row stays until the next scan of its inbox.

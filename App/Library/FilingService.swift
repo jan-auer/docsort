@@ -112,7 +112,7 @@ actor FilingService {
   /// app's `InboxWatcher` uses.
   init(
     historyURL: URL, recentsPreference: StoredPreference<RecentDestinations>,
-    fileOperations: FileOperations, expectedChanges: ExpectedChanges = ExpectedChanges()
+    fileOperations: FileOperations, expectedChanges: ExpectedChanges
   ) {
     store = FilingHistoryStore(fileURL: historyURL)
     self.recentsPreference = recentsPreference
@@ -120,10 +120,22 @@ actor FilingService {
     self.expectedChanges = expectedChanges
   }
 
+  #if DEBUG
+    /// A service with a registry of its own, for previews and tests that watch no inbox.
+    init(
+      historyURL: URL, recentsPreference: StoredPreference<RecentDestinations>,
+      fileOperations: FileOperations
+    ) {
+      self.init(
+        historyURL: historyURL, recentsPreference: recentsPreference,
+        fileOperations: fileOperations, expectedChanges: ExpectedChanges())
+    }
+  #endif
+
   /// The service for `environment`: its history file and defaults, and its Trash, registering its changes with
   /// `expectedChanges`.
   @MainActor static func make(
-    environment: AppEnvironment, expectedChanges: ExpectedChanges = ExpectedChanges()
+    environment: AppEnvironment, expectedChanges: ExpectedChanges
   ) -> FilingService {
     FilingService(
       historyURL: environment.filingHistoryURL,

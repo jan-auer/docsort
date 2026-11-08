@@ -187,7 +187,7 @@ struct MainWindowModelReturnTests {
   }
 
   @Test(
-    "Undoing a Move Back that kept both restores the filed mark onto the numbered row, not the new file's"
+    "Undoing a Move Back that kept both restores the filed mark onto the moved file's row, not the new file's"
   )
   func undoKeepBothMoveBackMarksMovedRow() async throws {
     let environment = try TestFolderEnvironment()
@@ -213,11 +213,15 @@ struct MainWindowModelReturnTests {
     let numbered = environment.webDownloads.appending(path: "Rechnung_NA-33-08812 2.pdf")
     try await waitUntil { model.inboxes.row(listing: numbered) != nil }
     let numberedRow = try #require(model.inboxes.row(listing: numbered))
+    // Rows follow the file's identity: the file moved back under the numbered name keeps the invoice's row.
+    #expect(numberedRow.id == row.id)
     #expect(numberedRow.mark == nil)
+    let downloadRow = try #require(model.inboxes.row(listing: invoice))
+    #expect(downloadRow.id != row.id)
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: numberedRow.id)?.mark == filedMark }
-    #expect(model.inboxes.row(for: row.id)?.mark == nil)
+    #expect(model.inboxes.row(for: downloadRow.id)?.mark == nil)
     #expect(exists(filed.movedURL))
     #expect(!exists(numbered))
     #expect(exists(invoice))

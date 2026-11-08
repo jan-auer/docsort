@@ -375,9 +375,12 @@ extension MainWindowModel {
         document: documentID, at: request.source, into: request.folderURL,
         archivePath: request.archivePath, named: request.name, resolution: resolution)
     } else {
-      try await filing.file(
-        request.source, into: request.folderURL, archivePath: request.archivePath,
-        named: request.name, resolution: resolution)
+      // The caller marks the row with the outcome; until then the row stays, whatever the watcher delivers.
+      try await inboxes.keepingRow(request.itemID) { () async throws(FilingError) in
+        try await filing.file(
+          request.source, into: request.folderURL, archivePath: request.archivePath,
+          named: request.name, resolution: resolution)
+      }
     }
   }
 
@@ -459,7 +462,7 @@ extension MainWindowModel {
     isFilingInProgress = true
     defer { isFilingInProgress = false }
     do {
-      let outcome = try await filing.trash(request.url)
+      let outcome = try await trashKeepingRow(request.itemID, url: request.url)
       inboxes.setMark(
         request.itemID,
         .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
@@ -474,6 +477,15 @@ extension MainWindowModel {
       alert = FilingAlert(
         title: "“\(request.originalName)” could not be moved to the Trash",
         message: FilingMessages.text(for: error))
+    }
+  }
+
+  /// Moves the file of row `id` at `url` to the Trash, keeping the row until the caller marks it with the outcome.
+  private func trashKeepingRow(_ id: InboxItemID, url: URL) async throws(FilingError)
+    -> TrashOutcome
+  {
+    try await inboxes.keepingRow(id) { () async throws(FilingError) in
+      try await filing.trash(url)
     }
   }
 
@@ -561,9 +573,6 @@ extension MainWindowModel {
           : "Moved “\(request.originalName)” back to \(request.inboxName) as \(returnedName) · Undo ⌘Z"
       )
       showReturned(request.itemID)
-      // Under a numbered name the file is a new inbox entry, and the row's name now belongs to the item in the way;
-      // a rescan lists both as they are.
-      if returnedName != request.originalName { inboxes.refresh() }
     } catch .fileOperation(.nameConflict(let existing)) {
       moveBackConflict = MoveBackConflict(blockingURL: existing, request: request)
     } catch {
@@ -574,19 +583,6 @@ extension MainWindowModel {
         title: "“\(request.originalName)” can’t be moved back to \(request.inboxName)",
         message: FilingMessages.text(for: error))
     }
-  }
-
-  /// The row listing the file that the Move Back event `eventID` of `request` returned to its inbox: the request's
-  /// own row when the file went back under its inbox name; after a Keep Both, the row of its numbered name (the
-  /// request's row now lists the item that was in the way), once a scan lists it. `nil` when no row lists it.
-  private func rowOfFileMovedBack(
-    by eventID: FilingEvent.ID, for request: MoveBackRequest
-  ) async -> InboxItemID? {
-    let moveBack = await filing.events().first { $0.id == eventID }
-    guard case .moved(let record)? = moveBack?.action else { return nil }
-    if record.destinationURL.lastPathComponent == request.originalName { return request.itemID }
-    await inboxes.waitForScan()
-    return inboxes.row(listing: record.destinationURL)?.id
   }
 
   private func perform(_ request: PutBackRequest) async {
@@ -659,7 +655,7 @@ extension MainWindowModel {
     _ action: UndoableFiling, ticket: FilingEventTicket, redoTicket: FilingEventTicket
   ) async {
     do {
-      var returnedRowID = action.itemID
+      let returnedRowID = action.itemID
       switch action {
       case .move(let request, _, let markBefore, let replacedRows):
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
@@ -674,23 +670,18 @@ extension MainWindowModel {
         }
       case .moveBack(let request, _, let markBefore):
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
-        let movedRowID = await rowOfFileMovedBack(by: eventID, for: request)
-        _ = try await filing.undo(eventID: eventID)
-        archive.rebuild()
-        if let movedRowID {
-          inboxes.setMark(movedRowID, markBefore)
-          returnedRowID = movedRowID
-        } else {
-          Logger.filing.error(
-            "No row lists \(request.originalName, privacy: .private) after its Move Back; its filed mark is not restored"
-          )
+        // Rows follow the file's identity, so the request's row lists the file also under a numbered name.
+        _ = try await inboxes.keepingRow(request.itemID) { () async throws(FilingError) in
+          try await filing.undo(eventID: eventID)
         }
+        archive.rebuild()
+        inboxes.setMark(request.itemID, markBefore)
       case .trash(let request):
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
         _ = try await filing.undo(eventID: eventID)
         inboxes.setMark(request.itemID, nil)
       case .putBack(let request):
-        let outcome = try await filing.trash(request.url)
+        let outcome = try await trashKeepingRow(request.itemID, url: request.url)
         redoTicket.eventID = outcome.event.id
         inboxes.setMark(
           request.itemID,
@@ -726,15 +717,10 @@ extension MainWindowModel {
         let outcome = try await filing.moveBack(
           document: request.documentID, at: request.url, resolution: resolution)
         undoTicket.eventID = outcome.event.id
-        // The undo restored the filed mark onto the row listing the file, which after a Keep Both is not the
-        // request's row.
-        for id in inboxes.rowIDs(filedAs: request.documentID) {
-          inboxes.setMark(id, nil)
-        }
+        inboxes.setMark(request.itemID, nil)
         showReturned(request.itemID)
-        if outcome.movedURL.lastPathComponent != request.originalName { inboxes.refresh() }
       case .trash(let request):
-        let outcome = try await filing.trash(request.url)
+        let outcome = try await trashKeepingRow(request.itemID, url: request.url)
         undoTicket.eventID = outcome.event.id
         inboxes.setMark(
           request.itemID,
