@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The destination line in the panel's bottom bar, the one place the full destination path is shown:
+/// The destination line under the picker's search field, the one place the full destination path is shown:
 /// `Archive › Gesundheit › Konrad › Physiotherapie`, the folder's own name in semibold, wrapping onto a second line
 /// rather than hiding part of the path. It names the chosen folder (with a filled folder icon), else the highlighted
 /// one (outlined), so it always says where ⌘Return would file. Each ancestor is a link that takes the picker there.

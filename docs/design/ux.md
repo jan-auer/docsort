@@ -35,16 +35,17 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
 │ ● ● ●  ◧  Web-Downloads › Rechnung_NA-33-08812.pdf       [Open] [Finder] [Trash]      ◨  │  toolbar
 ├────────────────┬───────────────────────────────────────────┬─────────────────────────────┤
 │ WEB-DOWNLOADS 9│                                           │ [🔍 Search, Gesundheit first]│
-│   Gehaltszett… │                                           ├─────────────────────────────┤
-│ ✓ 2033-10-20 … │                                           │ In Gesundheit               │
+│   Gehaltszett… │                                           │ 📁 Archive › Musik › Noten  │
+│ ✓ 2033-10-20 … │                                           ├─────────────────────────────┤
+│                │                                           │ In Gesundheit               │
 │ ▸ Rechnung_NA… │                                           │  folder list, edge to edge  │
 │ ▾ Uni Westerh… │              large preview                │ ⊕ New Folder  ↻   → into · ← │
 │     Rechnung_… │      (PDF pages, image, Quick Look)       ├──────── drag to resize ─────┤
 │ SCANNER      4 │                                           │ › Files in Noten   12 files │
 │   2033-10-11_… │                                           │  folder contents            │
 │   2033-10-16_… │                                           ├─────────────────────────────┤
-│ ────────────── │                                           │ Folder: Archive › Musik › … │
-│ ⏱ History  ⌘Y  │                                           │  Name: [2033-10-13 No… ↺ .pdf]│
+│ ────────────── │                                           │ Name: [2033-10-13 No… ↺ .pdf]│
+│ ⏱ History  ⌘Y  │                                           │                             │
 │                │  page 1 of 2 · 94 KB · PDF · 13 Oct 2033  │              ( Move  ⌘↩ )   │
 └────────────────┴───────────────────────────────────────────┴─────────────────────────────┘
 ```
@@ -72,14 +73,14 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
   bottom:
   1. **Suggestions slot.** Reserved, empty and hidden for now. Later work (PDF text, OCR, download source) puts up to
      three suggested destinations and a suggested name here as clickable chips, above the picker.
-  2. **Destination picker**: the search field, then the folder list edge to edge, with the **New Folder** button under
-     the list (choosing or creating the folder is the earlier step, so New Folder sits with the list, not at the
-     bottom).
+  2. **Destination picker**: the search field; under it the **destination line**, the one place the full
+     destination path is shown (`Archive › Musik Margit › Noten & Bücher`), so the destination reads where it is
+     chosen; then the folder list edge to edge, with the **New Folder** button under the list (choosing or creating
+     the folder is the earlier step, so New Folder sits with the list, not at the bottom).
   3. **Folder contents**: a drawer under the list with the files already in the highlighted destination. Dragging its
-     header resizes it against the list; its chevron collapses it to the header. Size and state are kept with the
-     window.
-  4. **Bottom bar**: **Folder:** the destination line, the one place the full destination path is shown
-     (`Archive › Musik Margit › Noten & Bücher`); **Name:** the name field with the extension and the revert control
+     header resizes it against the list (only its grab bar shows the resize cursor); its chevron collapses it to the
+     header. Size and state are kept with the window.
+  4. **Bottom bar**: **Name:** the name field with the extension and the revert control
      inside it, and the conflict notice under it; then the **Move button**: the default (accent-filled) button, large
      and capsule-shaped, with its shortcut shown inside it as a small key-cap badge to the right of the label:
      `Move  ⌘↩`. For a filed file the label reads Rename or Move.
@@ -104,6 +105,9 @@ concept C's structure (`filing-panel-redesign`).
 - **Banners**: the filed/trashed status (green tint or the content colour) and the failures (orange tint, orange
   warning symbol) run across the top of the panel, so information and failure never look alike.
 - **Empty states** use `ContentUnavailableView`, like the preview.
+- **The window's toolbar spans the preview and the filing panel**; the panel starts below it, and the file's actions
+  and the panel toggle sit in the toolbar's trailing area above the panel. The panel's backgrounds stop at the
+  toolbar instead of running under it.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
@@ -290,8 +294,8 @@ the 2026-11-08 destination-search study, concept C, `docs/design/destination-sea
 
 - **One list at the panel's normal width**, edge to edge under the search field. Where the picker is shows in the
   list itself (the "this folder" row while browsing, "In <folder>" while searching) and in the placeholder; the full
-  path of the folder a file would go to is on the destination line in the bottom bar, whose ancestor segments are
-  links that take the picker there. There is no path bar and no scope chip in the field.
+  path of the folder a file would go to is on the destination line under the search field, whose ancestor segments
+  are links that take the picker there. There is no path bar and no scope chip in the field.
 - **Empty filter at the archive root**: Recent first (up to 20, most recent first), then the top-level folders.
 - **Stepping**: ↑/↓ move the highlight; → steps into the highlighted folder (the list now shows its subfolders);
   ← or Backspace in an empty filter steps out and highlights the folder you came from; ⌘↑ jumps to the

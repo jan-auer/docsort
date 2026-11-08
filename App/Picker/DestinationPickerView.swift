@@ -1,8 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The destination picker: the search field above an edge-to-edge folder list, with the New Folder button under the
-/// list (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds it.
+/// The destination picker: the search field, the destination line under it (the folder a file would go to, its full
+/// path shown once), an edge-to-edge folder list and the New Folder button under the list (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds it.
 ///
 /// The panel owns focus: it passes its focus binding and maps ``PickerField`` into its own focus values with
 /// `field`. The picker moves focus only between its own two fields (the filter and the new-folder name); everything
@@ -62,7 +62,14 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         .accessibilityIdentifier("picker-filter")
       }
       .padding(.horizontal, FilingPanelStyle.edgeMargin)
-      .padding(.vertical, 10)
+      .padding(.top, 10)
+      DestinationLine(destination: model.destinationPath) { path in
+        model.jump(to: path)
+        focus.wrappedValue = field(.filter)
+      }
+      .padding(.horizontal, FilingPanelStyle.edgeMargin + 2)
+      .padding(.top, 7)
+      .padding(.bottom, 9)
       Divider()
       folderList
         .background(FilingPanelStyle.listBackground)

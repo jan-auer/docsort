@@ -5,9 +5,9 @@ import SwiftUI
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
 /// panel: the search field at the top, the folder list edge to edge with New Folder under it, Folder contents as a
-/// drawer the user resizes by dragging its header, and a bottom bar with the destination line (the full path, shown
-/// once), the name field (extension and Revert inside it) and the Move button (⌘Return, also File › Move). The file's
-/// name is in the window's title, not repeated here.
+/// drawer the user resizes by dragging its header, and a bottom bar with the name field (extension and Revert inside
+/// it) and the Move button (⌘Return, also File › Move). The destination line, the full path shown once, sits under the
+/// search field. The file's name is in the window's title, not repeated here.
 ///
 /// A filed file opens with a status banner ("Filed to … · today 09:41", **Move Back**) above the same parts, with
 /// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
@@ -53,8 +53,10 @@ struct FilingPanel: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    // The window colour for the bars, so the edge-to-edge lists (content colour) stand apart from them.
-    .background(FilingPanelStyle.background)
+    // The bars' colour, so the edge-to-edge lists (content colour) stand apart from them. It stops at the top safe
+    // area: the window's toolbar spans the preview and the panel, and a background reaching under it made the panel
+    // look like a full-height column of its own beside the toolbar.
+    .background(FilingPanelStyle.background, ignoresSafeAreaEdges: [])
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }
@@ -135,28 +137,17 @@ struct FilingPanel: View {
       }
   }
 
-  /// The bottom bar, laid out like the save panel: "Folder" with the destination line, "Name" with the name field,
-  /// a notice if moving failed, and the Move button at the trailing end.
+  /// The bottom bar: "Name" with the name field, a notice if moving failed, and the Move button at the trailing end.
+  /// The destination is named under the search field, where it is chosen.
   private func bottomBar(for file: SelectedFile) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
-        GridRow(alignment: .firstTextBaseline) {
-          Text("Folder:")
-            .foregroundStyle(.secondary)
-            .gridColumnAlignment(.trailing)
-          DestinationLine(destination: model.picker.destinationPath) { path in
-            model.picker.jump(to: path)
-            model.requestFocus(.destinationFilter)
-          }
-        }
-        GridRow {
-          Text("Name:")
-            .foregroundStyle(.secondary)
-          NameField(model: model, file: file)
-        }
-        // The Return toast floats below the field, over the notice and the Move button.
-        .zIndex(1)
+      HStack(spacing: 8) {
+        Text("Name:")
+          .foregroundStyle(.secondary)
+        NameField(model: model, file: file)
       }
+      // The Return toast floats below the field, over the notice and the Move button.
+      .zIndex(1)
 
       if let notice = model.panel.notice {
         Label(notice, systemImage: "exclamationmark.octagon.fill")
@@ -262,7 +253,7 @@ private struct FailureNotice<Actions: View>: View {
     .padding(.horizontal, FilingPanelStyle.edgeMargin)
     .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.orange.opacity(0.14))
+    .background(Color.orange.opacity(0.14), ignoresSafeAreaEdges: [])
     .overlay(alignment: .bottom) { Divider() }
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier(identifier)

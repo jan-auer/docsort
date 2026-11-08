@@ -65,7 +65,8 @@ struct FilingStatusStrip: View {
     .padding(.horizontal, FilingPanelStyle.edgeMargin)
     .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(background)
+    // Not under the window's toolbar, which spans the preview and the panel.
+    .background(background, ignoresSafeAreaEdges: [])
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-strip")
   }

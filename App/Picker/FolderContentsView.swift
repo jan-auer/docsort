@@ -74,7 +74,8 @@ struct FolderContentsListing: View {
   // MARK: Header
 
   /// The drawer's header: a chevron that collapses it, "Files in Rechnungen" with the file count trailing (the
-  /// folder's full path is in its tooltip), and a grip; dragging anywhere on it resizes the list.
+  /// folder's full path is in its tooltip), and a grab bar, which alone shows the resize cursor; dragging anywhere on
+  /// the header resizes the list.
   private var header: some View {
     HStack(alignment: .firstTextBaseline, spacing: 6) {
       Button {
@@ -111,15 +112,18 @@ struct FolderContentsListing: View {
     .padding(.top, 9)
     .padding(.bottom, 6)
     .overlay(alignment: .top) {
+      // The grab bar: the only part that shows the resize cursor, with a hit area larger than the bar itself.
       Capsule()
         .fill(.quaternary)
         .frame(width: 32, height: 3)
-        .padding(.top, 3)
+        .frame(width: 64, height: 9)
+        .contentShape(Rectangle())
+        .pointerStyle(.rowResize)
+        .help("Drag to resize")
         .accessibilityHidden(true)
     }
     .frame(maxWidth: .infinity)
     .contentShape(Rectangle())
-    .pointerStyle(.rowResize)
     .gesture(resizeGesture)
     .accessibilityAdjustableAction { direction in
       switch direction {
