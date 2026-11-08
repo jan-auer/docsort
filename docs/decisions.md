@@ -75,10 +75,9 @@ and before testing, and check `ps` for a stray Docsort.app when tests hang. Reas
 
 ## targeted-ui-tests
 
-UI tests are slow and take over the machine. While fixing, run only the affected test (`-only-testing:`), and
-diagnose with unit tests or the log-based launch check where possible. Run the full UI suite once before landing, not
-after every change. Timebox flaky-test hunting and list leftovers instead. Reason: the user found repeated full-suite
-runs wasteful.
+No UI-test runs except a single focused test, when it is essential to validate a fix that a unit test has already
+confirmed. No full UI suites, and no UI tests used for diagnosis. Diagnose with unit tests or the log-based launch
+check; list leftovers instead of hunting. Reason: the user found the UI-test runs wasteful and slow (2026-11-08).
 
 ## e2e-first
 
