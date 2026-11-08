@@ -84,3 +84,7 @@ you may have to pick the archive and inbox folders in Settings again.
 
 The check commands (formatting, the package's unit tests, the app's unit tests and the UI tests) are listed in
 `CLAUDE.md`, under "Check Commands".
+
+## License
+
+MIT, see [LICENSE](LICENSE). Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
