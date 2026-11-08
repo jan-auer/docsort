@@ -108,8 +108,9 @@ final class DestinationPickerModel {
     return rows.first { $0.id == highlightedRowID }
   }
 
-  /// The folder under the highlight, for ⌘Return from the picker: a folder row's folder, or the folder the create
-  /// row would create (not yet pending); `nil` when neither is highlighted or the create row's name is invalid.
+  /// The folder under the highlight, for Tab, Return and ⌘Return: a folder row's folder or the "this folder" row's;
+  /// `nil` otherwise. The create row is not one: a typo must never become a folder with a single key, so only
+  /// ⇧⌘N or a click confirms it (``confirmCreateRow()``).
   var highlightedDestination: PickerDestination? {
     guard let highlightedRow else { return nil }
     switch highlightedRow.kind {
@@ -117,13 +118,19 @@ final class DestinationPickerModel {
       return destination(for: path)
     case .folder(let folder):
       return destination(for: folder.path)
-    case .createFolder(let name, let parent, let problem):
-      guard problem == nil else { return nil }
-      return NewFolderPath(typed: name).resolved(
-        under: parent, index: index, pendingFolders: pendingFolders)
-    case .newFolderDraft, .indexing:
+    case .createFolder, .newFolderDraft, .indexing:
       return nil
     }
+  }
+
+  /// The folder the highlighted create row would create (not yet pending); `nil` when the create row is not
+  /// highlighted or its name is invalid.
+  private var highlightedCreateRowDestination: PickerDestination? {
+    guard case .createFolder(let name, let parent, let problem) = highlightedRow?.kind,
+      problem == nil
+    else { return nil }
+    return NewFolderPath(typed: name).resolved(
+      under: parent, index: index, pendingFolders: pendingFolders)
   }
 
   /// The path bar's segments: `Archive`, then each segment of the scope; empty at the root.
@@ -359,7 +366,7 @@ final class DestinationPickerModel {
   func beginNewFolder() {
     guard newFolderDraft == nil else { return }
     if destination == nil, case .createFolder = highlightedRow?.kind {
-      chooseHighlighted()
+      confirmCreateRow()
       return
     }
     let parent = newFolderParent
@@ -370,6 +377,14 @@ final class DestinationPickerModel {
     query = ""
     newFolderDraft = NewFolderDraft(parent: parent, name: "", notice: nil)
     update(highlight: .currentFolder)
+  }
+
+  /// ⇧⌘N or a click on the highlighted create row: chooses the folder it offers (pending until the move) and emits
+  /// ``PickerEvent/chose(_:)``. Does nothing when the create row is not highlighted or its name is invalid.
+  func confirmCreateRow() {
+    guard let created = highlightedCreateRowDestination else { return }
+    choose(created)
+    onEvent(.chose(created))
   }
 
   /// The name typed into the new-folder row, bound to its field; setting it updates the row's position and notice.
@@ -422,6 +437,7 @@ final class DestinationPickerModel {
   /// before it opened. Does nothing without a row.
   func cancelNewFolder() {
     guard newFolderDraft != nil, let saved = stateBeforeDraft else { return }
+    lastDraftEnding = .cancelled
     newFolderDraft = nil
     stateBeforeDraft = nil
     scope = saved.scope
@@ -430,6 +446,10 @@ final class DestinationPickerModel {
     highlightedRowID = saved.highlightedRowID
     update(highlight: .keep)
   }
+
+  /// How the latest new-folder row ended. The view refocuses the filter only after a cancel: after a choice, the
+  /// panel has already moved focus on (to the name field, or the move has started).
+  private(set) var lastDraftEnding: NewFolderDraftEnding?
 
   /// What ``cancelNewFolder()`` restores.
   private struct StateBeforeDraft {
@@ -468,6 +488,7 @@ final class DestinationPickerModel {
       return .cancelled
     }
     guard typed.problem == nil else { return .unchanged }
+    lastDraftEnding = .chosen
     newFolderDraft = nil
     stateBeforeDraft = nil
     scope = draft.parent
@@ -687,4 +708,12 @@ final class DestinationPickerModel {
     else { return nil }
     return ArchivePath.joining(ancestor, first)
   }
+}
+
+/// How a new-folder row ended.
+enum NewFolderDraftEnding: Hashable, Sendable {
+  /// Its folder was chosen (Tab, Return or ⌘Return).
+  case chosen
+  /// It was cancelled (Esc, ⇧Tab, an empty name, or another action that closes it).
+  case cancelled
 }

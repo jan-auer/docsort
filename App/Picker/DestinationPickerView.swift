@@ -75,17 +75,20 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("picker")
-    .onChange(of: focusedField, initial: true) { _, focusedField in
+    .onChange(of: focusedField, initial: true) { previousField, focusedField in
       if focusedField == nil {
         keyMonitor.stop()
       } else {
         keyMonitor.start { key in handle(key) }
       }
+      if focusedField == .filter, previousField != .filter {
+        placeFilterCaretAtEnd()
+      }
     }
     .onChange(of: model.newFolderDraft == nil) { _, draftEnded in
-      // The new-folder row and its field are gone; give focus back to the filter unless an event (handled by the
-      // panel, e.g. `.chose`) already moved it on.
-      guard draftEnded,
+      // The new-folder row and its field are gone. After a cancel, focus goes back to the filter; after a choice,
+      // the panel moves it on (`.chose` to the name field), and taking it here would race with that.
+      guard draftEnded, model.lastDraftEnding == .cancelled,
         focus.wrappedValue == field(.newFolderName) || focus.wrappedValue == nil
       else { return }
       focus.wrappedValue = field(.filter)
@@ -101,6 +104,18 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     if focused == field(.filter) { return .filter }
     if focused == field(.newFolderName) { return .newFolderName }
     return nil
+  }
+
+  /// Puts the filter's caret after its last character, so text typed in the sidebar continues the query instead of
+  /// replacing it, and → can step in at once.
+  ///
+  /// SwiftUI's text field selects all of its text when it gains focus, which happens after this focus change; so the
+  /// caret is placed again on the next turn of the main actor, once the field has taken focus.
+  private func placeFilterCaretAtEnd() {
+    filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
+    Task { @MainActor in
+      filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
+    }
   }
 
   /// Whether the filter's caret sits at the end of its text (or nothing is known about it, as right after the
@@ -260,7 +275,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         .modifier(
           PickerRowChrome(
             identifier: "picker-create-row", label: createRow.title, highlight: highlight,
-            click: { click(row) }, open: { open(row) }))
+            click: { confirmCreateRow(row) }, open: { confirmCreateRow(row) }))
     case .newFolderDraft:
       NewFolderRowView(model: model, focus: focus, nameField: field(.newFolderName))
     case .indexing:
@@ -273,6 +288,12 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   private func click(_ row: PickerRow) {
     model.highlight(row.id)
     focus.wrappedValue = field(.filter)
+  }
+
+  /// A click on the create row: creates its folder (pending until the move), as ⇧⌘N does.
+  private func confirmCreateRow(_ row: PickerRow) {
+    model.highlight(row.id)
+    model.confirmCreateRow()
   }
 
   /// A double click: steps into a folder with subfolders, chooses anything else.

@@ -4,7 +4,8 @@ import SwiftUI
 /// The name field: the file's name without its extension, all selected when focused, with the extension as a fixed
 /// label after it and a name problem shown under it.
 ///
-/// An empty field keeps the original name. Return does not move: it shows "Press ⌘Return to move" for two seconds.
+/// An empty field keeps the original name. Return does not move: it shows "Press ⌘Return to move" for two seconds,
+/// as a toast that floats below the field without taking layout space.
 /// Tab wraps focus to the sidebar; ⇧Tab and Esc return to the destination filter.
 struct NameField: View {
   /// The window's state.
@@ -37,22 +38,19 @@ struct NameField: View {
             .accessibilityIdentifier("name-extension")
         }
       }
+      // The hint floats just below the field over whatever is there, so nothing shifts when it appears.
+      .overlay(alignment: .bottomLeading) {
+        if let hint = model.panel.hint {
+          HintToast(hint: hint) { model.panel.hint = nil }
+            .alignmentGuide(.bottom) { dimensions in dimensions[.top] - 6 }
+        }
+      }
+      .zIndex(1)
       if let problem = nameProblem {
         Text("This name can’t be used: \(FilingMessages.text(for: problem))")
           .font(.callout)
           .foregroundStyle(.orange)
           .accessibilityIdentifier("name-problem")
-      }
-      if model.panel.isMoveHintShown {
-        Text("Press ⌘Return to move")
-          .font(.callout)
-          .foregroundStyle(.secondary)
-          .accessibilityIdentifier("name-move-hint")
-          .task {
-            // A cancelled sleep only means the hint went away earlier; hiding it then is right too.
-            try? await Task.sleep(for: .seconds(2))
-            model.panel.isMoveHintShown = false
-          }
       }
     }
   }
@@ -72,7 +70,7 @@ struct NameField: View {
   private func handle(_ command: TextFieldKeyCommand) -> Bool {
     switch command {
     case .submit:
-      model.panel.isMoveHintShown = true
+      model.panel.hint = .pressCommandReturnToMove
       return true
     case .tab:
       model.requestFocus(.sidebar)
@@ -83,6 +81,34 @@ struct NameField: View {
     case .moveUp, .moveDown:
       return false
     }
+  }
+}
+
+/// A short hint in a small floating capsule that hides itself after two seconds.
+private struct HintToast: View {
+  let hint: FilingHint
+  /// Called when the two seconds are up.
+  let expire: () -> Void
+
+  var body: some View {
+    Text(hint.text)
+      .font(.callout)
+      .padding(.horizontal, 10)
+      .padding(.vertical, 5)
+      .background(.regularMaterial, in: Capsule())
+      .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+      .shadow(radius: 3, y: 1)
+      .fixedSize()
+      .accessibilityIdentifier("filing-hint")
+      .task(id: hint) {
+        do {
+          try await Task.sleep(for: .seconds(2))
+        } catch {
+          // Cancelled: the hint was replaced or went away earlier, and the newer one sets its own timer.
+          return
+        }
+        expire()
+      }
   }
 }
 

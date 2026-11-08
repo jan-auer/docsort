@@ -116,12 +116,13 @@ extension MainWindowModel {
     return FileNaming.finalName(entered: panel.nameText, originalName: file.originalName)
   }
 
-  /// File › Move (⌘Return): moves the selected file to the chosen destination under the entered name.
+  /// File › Move (⌘Return) and the Move button: moves the selected file to the chosen destination under the
+  /// entered name.
   ///
-  /// With no destination chosen, the picker's highlighted folder is chosen first when the picker is in use;
-  /// otherwise focus goes to the filter and nothing moves. With the filing panel hidden, it shows the panel and moves
-  /// nothing. (While a picker field has focus, the picker handles
-  /// ⌘Return itself and reports `.moveRequested`.)
+  /// With no destination chosen: while focus is in the picker (a click on Move), the picker's highlighted folder is
+  /// chosen and the file moves, as ⌘Return in the picker does (the picker handles that key itself). Anywhere else
+  /// nothing moves: focus goes to the filter and the hint says "Choose a destination first". With the filing panel
+  /// hidden, it shows the panel and moves nothing.
   func moveSelectedFile() {
     guard canMoveSelectedFile else { return }
     guard isFilingPanelShown else {
@@ -131,11 +132,10 @@ extension MainWindowModel {
     }
     if let destination = picker.destination {
       move(to: destination)
-    } else if focus == .destinationFilter || !picker.filterText.isEmpty,
-      picker.highlightedDestination != nil
-    {
+    } else if focus == .destinationFilter, picker.highlightedDestination != nil {
       picker.requestMove()
     } else {
+      panel.hint = .chooseDestinationFirst
       requestFocus(.destinationFilter)
     }
   }
@@ -279,6 +279,9 @@ extension MainWindowModel {
     }
     do {
       _ = try await filing.undo(eventID: eventID)
+      // Undoing a move removes the folders it created (when still empty); a rebuild keeps the old index in use
+      // until the new one is ready, so it is cheap to do whenever a move is undone.
+      if case .move = action { archive.rebuild() }
       inboxes.unmark(action.itemID)
       select(action.itemID)
       resetPanel()
@@ -304,6 +307,7 @@ extension MainWindowModel {
           request.source, into: request.folderURL, archivePath: request.archivePath,
           named: request.name, resolution: resolution)
         ticket.eventID = outcome.event.id
+        if !outcome.record.createdFolders.isEmpty { archive.rebuild() }
         inboxes.markFiled(
           request.itemID, newURL: outcome.movedURL, destinationPath: request.archivePath)
       case .trash(let request):

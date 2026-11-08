@@ -32,7 +32,13 @@ struct DestinationPickerNewFolderTests {
     model.filterText = " Besuch Westerholm // Bahn/ "
     #expect(model.rowSummaries == ["create:Besuch Westerholm/Bahn in Reisen"])
 
+    // Tab, Return and ⌘Return never turn a typo into a folder: only New Folder (⇧⌘N) or a click confirms it.
     model.chooseHighlighted()
+    model.requestMove()
+    #expect(events.events.isEmpty)
+    #expect(model.destination == nil)
+
+    model.beginNewFolder()
     let created = PickerDestination.newFolder("Reisen/Besuch Westerholm/Bahn")
     #expect(events.events == [.chose(created)])
     #expect(model.pendingFolders == [created.path])
@@ -51,8 +57,8 @@ struct DestinationPickerNewFolderTests {
         .createFolder(name: ".Bahn", parent: "Mobilität", problem: .leadingDot)
       ])
 
-    model.chooseHighlighted()
-    model.requestMove()
+    model.beginNewFolder()
+    model.confirmCreateRow()
     #expect(events.events.isEmpty)
     #expect(model.destination == nil)
   }

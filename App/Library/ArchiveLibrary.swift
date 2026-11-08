@@ -102,17 +102,24 @@ final class ArchiveLibrary {
       return
     }
     status = .indexing
+    startBuild(for: request)
+  }
+
+  /// Builds the index again for the same folders, for example after a move created folders in the archive or its
+  /// undo removed them. The current index stays in use (and the status unchanged) until the new one is ready, so the
+  /// picker keeps working meanwhile.
+  func rebuild() {
+    guard let request else { return }
+    buildTask?.cancel()
+    startBuild(for: request)
+  }
+
+  /// Builds the index for `request` off the main actor and applies it when done.
+  private func startBuild(for request: ArchiveIndexRequest) {
     buildTask = Task { [weak self] in
       let outcome = await Self.build(request)
       self?.apply(outcome, for: request)
     }
-  }
-
-  /// Builds the index again for the same folders, for example after a move created folders in the archive.
-  func rebuild() {
-    let current = request
-    request = nil
-    update(to: current)
   }
 
   /// Waits until the build in progress, if any, has finished and been applied.

@@ -124,6 +124,94 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(waitForValue("unfiled", of: scan))
   }
 
+  /// Waits until `element` has keyboard focus.
+  @MainActor
+  private func waitForKeyboardFocus(of element: XCUIElement) -> Bool {
+    let expectation = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: element)
+    return XCTWaiter().wait(for: [expectation], timeout: 5) == .completed
+  }
+
+  /// Selects the invoice in the sidebar and types `noten`, which goes into the destination filter.
+  @MainActor
+  private func startFilingTheInvoice() -> (app: XCUIApplication, mainWindow: XCUIElement) {
+    let (app, mainWindow) = launchMainWindow()
+    let invoice = sidebarRow("Rechnung_NA-33-08812.pdf", in: app)
+    XCTAssertTrue(invoice.waitForExistence(timeout: 5))
+    invoice.click()
+    mainWindow.typeText("noten")
+    XCTAssertTrue(waitForValue("noten", of: app.textFields["picker-filter"]))
+    return (app, mainWindow)
+  }
+
+  @MainActor
+  func testNameFieldKeysAfterChoosingADestination() throws {
+    let (app, mainWindow) = startFilingTheInvoice()
+    let filter = app.textFields["picker-filter"]
+    let nameField = app.textFields["name-field"]
+
+    // Tab chooses the highlighted folder and moves to the name field.
+    mainWindow.typeKey(.tab, modifierFlags: [])
+    XCTAssertTrue(waitForKeyboardFocus(of: nameField))
+    let token = app.descendants(matching: .any)["picker-chosen-token"]
+    XCTAssertTrue(token.waitForExistence(timeout: 5))
+    XCTAssertTrue(token.label.contains("Noten & Bücher"))
+
+    // Return doesn't move; it shows the hint, and the picker keeps its choice.
+    mainWindow.typeKey(.return, modifierFlags: [])
+    let hint = app.descendants(matching: .any)["filing-hint"]
+    XCTAssertTrue(hint.waitForExistence(timeout: 5))
+    XCTAssertEqual(hint.label, "Press ⌘Return to move")
+    XCTAssertTrue(waitForKeyboardFocus(of: nameField))
+    XCTAssertTrue(token.exists)
+
+    // → moves the caret (to the end of the selected name); it doesn't step the picker into a folder.
+    mainWindow.typeKey(.rightArrow, modifierFlags: [])
+    mainWindow.typeText(" Advent")
+    XCTAssertTrue(waitForValue("Rechnung_NA-33-08812 Advent", of: nameField))
+    XCTAssertTrue(token.label.contains("Noten & Bücher"))
+
+    // ↓ in the name field leaves the chosen destination alone.
+    mainWindow.typeKey(.downArrow, modifierFlags: [])
+    XCTAssertTrue(token.label.contains("Noten & Bücher"))
+
+    // Esc returns to the filter.
+    mainWindow.typeKey(.escape, modifierFlags: [])
+    XCTAssertTrue(waitForKeyboardFocus(of: filter))
+  }
+
+  @MainActor
+  func testReturnInTheNewFolderRowFocusesTheNameField() throws {
+    let (app, mainWindow) = startFilingTheInvoice()
+
+    mainWindow.typeKey("n", modifierFlags: [.command, .shift])
+    let newFolderName = app.textFields["picker-new-folder-name"]
+    XCTAssertTrue(waitForKeyboardFocus(of: newFolderName))
+    mainWindow.typeText("2033 Adventkonzert")
+    mainWindow.typeKey(.return, modifierFlags: [])
+
+    XCTAssertTrue(waitForKeyboardFocus(of: app.textFields["name-field"]))
+    let token = app.descendants(matching: .any)["picker-chosen-token"]
+    XCTAssertTrue(token.waitForExistence(timeout: 5))
+    XCTAssertTrue(token.label.contains("2033 Adventkonzert"))
+  }
+
+  @MainActor
+  func testCommandReturnWithoutADestinationMovesNothing() throws {
+    let (app, mainWindow) = launchMainWindow()
+    let invoice = sidebarRow("Rechnung_NA-33-08812.pdf", in: app)
+    XCTAssertTrue(invoice.waitForExistence(timeout: 5))
+    invoice.click()
+
+    mainWindow.typeKey(.return, modifierFlags: .command)
+
+    let hint = app.descendants(matching: .any)["filing-hint"]
+    XCTAssertTrue(hint.waitForExistence(timeout: 5))
+    XCTAssertEqual(hint.label, "Choose a destination first")
+    XCTAssertTrue(waitForKeyboardFocus(of: app.textFields["picker-filter"]))
+    XCTAssertEqual(invoice.value as? String, "unfiled")
+  }
+
   /// Waits until `element`'s accessibility label is `label`.
   @MainActor
   private func waitForLabel(_ label: String, of element: XCUIElement) -> Bool {

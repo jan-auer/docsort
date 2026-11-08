@@ -45,6 +45,30 @@ struct ArchiveLibraryTests {
     #expect(problems.first?.url.lastPathComponent == "Gemeinsam")
   }
 
+  @Test("A rebuild keeps the old index in use until the new one is ready")
+  func rebuildKeepsTheOldIndex() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    try makeArchive(in: environment)
+    let library = ArchiveLibrary()
+    library.update(
+      to: ArchiveIndexRequest(
+        root: environment.archive, excludedFolders: [environment.scanner, environment.webDownloads])
+    )
+    await library.waitForIndexing()
+    let before = try #require(library.index)
+
+    try FileManager.default.createDirectory(
+      at: environment.archive.appending(path: "Reisen/2033-11 Besuch Westerholm"),
+      withIntermediateDirectories: true)
+    library.rebuild()
+    #expect(library.index?.folders == before.folders)
+    #expect(library.status != .indexing)
+    await library.waitForIndexing()
+
+    #expect(library.index?.contains("Reisen/2033-11 Besuch Westerholm") == true)
+  }
+
   @Test("A missing archive root fails with a reason, and no request clears the index")
   func missingRootFails() async throws {
     let environment = try TestFolderEnvironment()

@@ -63,13 +63,18 @@ enum PickerKey: Hashable {
 ///
 /// SwiftUI's `TextField` on macOS hands Tab and ⇧Tab to the focus system, Return to `onSubmit` and arrows and Esc to
 /// its field editor, and `onKeyPress` does not reliably see them first. An app-local event monitor does: AppKit calls
-/// it for every key-down event before `NSApplication.sendEvent(_:)` dispatches it. The monitor runs only while the
-/// picker has focus (the view starts and stops it), acts only on events for the picker's own window, and leaves keys
-/// alone while an input method is composing text (marked text), so dead keys and IMEs keep working.
+/// it for every key-down event before `NSApplication.sendEvent(_:)` dispatches it. The monitor runs while SwiftUI
+/// says the picker has focus (the view starts and stops it), but that focus state can lag behind AppKit: the name
+/// field takes focus with `makeFirstResponder`, outside SwiftUI. So the monitor acts only while the window's actual
+/// first responder is a text field inside the picker (inside its anchor's frame), only on events for the picker's own
+/// window, and leaves keys alone while an input method is composing text (marked text), so dead keys and IMEs keep
+/// working.
 @MainActor
 final class PickerKeyMonitor {
   /// The window the picker is in; set by ``PickerKeyMonitorAnchor``.
   weak var window: NSWindow?
+  /// The view that spans the picker; set by ``PickerKeyMonitorAnchor``.
+  weak var anchor: NSView?
 
   /// The installed monitor, `nil` while stopped.
   private var monitor: Any?
@@ -80,6 +85,7 @@ final class PickerKeyMonitor {
     stop()
     monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
       guard let self, let window = self.window, event.window === window,
+        self.isPickerFieldFirstResponder(in: window),
         !Self.isComposingText(in: window), let key = PickerKey(event)
       else { return event }
       return handler(key) == .handled ? nil : event
@@ -95,6 +101,18 @@ final class PickerKeyMonitor {
 
   isolated deinit {
     stop()
+  }
+
+  /// Whether `window`'s first responder is the field editor of a text field inside the picker: the filter or the
+  /// new-folder name, and not the filing panel's name field or the sidebar.
+  private func isPickerFieldFirstResponder(in window: NSWindow) -> Bool {
+    guard let anchor, anchor.window === window,
+      let editor = window.firstResponder as? NSTextView, editor.isFieldEditor,
+      let field = editor.delegate as? NSView
+    else { return false }
+    let pickerFrame = anchor.convert(anchor.bounds, to: nil)
+    let fieldFrame = field.convert(field.bounds, to: nil)
+    return pickerFrame.contains(CGPoint(x: fieldFrame.midX, y: fieldFrame.midY))
   }
 
   /// Whether the focused text in `window` has marked text, i.e. an input method is composing a character.
@@ -114,6 +132,7 @@ struct PickerKeyMonitorAnchor: NSViewRepresentable {
   func updateNSView(_ view: AnchorView, context: Context) {
     view.monitor = monitor
     monitor.window = view.window
+    monitor.anchor = view
   }
 
   /// Reports its window to the monitor whenever it moves into one.
@@ -133,6 +152,7 @@ struct PickerKeyMonitorAnchor: NSViewRepresentable {
     override func viewDidMoveToWindow() {
       super.viewDidMoveToWindow()
       monitor.window = window
+      monitor.anchor = self
     }
   }
 }

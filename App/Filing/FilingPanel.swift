@@ -76,8 +76,14 @@ struct FilingPanel: View {
       .frame(minHeight: 180, maxHeight: .infinity)
       .task(id: model.focusRequest) {
         // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
-        // when the picker only just appeared for a newly selected file.
-        if model.focusRequest?.target == .destinationFilter { focusedField = .picker(.filter) }
+        // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
+        // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
+        guard model.focusRequest?.target == .destinationFilter else { return }
+        if focusedField != nil {
+          focusedField = nil
+          await Task.yield()
+        }
+        focusedField = .picker(.filter)
       }
       .onChange(of: focusedField, initial: true) { _, field in
         if field != nil {
@@ -86,6 +92,11 @@ struct FilingPanel: View {
         } else if model.focus == .destinationFilter {
           model.focus = nil
         }
+      }
+      .onChange(of: model.focus) { _, focus in
+        // The name field and the sidebar take focus outside this focus state (AppKit's `makeFirstResponder`, the
+        // sidebar's own focus state); keep it in step, so the picker stops treating its fields as focused.
+        if focus == .nameField || focus == .sidebar, focusedField != nil { focusedField = nil }
       }
     FolderContentsView(model: model.picker, conflictingName: model.finalName)
       .frame(minHeight: 80, maxHeight: 200)

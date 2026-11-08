@@ -11,8 +11,8 @@ final class FilingPanelModel {
   var nameText = ""
   /// An error to show in the panel, for example why the last move failed.
   var notice: String?
-  /// Whether the "Press ⌘Return to move" hint is shown under the name field.
-  var isMoveHintShown = false
+  /// The short hint floating under the name field, if any; it hides itself after two seconds.
+  var hint: FilingHint?
   /// Whether a key typed in the sidebar asked for the filter's focus, which it has not reported yet. Keys typed
   /// meanwhile still reach the sidebar and are appended to the filter instead of starting it again.
   var isFilterFocusPending = false
@@ -20,7 +20,23 @@ final class FilingPanelModel {
   /// Clears everything entered and pre-fills the name with `originalName` without its extension.
   func reset(originalName: String?) {
     notice = nil
-    isMoveHintShown = false
+    hint = nil
     nameText = originalName.map { FileNameParts($0).stem } ?? ""
+  }
+}
+
+/// A short hint the filing panel shows for two seconds as a toast under the name field, taking no layout space.
+enum FilingHint: Hashable, Sendable {
+  /// Return in the name field: only ⌘Return files.
+  case pressCommandReturnToMove
+  /// ⌘Return with no destination chosen outside the picker: nothing moved, focus went to the picker.
+  case chooseDestinationFirst
+
+  /// The hint's text.
+  var text: String {
+    switch self {
+    case .pressCommandReturnToMove: "Press ⌘Return to move"
+    case .chooseDestinationFirst: "Choose a destination first"
+    }
   }
 }
