@@ -62,7 +62,10 @@ final class DocsortUITests: XCTestCase {
   @MainActor
   private func sidebarRow(_ name: String, in app: XCUIApplication) -> XCUIElement {
     app.descendants(matching: .any)
-      .matching(NSPredicate(format: "identifier == 'sidebar-row' AND label == %@", name))
+      .matching(
+        NSPredicate(
+          format: "identifier == 'sidebar-row' AND label IN %@", normalizationForms(of: name))
+      )
       .firstMatch
   }
 
@@ -96,17 +99,15 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(waitForValue("filed", of: invoice))
     let status = app.descendants(matching: .any)["status-message"]
     XCTAssertTrue(status.waitForExistence(timeout: 5))
-    XCTAssertTrue(
-      waitForText(
-        "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z", of: status))
+    expectText(
+      "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z", of: status)
     let title = app.descendants(matching: .any)["toolbar-file-title"]
-    XCTAssertTrue(
-      waitForText("Web-Downloads › 2033-10-20 Verlängerung Jahreskarte Konrad.pdf", of: title))
+    expectText("Web-Downloads › 2033-10-20 Verlängerung Jahreskarte Konrad.pdf", of: title)
 
     mainWindow.typeKey("z", modifierFlags: .command)
 
     XCTAssertTrue(waitForValue("unfiled", of: invoice))
-    XCTAssertTrue(waitForText("Web-Downloads › Rechnung_NA-33-08812.pdf", of: title))
+    expectText("Web-Downloads › Rechnung_NA-33-08812.pdf", of: title)
   }
 
   @MainActor
@@ -160,9 +161,7 @@ final class DocsortUITests: XCTestCase {
 
     // Return doesn't move; it shows the hint, and the picker keeps its choice.
     mainWindow.typeKey(.return, modifierFlags: [])
-    let hint = app.descendants(matching: .any)["filing-hint"]
-    XCTAssertTrue(hint.waitForExistence(timeout: 5))
-    XCTAssertTrue(waitForText("Press ⌘Return to move", of: hint))
+    XCTAssertTrue(hintShows("Press ⌘Return to move", in: app))
     XCTAssertTrue(waitForKeyboardFocus(of: nameField))
     XCTAssertTrue(token.exists)
 
@@ -206,9 +205,7 @@ final class DocsortUITests: XCTestCase {
 
     mainWindow.typeKey(.return, modifierFlags: .command)
 
-    let hint = app.descendants(matching: .any)["filing-hint"]
-    XCTAssertTrue(hint.waitForExistence(timeout: 5))
-    XCTAssertTrue(waitForText("Choose a destination first", of: hint))
+    XCTAssertTrue(hintShows("Choose a destination first", in: app))
     XCTAssertTrue(waitForKeyboardFocus(of: app.textFields["picker-filter"]))
     XCTAssertEqual(invoice.value as? String, "unfiled")
   }
@@ -260,11 +257,10 @@ final class DocsortUITests: XCTestCase {
     mainWindow.typeKey(.return, modifierFlags: .command)
 
     let status = app.descendants(matching: .any)["status-message"]
-    XCTAssertTrue(
-      waitForText("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status))
+    expectText("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status)
     XCTAssertEqual(invoice.value as? String, "filed")
     let title = app.descendants(matching: .any)["toolbar-file-title"]
-    XCTAssertTrue(waitForText("Web-Downloads › 2033-10-13 Notenhaus Allegretto.pdf", of: title))
+    expectText("Web-Downloads › 2033-10-13 Notenhaus Allegretto.pdf", of: title)
   }
 
   @MainActor
@@ -315,11 +311,32 @@ final class DocsortUITests: XCTestCase {
     return XCTWaiter().wait(for: [expectation], timeout: 5) == .completed
   }
 
-  /// Waits until the static text `element` reads `text`. On macOS a static text carries its text as its value, not
+  /// Waits until the filing hint shows `text`. The hint hides itself after two seconds, and the test polls about once
+  /// a second, so one query checks both that it exists and what it reads.
+  @MainActor
+  private func hintShows(_ text: String, in app: XCUIApplication) -> Bool {
+    app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier == 'filing-hint' AND value == %@", text))
+      .firstMatch.waitForExistence(timeout: 5)
+  }
+
+  /// Expects the static text `element` to read `text` within five seconds. On macOS a static text carries its text as its value, not
   /// its label.
   @MainActor
-  private func waitForText(_ text: String, of element: XCUIElement) -> Bool {
-    waitForValue(text, of: element)
+  private func expectText(
+    _ text: String, of element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+  ) {
+    let expectation = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "value IN %@", normalizationForms(of: text)), object: element)
+    let result = XCTWaiter().wait(for: [expectation], timeout: 5)
+    let shown = element.exists ? String(describing: element.value ?? "") : "(no element)"
+    XCTAssertEqual(result, .completed, "reads “\(shown)”", file: file, line: line)
+  }
+
+  /// `text` in its composed and decomposed Unicode forms. Names of files that Foundation creates (the fixture's) are
+  /// stored decomposed, so the app shows "ä" as "a" and a combining diaeresis; tests write it composed.
+  private func normalizationForms(of text: String) -> [String] {
+    [text.precomposedStringWithCanonicalMapping, text.decomposedStringWithCanonicalMapping]
   }
 
   /// Waits until `element`'s accessibility label is `label`.

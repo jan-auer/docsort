@@ -47,7 +47,7 @@ final class HistoryUITests: XCTestCase {
     // The newest entry is selected; Move Back to Inbox returns the file and adds an entry.
     let moveBack = historyWindow.buttons["history-return"]
     XCTAssertTrue(moveBack.waitForExistence(timeout: 5))
-    XCTAssertEqual(moveBack.title, "Move Back to Inbox")
+    XCTAssertEqual(moveBack.label, "Move Back to Inbox")
     moveBack.click()
 
     XCTAssertTrue(waitFor("value == '2 entries'", count))
