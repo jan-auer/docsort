@@ -42,6 +42,8 @@ struct FilingPanel: View {
     }
     .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    // A plain content background (white, or the dark window colour) instead of the inspector's tint, as in the mockup.
+    .background(Color(nsColor: .textBackgroundColor))
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }
@@ -121,6 +123,8 @@ struct FilingPanel: View {
       .font(.subheadline.weight(.semibold))
       .foregroundStyle(.secondary)
     NameField(model: model, file: file)
+      // The Return toast floats below the field, over the notice and the Move button.
+      .zIndex(1)
 
     if let notice = model.panel.notice {
       Label(notice, systemImage: "exclamationmark.octagon.fill")
@@ -144,7 +148,6 @@ struct FilingPanel: View {
         }
       }
       .buttonStyle(.borderedProminent)
-      .controlSize(.large)
       .disabled(!model.canMoveSelectedFile)
       .help("\(moveButtonTitle) (⌘Return)")
       .accessibilityLabel(moveButtonTitle)
@@ -222,6 +225,16 @@ struct FilingPanel: View {
       locateArchive: {}
     )
     .frame(width: 340, height: 600)
+  }
+
+  #Preview("Edited name, Return toast") {
+    let model = MainWindowModel.preview(
+      folders: .preview(archiveRoot: SampleFolders.archiveRoot, inboxes: SampleFolders.inboxes),
+      selectedFile: SampleInboxes.selectedInvoice())
+    model.panel.nameText = "2033-10-13 Notenhaus Allegretto"
+    model.panel.hint = .pressCommandReturnToMove
+    return FilingPanel(model: model, locateArchive: {})
+      .frame(width: 340, height: 600)
   }
 
   #Preview("Filed file") {
