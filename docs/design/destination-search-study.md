@@ -1,9 +1,7 @@
 # Destination search: UX study
 
 Status: proposal for the user to choose from, 2026-11-08. Nothing here is decided and no app code has changed. The
-clickable mockup of the three concepts is `docs/design/destination-search-mock/` (built into `index.html`), published at
-https://claude.ai/artifact/8YSxScQexWpfZUaDhjL9BT; the
-pattern research behind it is `docs/design/destination-search-research.md`. All folder names come from the fictional
+clickable mockup of the three concepts is `docs/design/destination-search-mock/` (built into `index.html`); the pattern research behind it is `docs/design/destination-search-research.md`. All folder names come from the fictional
 sample archive in `docs/design/sample-data/` (`no-real-data-in-repo`).
 
 ## The feedback

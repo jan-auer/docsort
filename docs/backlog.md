@@ -23,7 +23,10 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - (Done 2026-11-08: live folder watching in the app.)
 - (Done 2026-11-08: History window, status strips, Move Back / Put Back, revert name.)
 - Date shortcuts in the name field (`deferred-and-wanted-features`).
-- Ideas from the layout research (see `docs/open-questions.md`).
+- Ideas from the layout research (report on local branch `claude/layout-research-068c21`): a ⌘K command palette,
+  open Finder windows and pinned folders as destinations, a focus-preview toggle, suggestion chips with per-source
+  defaults.
+- Write-ahead filing history (record a pending event before moving), only if a save failure ever bites.
 
 ## From the filing-extras review (2026-11-08)
 

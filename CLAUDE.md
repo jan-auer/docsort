@@ -137,6 +137,6 @@ Steps that work:
 
 Xcode asks the user to allow each agent and each folder (worktree) the first time, and the grant lasts 24 hours. The
 user, not an agent, can grant the whole repository with
-`sudo xcrun mcp-server allow-folder /Users/jauer/Coding/docsort-ui --always` (or `--for-24-hours`). Its help
+`sudo xcrun mcp-server allow-folder <path to this repository> --always` (or `--for-24-hours`). Its help
 describes this as permitting headless Xcode to serve workspaces from that folder and its subfolders; whether it also
 removes the Allow dialog for a running Xcode is unverified.

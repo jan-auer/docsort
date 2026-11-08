@@ -99,6 +99,12 @@ Sessions commit unsigned on their own branches (`git -c commit.gpgsign=false com
 records on master are signed when 1Password allows; if it refuses, the hub may merge unsigned rather than block.
 Reason: 1Password re-locks often and blocked sessions repeatedly (user's choice, 2026-11-08).
 
+## screenshots-stay-private
+
+The hub never copies names, paths or text from the user's own screenshots into briefs, messages or docs; it describes
+what a screenshot shows in generic terms. Reason: a real folder name relayed from a screenshot ended up in code, tests
+and a commit message and had to be removed from history before publishing (2026-11-08).
+
 ## e2e-first
 
 Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
@@ -118,7 +124,7 @@ ready to use.
 While the user is away (from 2026-11-08), the hub lands work that passes the checks and one review without asking.
 Commits are unsigned (`git -c commit.gpgsign=false`), because 1Password can't be unlocked. The goal is the approved
 mockup's functionality; edge cases that resist stay out. Questions that need the user are collected in
-`docs/open-questions.md`. Reason: the user's instruction when signing off.
+a list for the user. Reason: the user's instruction when signing off.
 
 ## parallel-sessions
 

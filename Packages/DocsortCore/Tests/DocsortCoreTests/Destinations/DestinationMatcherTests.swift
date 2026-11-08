@@ -89,7 +89,8 @@ struct DestinationMatcherTests {
   @Test("letters scattered one by one over a path are not a match")
   func scatteredLettersAreNoMatch() {
     let matcher = DestinationMatcher(paths: [
-      "Ahnenforschung/Stammbaum/Druckfassung", "Hobbys/Imkerei/Völker/2034-09-15 Ableger Stand Föhrenhang",
+      "Ahnenforschung/Stammbaum/Druckfassung",
+      "Hobbys/Imkerei/Völker/2034-09-15 Ableger Stand Föhrenhang",
       "Mobilität/Jahresnetzkarte/2036-10-24 Verlängerung",
     ])
 

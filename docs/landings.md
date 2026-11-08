@@ -127,7 +127,7 @@ Work landed on `master`, newest first. Written by `/coord-land`.
 - Divergence: the picker component was merged into the UI branch rather than landing on its own. The name field and
   filter use AppKit text fields. Hosted tests (app unit tests after 01:30, all UI tests) are written but unrun,
   because the screen was locked; verified by lint, builds, core tests, launch-log checks and review.
-- Follow-ups: run the hosted tests (`docs/open-questions.md`); `docs/backlog.md`; History window, status strips with
+- Follow-ups: run the hosted tests; `docs/backlog.md`; History window, status strips with
   Move Back, revert name, and wiring in live folder watching.
 
 ## 2026-11-08 claude/architecture-60c7c1: target architecture
