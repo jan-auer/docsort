@@ -52,9 +52,16 @@ Reason: user's feedback in design round 2.
 
 The core exposes small, clean service interfaces, each owning one concern (filing with its perform/record/save
 orchestration, inbox listing with live updates, destination lookup and search, previews and caching). The UI only
-calls those services; views and view models hold no file-system, history or orchestration logic. After UI increment 1,
-an architecture coordinator reviews the codebase and moves the core toward this before the UI continues. Reason: the
-user found orchestration landing in the UI layer and asked for clean separation.
+calls those services; views and view models hold no file-system, history or orchestration logic. Until the app works
+end to end, new code keeps UI-free services in their own files so they can move into the core. Once the app is
+usable end to end, an architecture coordinator reviews the codebase and moves the core toward this, in parallel
+with feature and UX work. Do it earlier only if the code gets too messy. Reason: the user found orchestration landing
+in the UI layer and asked for clean separation, but wants a usable app first.
+
+## parallel-sessions
+
+Sessions run in parallel wherever their files don't overlap, each owning one piece; avoid long-lived sessions that
+carry many pieces. Reason: the user wants faster progress and found one UI session carrying too much.
 
 ## history-save-failure
 
