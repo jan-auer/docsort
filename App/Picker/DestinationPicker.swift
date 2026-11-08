@@ -36,6 +36,8 @@ import DocsortCore
 /// - ``DestinationPickerModel/destinationPath``: the chosen destination, else the highlighted folder, for the panel's
 ///   destination line; a click on one of its segments calls ``DestinationPickerModel/jump(to:)``.
 /// - ``DestinationPickerModel/highlightedDestination``: the folder under the highlight, for ⌘Return from the picker.
+/// - ``DestinationPickerModel/destinationFolderURL``: where the destination line's folder is on disk, `nil` for a
+///   pending new folder, for File › Open Destination in Finder.
 /// - ``DestinationPickerModel/contents``: the files listed in Folder contents, alphabetical, so the name field's
 ///   ⌥↑ / ⌥↓ can walk them.
 ///

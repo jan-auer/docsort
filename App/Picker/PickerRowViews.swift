@@ -164,6 +164,22 @@ struct PickerSectionHeader: View {
   }
 }
 
+/// The context menu of a row that stands for a folder on disk: Open in Finder and Reveal in Finder. A row whose
+/// folder is not on disk (a pending new folder, or any folder while the archive is being indexed) gets no menu.
+struct PickerFolderMenu: ViewModifier {
+  /// Where the row's folder is on disk; `nil` for none.
+  let folderURL: URL?
+
+  func body(content: Content) -> some View {
+    content.contextMenu {
+      if let folderURL {
+        Button("Open in Finder") { FileActions.open(folderURL) }
+        Button("Reveal in Finder") { FileActions.revealInFinder(folderURL) }
+      }
+    }
+  }
+}
+
 /// The shared look and behaviour of a selectable picker row: padding, highlight background, click handling and the
 /// accessibility element UI tests find it by (see ``DestinationPickerView`` for the scheme).
 struct PickerRowChrome: ViewModifier {
