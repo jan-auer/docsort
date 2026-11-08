@@ -2,6 +2,13 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/picker-after-filing-62da19 + claude/sidebar-numeric-dates: picker highlight after filing
+- What landed: after filing, the next file's picker highlights the folder just used at the top of Recent, whichever
+  order the panel reset and the recents update arrive in (`picker-inputs-arrive-late`). A test pins the sidebar date
+  format for de_AT and en_US (the landed format was already locale-aware).
+- Divergence: the reset placement also re-applies when a new index or ranking arrives right after a reset.
+- Follow-ups: None.
+
 ## 2026-11-08 claude/sidebar-dates-5eef76: absolute dates in the sidebar
 - What landed: sidebar rows show a compact absolute date ("12 Oct", with the year when it isn't the current one)
   instead of a relative one; group ranges are absolute too.
