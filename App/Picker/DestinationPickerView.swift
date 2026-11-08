@@ -184,13 +184,10 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     return .handled
   }
 
-  /// ⇧⌘N or the New Folder button: opens the new-folder row and focuses its field (the row also takes focus when it
-  /// appears, in case it was not laid out yet).
+  /// ⇧⌘N or the New Folder button: opens the new-folder row, which takes focus when it appears. Focusing its field
+  /// here, before the field exists, would only resign the filter and leave nothing focused.
   private func beginNewFolder() {
     model.beginNewFolder()
-    if model.newFolderDraft != nil {
-      focus.wrappedValue = field(.newFolderName)
-    }
   }
 
   // MARK: List
