@@ -84,12 +84,12 @@ final class DocsortUITests: XCTestCase {
 
     // Typing in the sidebar starts the destination filter.
     mainWindow.typeText("noten")
-    let filter = app.descendants(matching: .any)["destination-filter"]
+    let filter = app.textFields["picker-filter"]
     XCTAssertTrue(waitForValue("noten", of: filter))
     let firstDestination = app.descendants(matching: .any)
-      .matching(identifier: "destination-row").firstMatch
+      .matching(identifier: "picker-row").firstMatch
     XCTAssertTrue(firstDestination.waitForExistence(timeout: 5))
-    XCTAssertEqual(firstDestination.label, "Musik Margit/Noten & Bücher")
+    XCTAssertTrue(firstDestination.label.contains("Noten & Bücher"))
 
     mainWindow.typeKey(.return, modifierFlags: .command)
 

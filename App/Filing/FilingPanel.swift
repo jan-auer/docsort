@@ -4,15 +4,23 @@ import SwiftUI
 /// The filing panel, the main window's inspector: where the selected file gets its destination and name.
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the file's name,
-/// the destination filter with the folder list below it (or the chosen folder), the name field with the extension
-/// as a fixed label, and the Move button (⌘Return, also File › Move). A filed or trashed file shows what happened to
-/// it instead. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the filing history
+/// the destination picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents,
+/// the name field with the extension as a fixed label, and the Move button (⌘Return, also File › Move). A filed or
+/// trashed file shows what happened to it instead. Notices sit at the top: the archive folder is unreachable (with **Locate…**), or the filing history
 /// can't be read (with **Start New History** and **Show in Finder**).
 struct FilingPanel: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
   /// Lets the user find the unreachable archive folder again.
   let locateArchive: () -> Void
+
+  /// The panel's SwiftUI-focusable fields: the picker's two text fields. (The name field and the sidebar take focus
+  /// through `MainWindowModel.requestFocus`; this bridges the picker into the same scheme.)
+  enum PanelField: Hashable {
+    case picker(PickerField)
+  }
+
+  @FocusState private var focusedField: PanelField?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -64,11 +72,23 @@ struct FilingPanel: View {
     Text("Destination")
       .font(.subheadline.weight(.semibold))
       .foregroundStyle(.secondary)
-    if let chosen = model.panel.chosenDestination {
-      chosenDestinationRow(chosen)
-    } else {
-      DestinationList(model: model)
-    }
+    DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
+      .frame(minHeight: 180, maxHeight: .infinity)
+      .task(id: model.focusRequest) {
+        // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
+        // when the picker only just appeared for a newly selected file.
+        if model.focusRequest?.target == .destinationFilter { focusedField = .picker(.filter) }
+      }
+      .onChange(of: focusedField, initial: true) { _, field in
+        if field != nil {
+          model.focus = .destinationFilter
+          model.panel.isFilterFocusPending = false
+        } else if model.focus == .destinationFilter {
+          model.focus = nil
+        }
+      }
+    FolderContentsView(model: model.picker, conflictingName: model.finalName)
+      .frame(minHeight: 80, maxHeight: 200)
 
     Text("Name")
       .font(.subheadline.weight(.semibold))
@@ -81,8 +101,6 @@ struct FilingPanel: View {
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityIdentifier("filing-panel-notice")
     }
-
-    Spacer(minLength: 0)
 
     HStack {
       Spacer()
@@ -104,24 +122,6 @@ struct FilingPanel: View {
       .help("Move (⌘Return)")
       .accessibilityIdentifier("move-button")
     }
-  }
-
-  private func chosenDestinationRow(_ path: String) -> some View {
-    HStack {
-      Text("→ \(path)")
-        .lineLimit(2)
-        .truncationMode(.middle)
-        .accessibilityIdentifier("chosen-destination")
-      Spacer(minLength: 8)
-      Button("Change") {
-        model.panel.chosenDestination = nil
-        model.requestFocus(.destinationFilter)
-      }
-      .controlSize(.small)
-      .accessibilityIdentifier("change-destination")
-    }
-    .padding(8)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
   }
 
   private func handledStrip(systemImage: String, color: Color, text: String) -> some View {

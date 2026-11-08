@@ -73,53 +73,30 @@ private final class FilingEventTicket {
 extension MainWindowModel {
   // MARK: Destinations
 
-  /// The folders the destination list offers: for an empty filter the recent destinations still in the archive,
-  /// then the top-level folders; otherwise the search matches. Empty while the archive is being indexed.
-  var destinationCandidates: [DestinationCandidate] {
-    guard let index = archive.index else { return [] }
-    let query = panel.filter
-    if query.trimmingCharacters(in: .whitespaces).isEmpty {
-      let recentPaths = filing.recents.paths.filter(index.contains)
-      let recent = recentPaths.map {
-        DestinationCandidate(path: $0, shownPath: $0, matchedRanges: [], isRecent: true)
-      }
-      let topLevel = index.topLevelFolders().filter { !recentPaths.contains($0) }.map {
-        DestinationCandidate(path: $0, shownPath: $0, matchedRanges: [], isRecent: false)
-      }
-      return recent + topLevel
-    }
-    return index.search(query, ranking: search.ranking, recents: filing.recents, limit: 50).map {
-      DestinationCandidate(
-        path: $0.path, shownPath: $0.pathInScope, matchedRanges: $0.matchedRanges,
-        isRecent: filing.recents.paths.contains($0.path))
-    }
-  }
-
-  /// The highlighted folder in the destination list.
-  var highlightedCandidate: DestinationCandidate? {
-    let candidates = destinationCandidates
-    guard candidates.indices.contains(panel.highlightedIndex) else { return candidates.first }
-    return candidates[panel.highlightedIndex]
-  }
-
-  /// Chooses the highlighted folder as the destination and moves focus to the name field.
-  func chooseHighlightedDestination() {
-    guard let candidate = highlightedCandidate else { return }
-    choose(candidate)
-  }
-
-  /// Chooses `candidate` as the destination and moves focus to the name field.
-  func choose(_ candidate: DestinationCandidate) {
-    panel.chosenDestination = candidate.path
-    panel.notice = nil
-    requestFocus(.nameField)
-  }
-
   /// Starts the destination filter with `text` typed in the sidebar and moves focus there.
+  ///
+  /// A new search starts at the archive root; keys typed before the filter has taken focus are appended.
   func startDestinationFilter(with text: String) {
-    panel.filter = panel.isFilterFocusPending ? panel.filter + text : text
-    panel.chosenDestination = nil
+    if !panel.isFilterFocusPending { picker.reset() }
+    picker.enter(typing: text)
+    panel.notice = nil
     requestFocus(.destinationFilter)
+  }
+
+  /// Acts on what the destination picker reports (see `PickerContract`).
+  func handlePickerEvent(_ event: PickerEvent) {
+    switch event {
+    case .chose:
+      panel.notice = nil
+      requestFocus(.nameField)
+    case .moveRequested(let destination):
+      move(to: destination)
+    case .steppedBack:
+      requestFocus(.sidebar)
+    case .tookFileName(let fileName):
+      panel.nameText = FileNameParts(fileName).stem
+      requestFocus(.nameField)
+    }
   }
 
   // MARK: Moving
@@ -141,30 +118,33 @@ extension MainWindowModel {
 
   /// File › Move (⌘Return): moves the selected file to the chosen destination under the entered name.
   ///
-  /// With no destination chosen, the highlighted folder is chosen first when the filter is in use; otherwise focus
-  /// goes to the filter and nothing moves.
+  /// With no destination chosen, the picker's highlighted folder is chosen first when the picker is in use;
+  /// otherwise focus goes to the filter and nothing moves. (While a picker field has focus, the picker handles
+  /// ⌘Return itself and reports `.moveRequested`.)
   func moveSelectedFile() {
-    guard canMoveSelectedFile, let file = selectedFile, let index = archive.index else { return }
-    let destination: String
-    if let chosen = panel.chosenDestination {
-      destination = chosen
-    } else if focus == .destinationFilter || !panel.filter.isEmpty,
-      let highlighted = highlightedCandidate
+    guard canMoveSelectedFile else { return }
+    if let destination = picker.destination {
+      move(to: destination)
+    } else if focus == .destinationFilter || !picker.filterText.isEmpty,
+      picker.highlightedDestination != nil
     {
-      panel.chosenDestination = highlighted.path
-      destination = highlighted.path
+      picker.requestMove()
     } else {
       requestFocus(.destinationFilter)
-      return
     }
+  }
+
+  /// Moves the selected file into `destination` under the entered name.
+  private func move(to destination: PickerDestination) {
+    guard canMoveSelectedFile, let file = selectedFile, let index = archive.index else { return }
     let name = FileNaming.finalName(entered: panel.nameText, originalName: file.originalName)
     guard FileNaming.validationProblem(for: name) == nil else {
       requestFocus(.nameField)
       return
     }
     let request = MoveRequest(
-      itemID: file.id, source: file.url, folderURL: index.url(for: destination),
-      archivePath: destination, name: name, originalName: file.originalName)
+      itemID: file.id, source: file.url, folderURL: index.url(for: destination.path),
+      archivePath: destination.path, name: name, originalName: file.originalName)
     Task { await perform(request, resolution: .refuse) }
   }
 
@@ -188,6 +168,7 @@ extension MainWindowModel {
         named: request.name, resolution: resolution)
       inboxes.markFiled(
         request.itemID, newURL: outcome.movedURL, destinationPath: request.archivePath)
+      if !outcome.record.createdFolders.isEmpty { archive.rebuild() }
       let filedName = outcome.movedURL.lastPathComponent
       let redoRequest = MoveRequest(
         itemID: request.itemID, source: request.source, folderURL: request.folderURL,
@@ -249,7 +230,7 @@ extension MainWindowModel {
     if let next = inboxes.nextUnhandledRow(after: id) {
       select(next.id)
     }
-    panel.reset(originalName: selectedFile?.originalName)
+    resetPanel()
     requestFocus(.sidebar)
   }
 
@@ -294,7 +275,7 @@ extension MainWindowModel {
       _ = try await filing.undo(eventID: eventID)
       inboxes.unmark(action.itemID)
       select(action.itemID)
-      panel.reset(originalName: selectedFile?.originalName)
+      resetPanel()
       statusMessage = nil
       requestFocus(.sidebar)
     } catch {

@@ -95,7 +95,7 @@ final class MainWindowModel {
   var sidebarSelection: SidebarRowID? {
     didSet {
       guard sidebarSelection != oldValue else { return }
-      panel.reset(originalName: selectedFile?.originalName)
+      resetPanel()
     }
   }
   /// Subfolder groups the user collapsed; groups are expanded otherwise.
@@ -127,8 +127,10 @@ final class MainWindowModel {
   let filing: FilingModel
   /// The destination-search settings.
   let search: SearchSettings
-  /// What the filing panel holds for the selected file.
+  /// What the filing panel holds for the selected file, beyond the destination picker.
   let panel = FilingPanelModel()
+  /// The filing panel's destination picker.
+  let picker = DestinationPickerModel(folderFiles: ArchiveFolderFileListing())
   /// The controller the window's zoom commands go through to the preview.
   let previewController = PreviewController()
   /// The window's undo manager, which moves and trashes are registered with; set by the window's view.
@@ -137,6 +139,8 @@ final class MainWindowModel {
   /// Whether the sidebar is hidden because the window became narrow, rather than by the user. Only then does the
   /// sidebar come back by itself when the window is widened again.
   @ObservationIgnored private var isSidebarCollapsedForWidth = false
+  /// Keeps the picker's index, recents and ranking in step with the app's models.
+  @ObservationIgnored private var pickerInputsTask: Task<Void, Never>?
 
   #if DEBUG
     /// A file shown as selected regardless of the sidebar, for SwiftUI previews.
@@ -153,6 +157,35 @@ final class MainWindowModel {
     self.archive = archive
     self.filing = filing
     self.search = search
+    picker.onEvent = { [weak self] event in self?.handlePickerEvent(event) }
+    pickerInputsTask = Task { [weak self, archive, filing, search] in
+      for await inputs in Observations({
+        PickerInputs(index: archive.index, recents: filing.recents, ranking: search.ranking)
+      }) {
+        guard let self else { return }
+        apply(inputs)
+      }
+    }
+  }
+
+  isolated deinit {
+    pickerInputsTask?.cancel()
+  }
+
+  /// Hands the archive index, the recent destinations and the ranking setting to the picker, changing only what
+  /// changed, so the picker keeps its highlight.
+  private func apply(_ inputs: PickerInputs) {
+    if inputs.index?.root != picker.index?.root || inputs.index?.folders != picker.index?.folders {
+      picker.index = inputs.index
+    }
+    if inputs.recents != picker.recents { picker.recents = inputs.recents }
+    if inputs.ranking != picker.ranking { picker.ranking = inputs.ranking }
+  }
+
+  /// Clears the filing panel for the selected file: the picker back at the archive root, the name pre-filled.
+  func resetPanel() {
+    panel.reset(originalName: selectedFile?.originalName)
+    picker.reset()
   }
 
   /// The selected file; `nil` while nothing or a group is selected.
@@ -240,7 +273,7 @@ final class MainWindowModel {
           historyFileURL: environment.filingHistoryURL),
         search: SearchSettings(defaults: environment.defaults))
       model.previewSelectedFile = selectedFile
-      model.panel.reset(originalName: selectedFile?.originalName)
+      model.resetPanel()
       return model
     }
   #endif
@@ -249,4 +282,11 @@ final class MainWindowModel {
 extension FocusedValues {
   /// The model of the key main window, for the menu commands; `nil` while another window is key.
   @Entry var mainWindowModel: MainWindowModel?
+}
+
+/// What the destination picker takes from the app's models.
+nonisolated private struct PickerInputs: Sendable {
+  let index: DestinationIndex?
+  let recents: RecentDestinations
+  let ranking: ScopedRanking
 }

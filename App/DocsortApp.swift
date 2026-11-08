@@ -64,5 +64,10 @@ struct DocsortApp: App {
     Settings {
       SettingsView(folders: folders, archive: archive, search: search)
     }
+
+    #if DEBUG
+      // Shown only with the launch argument `-docsort-picker-test-host`, for the picker's own UI tests.
+      PickerTestHostScene()
+    #endif
   }
 }

@@ -108,6 +108,13 @@ final class ArchiveLibrary {
     }
   }
 
+  /// Builds the index again for the same folders, for example after a move created folders in the archive.
+  func rebuild() {
+    let current = request
+    request = nil
+    update(to: current)
+  }
+
   /// Waits until the build in progress, if any, has finished and been applied.
   func waitForIndexing() async {
     await buildTask?.value
