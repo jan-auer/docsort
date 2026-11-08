@@ -86,7 +86,9 @@ rounds.
 
 ## autonomous-while-away
 
-Ended when the user returned on 2026-11-08: landing needs the user's yes again, and commits are signed again.
+Updated 2026-11-08 after the user returned: commits are signed again, and the hub keeps landing reviewed work without
+asking. The user wants to be involved only for judgement calls (product behaviour, trade-offs) and when something is
+ready to use.
 While the user is away (from 2026-11-08), the hub lands work that passes the checks and one review without asking.
 Commits are unsigned (`git -c commit.gpgsign=false`), because 1Password can't be unlocked. The goal is the approved
 mockup's functionality; edge cases that resist stay out. Questions that need the user are collected in
