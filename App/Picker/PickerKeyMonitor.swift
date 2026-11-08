@@ -38,7 +38,7 @@ enum PickerKey: Hashable {
     case (.downArrow?, []): self = .downArrow
     case (.rightArrow?, []): self = .rightArrow
     case (.leftArrow?, []): self = .leftArrow
-    case (.delete?, []): self = .delete
+    case (.delete?, []), (.backspace?, []): self = .delete
     case (.upArrow?, [.command]): self = .commandUpArrow
     case (.tab?, []): self = .tab
     case (.carriageReturn?, []), (.enter?, []): self = .returnKey
