@@ -20,20 +20,20 @@ struct InboxTable: View {
           actions.relabelInbox(inbox.id, label)
         }
       }
-      .width(min: 100, ideal: 150)
+      .width(min: 90, ideal: 120)
       TableColumn("Folder") { inbox in
         Text(inbox.folder.displayPath)
           .lineLimit(1)
           .truncationMode(.middle)
           .help(inbox.folder.reference.lastKnownPath)
       }
-      .width(min: 140, ideal: 240)
+      .width(min: 140, ideal: 220)
       TableColumn("Status") { inbox in
         InboxStatusCell(availability: inbox.availability) {
           actions.chooseInboxFolder(inbox.id)
         }
       }
-      .width(min: 100, ideal: 170)
+      .width(min: 190, ideal: 210)
     } rows: {
       ForEach(inboxes) { inbox in
         TableRow(inbox)
