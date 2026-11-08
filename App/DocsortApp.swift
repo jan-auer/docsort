@@ -13,6 +13,10 @@ enum SceneID {
 struct DocsortApp: App {
   /// The configured folders, loaded and resolved at launch.
   @State private var folders: FolderLibrary
+  /// The index of archive folders, rebuilt whenever the folders change.
+  @State private var archive: ArchiveLibrary
+  /// The destination-search settings.
+  @State private var search: SearchSettings
   /// The state of the one main window.
   @State private var mainWindowModel: MainWindowModel
 
@@ -23,6 +27,8 @@ struct DocsortApp: App {
     let environment = AppEnvironment.forCurrentProcess()
     let folders = FolderLibrary(environment: environment)
     _folders = State(initialValue: folders)
+    _archive = State(initialValue: ArchiveLibrary(folders: folders))
+    _search = State(initialValue: SearchSettings(defaults: environment.defaults))
     _mainWindowModel = State(initialValue: MainWindowModel(folders: folders))
   }
 
@@ -43,7 +49,7 @@ struct DocsortApp: App {
     .commandsRemoved()
 
     Settings {
-      SettingsView()
+      SettingsView(folders: folders, archive: archive, search: search)
     }
   }
 }
