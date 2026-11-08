@@ -69,7 +69,9 @@ and Spotlight metadata for suggestions later), but never SwiftUI or AppKit. Reas
 Only one `xcodebuild test` runs on the machine at a time, across all sessions. Parallel runs share one testmanagerd
 and the same bundle ID, and hang. Wrap every run in the shared lock:
 `until mkdir /tmp/docsort-xctest.lock 2>/dev/null; do sleep 15; done; xcodebuild … test …; rc=$?; rmdir /tmp/docsort-xctest.lock`.
-Plain builds and `swift test` don't need it. Reason: two sessions' test runs hung each other on 2026-11-08.
+Plain builds and `swift test` don't need it. Also, RenderPreview (Xcode MCP) launches the real app and leaves it
+running, and a running Docsort.app makes `xcodebuild test` hang. Call `XcodeCloseWorkspace` after rendering previews
+and before testing, and check `ps` for a stray Docsort.app when tests hang. Reason: test runs hung on 2026-11-08.
 
 ## e2e-first
 
