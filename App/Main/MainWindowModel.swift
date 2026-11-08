@@ -17,9 +17,14 @@ nonisolated struct SelectedFile: Hashable, Sendable {
   /// What happened to the file in this session; `nil` while it is unhandled.
   let mark: InboxItemMark?
 
-  /// The file's current name with its extension.
+  /// The file's current name with its extension: its inbox name until it is filed, then its name in the archive.
   var name: String {
     url.lastPathComponent
+  }
+
+  /// Whether the file was moved to the Trash in this session.
+  var isTrashed: Bool {
+    mark?.isTrashed == true
   }
 
   /// The file as the preview column shows it.
@@ -112,9 +117,11 @@ final class MainWindowModel {
   var statusMessage: WindowStatusMessage?
   /// A name conflict waiting for the user's choice.
   var conflict: FilingConflict?
+  /// A Move Back blocked by a taken inbox name, waiting for the user's choice between Keep Both and Cancel.
+  var moveBackConflict: MoveBackConflict?
   /// A failed action to tell the user about.
   var alert: FilingAlert?
-  /// Whether a move, trash or undo is under way; further ones wait for it.
+  /// Whether a move, trash, Move Back or Put Back is under way; further ones wait for it.
   var isFilingInProgress = false
 
   /// The app's configured folders.
@@ -182,10 +189,16 @@ final class MainWindowModel {
     if inputs.ranking != picker.ranking { picker.ranking = inputs.ranking }
   }
 
-  /// Clears the filing panel for the selected file: the picker back at the archive root, the name pre-filled.
+  /// Clears the filing panel for the selected file: the name field holds the file's current name; the picker is at
+  /// the archive root, or, for a filed file, has the file's current folder chosen.
   func resetPanel() {
-    panel.reset(originalName: selectedFile?.originalName)
-    picker.reset()
+    let file = selectedFile
+    panel.reset(currentName: file?.name)
+    if case .filed(_, let destinationPath, _) = file?.mark {
+      picker.reset(choosing: .folder(destinationPath))
+    } else {
+      picker.reset()
+    }
   }
 
   /// The selected file; `nil` while nothing or a group is selected.
@@ -193,7 +206,13 @@ final class MainWindowModel {
     #if DEBUG
       if let previewSelectedFile { return previewSelectedFile }
     #endif
-    guard case .item(let id) = sidebarSelection, let row = inboxes.row(for: id) else { return nil }
+    guard case .item(let id) = sidebarSelection else { return nil }
+    return file(id)
+  }
+
+  /// The file `id` as the window shows it; `nil` when no section lists it.
+  func file(_ id: InboxItemID) -> SelectedFile? {
+    guard let row = inboxes.row(for: id) else { return nil }
     return SelectedFile(
       id: id, url: row.currentURL, originalName: row.item.name,
       inboxName: inboxes.sectionLabel(of: id) ?? "",

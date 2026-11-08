@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The main window's menu-bar commands: Open, Reveal in Finder, Move and Move to Trash (File), Refresh, the filing
+/// The main window's menu-bar commands: Open, Reveal in Finder, Move, Revert Name, Move to Trash and Move Back to
+/// Inbox (Put Back for a trashed file) (File), Refresh, the filing
 /// panel toggle and the preview zoom (View), the sidebar toggle, and History (Window). Undo and Redo (Edit) come
 /// from the window's undo manager.
 ///
@@ -34,6 +35,12 @@ struct MainCommands: Commands {
       .keyboardShortcut(.return, modifiers: .command)
       .disabled(!(mainWindowModel?.canMoveSelectedFile ?? false))
 
+      Button("Revert Name") {
+        mainWindowModel?.revertName()
+      }
+      .keyboardShortcut("r", modifiers: [.shift, .command])
+      .disabled(!(mainWindowModel?.canRevertName ?? false))
+
       // Disabled while a text field has focus, so ⌘⌫ deletes text there instead of trashing the file.
       Button("Move to Trash") {
         mainWindowModel?.trashSelectedFile()
@@ -42,6 +49,12 @@ struct MainCommands: Commands {
       .disabled(
         !(mainWindowModel?.canTrashSelectedFile ?? false)
           || (mainWindowModel?.isTextFieldFocused ?? false))
+
+      Button(returnToInboxTitle) {
+        mainWindowModel?.returnSelectedFileToInbox()
+      }
+      .keyboardShortcut("z", modifiers: [.option, .command])
+      .disabled(!(mainWindowModel?.canReturnSelectedFileToInbox ?? false))
     }
 
     CommandGroup(after: .sidebar) {
@@ -89,6 +102,16 @@ struct MainCommands: Commands {
   /// The file selected in the key main window.
   private var selectedFile: SelectedFile? {
     mainWindowModel?.selectedFile
+  }
+
+  /// The title of the command returning the selected file to its inbox: "Put Back" for a trashed file, "Move Back to
+  /// Inbox" otherwise.
+  private var returnToInboxTitle: LocalizedStringKey {
+    if mainWindowModel?.selectedReturnToInboxAction == .putBack {
+      "Put Back"
+    } else {
+      "Move Back to Inbox"
+    }
   }
 
   /// The filing panel toggle's title, which names what the command will do.

@@ -2,6 +2,16 @@ import DocsortCore
 import Foundation
 import OSLog
 
+/// What a move does to the file.
+nonisolated enum MoveKind: Hashable, Sendable {
+  /// Files an inbox file into the archive.
+  case filing
+  /// Renames a filed file in its folder.
+  case renaming
+  /// Moves a filed file on to another folder (and possibly renames it).
+  case refiling
+}
+
 /// A move the user asked for, with everything needed to retry or redo it.
 nonisolated struct MoveRequest: Hashable, Sendable {
   /// The file's identity.
@@ -16,6 +26,20 @@ nonisolated struct MoveRequest: Hashable, Sendable {
   let name: String
   /// The file's inbox name, for the Undo menu item.
   let originalName: String
+  /// What the move does to the file.
+  let kind: MoveKind
+}
+
+/// A Move Back of a filed file to its inbox the user asked for.
+nonisolated struct MoveBackRequest: Hashable, Sendable {
+  /// The file's identity.
+  let itemID: InboxItemID
+  /// Where the file is now, in the archive.
+  let url: URL
+  /// The file's inbox name, for the Undo menu item.
+  let originalName: String
+  /// The display name of the file's inbox.
+  let inboxName: String
 }
 
 /// A move to the Trash the user asked for.
@@ -28,6 +52,20 @@ nonisolated struct TrashRequest: Hashable, Sendable {
   let originalName: String
 }
 
+/// A Put Back of a trashed file the user asked for.
+nonisolated struct PutBackRequest: Hashable, Sendable {
+  /// The file's identity.
+  let itemID: InboxItemID
+  /// Where the file lies in the Trash.
+  let trashedURL: URL
+  /// Where the file goes back to, in its inbox; undoing the Put Back trashes it from there again.
+  let url: URL
+  /// The file's inbox name, for the Undo menu item.
+  let originalName: String
+  /// The display name of the file's inbox.
+  let inboxName: String
+}
+
 /// A name conflict waiting for the user's choice between Keep Both, Replace and Cancel.
 nonisolated struct FilingConflict: Identifiable, Sendable {
   /// Distinguishes this conflict from the previous one.
@@ -38,30 +76,83 @@ nonisolated struct FilingConflict: Identifiable, Sendable {
   let request: MoveRequest
 }
 
+/// A Move Back whose inbox name is taken, waiting for the user's choice between Keep Both and Cancel.
+nonisolated struct MoveBackConflict: Identifiable, Sendable {
+  /// Distinguishes this conflict from the previous one.
+  let id = UUID()
+  /// The item in the way, at the file's original inbox path.
+  let blockingURL: URL
+  /// The Move Back that ran into it.
+  let request: MoveBackRequest
+}
+
+/// What ⌘Return does to the selected filed file, which the bottom button names.
+nonisolated enum FiledFileChange: Hashable, Sendable {
+  /// Only the name differs: rename it in its folder.
+  case rename
+  /// The folder differs (or none is chosen): move it on.
+  case move
+}
+
+/// What returns a handled file to its inbox (File › Move Back to Inbox, ⌥⌘Z, the status strip, the row's menu).
+nonisolated enum ReturnToInboxAction: Hashable, Sendable {
+  /// A filed file: Move Back.
+  case moveBack
+  /// A trashed file: Put Back.
+  case putBack
+}
+
+extension SelectedFile {
+  /// What returns the file to its inbox; `nil` while it is unhandled.
+  var returnToInboxAction: ReturnToInboxAction? {
+    switch mark {
+    case .filed: .moveBack
+    case .trashed: .putBack
+    case nil: nil
+    }
+  }
+}
+
 /// An action on the window's undo stack.
+///
+/// Undo puts the row back to the mark it had before the action and redo performs the action again. Where the action
+/// is exactly reversible (moves and Move Back put the file back under the refused-on-conflict rule, so at its old
+/// place) the earlier mark is stored; marks naming a new place in the Trash or a new date come from the outcome.
 nonisolated private enum UndoableFiling: Sendable {
-  /// A move, redone with `resolution` (Replace again, or refuse a conflict).
-  case move(MoveRequest, resolution: ConflictResolution)
+  /// A move, redone with `resolution` (Replace again, or refuse a conflict); undo restores `markBefore` (none for a
+  /// filing, the earlier filed mark for a rename or move of a filed file).
+  case move(MoveRequest, resolution: ConflictResolution, markBefore: InboxItemMark?)
+  /// A Move Back, redone with `resolution`; undo returns the file to the archive and restores `markBefore`.
+  case moveBack(MoveBackRequest, resolution: ConflictResolution, markBefore: InboxItemMark?)
   /// A move to the Trash.
   case trash(TrashRequest)
+  /// A Put Back; undo moves the file to the Trash again.
+  case putBack(PutBackRequest)
 
   var itemID: InboxItemID {
     switch self {
-    case .move(let request, _): request.itemID
+    case .move(let request, _, _): request.itemID
+    case .moveBack(let request, _, _): request.itemID
     case .trash(let request): request.itemID
+    case .putBack(let request): request.itemID
     }
   }
 
   /// The Edit menu's name for the action.
   var actionName: String {
     switch self {
-    case .move(let request, _): "Move of “\(request.originalName)”"
+    case .move(let request, _, _):
+      request.kind == .renaming
+        ? "Rename of “\(request.originalName)”" : "Move of “\(request.originalName)”"
+    case .moveBack(let request, _, _): "Move Back of “\(request.originalName)”"
     case .trash(let request): "Move to Trash of “\(request.originalName)”"
+    case .putBack(let request): "Put Back of “\(request.originalName)”"
     }
   }
 }
 
-/// The history event an undo entry undoes; filled in when a redo completes, after the entry was registered.
+/// The history event the next undo or redo step acts on; filled in by the step before it once it completes, after
+/// the next step was registered.
 private final class FilingEventTicket {
   var eventID: FilingEvent.ID?
 
@@ -101,23 +192,55 @@ extension MainWindowModel {
 
   // MARK: Moving
 
-  /// Whether the selected file can be moved: an unhandled, complete file, with the archive available and the history
-  /// writable.
-  var canMoveSelectedFile: Bool {
-    guard let file = selectedFile, file.mark == nil, file.completeness == .complete else {
+  /// Whether the filing panel's picker and name field take input for the selected file: a complete file that is
+  /// unhandled or filed (not trashed), with the archive available and the history writable.
+  var canChooseDestination: Bool {
+    guard let file = selectedFile, file.completeness == .complete, !file.isTrashed else {
       return false
     }
     return archiveAvailability == .available && filing.isHistoryWritable && !isFilingInProgress
   }
 
-  /// The name the selected file would be filed under, from the name field.
-  var finalName: String? {
-    guard let file = selectedFile else { return nil }
-    return FileNaming.finalName(entered: panel.nameText, originalName: file.originalName)
+  /// For a selected filed file, what ⌘Return would change: `.rename` when only the name differs, `.move` when the
+  /// chosen folder differs or no folder is chosen, `nil` when nothing changed or the file is not filed.
+  var filedFileChange: FiledFileChange? {
+    guard let file = selectedFile, case .filed(_, let destinationPath, _) = file.mark else {
+      return nil
+    }
+    guard let destination = picker.destination, destination.path == destinationPath else {
+      return .move
+    }
+    return finalName == file.name ? nil : .rename
   }
 
-  /// File › Move (⌘Return) and the Move button: moves the selected file to the chosen destination under the
-  /// entered name.
+  /// Whether the selected file can be moved: an unhandled file, or a filed one whose folder or name was changed, as
+  /// `canChooseDestination` allows.
+  var canMoveSelectedFile: Bool {
+    guard canChooseDestination, let file = selectedFile else { return false }
+    return file.mark == nil || filedFileChange != nil
+  }
+
+  /// The name the selected file would be filed under, from the name field (empty keeps its current name).
+  var finalName: String? {
+    guard let file = selectedFile else { return nil }
+    return FileNaming.finalName(entered: panel.nameText, originalName: file.name)
+  }
+
+  /// The name Folder contents flags as taken: the final name, except a filed file's own name (in any case) while
+  /// its own folder is chosen, which a rename in place may keep or change the case of.
+  var nameToCheckForConflicts: String? {
+    guard let file = selectedFile, let name = finalName else { return nil }
+    if case .filed(_, let destinationPath, _) = file.mark,
+      picker.destination?.path == destinationPath,
+      name.caseInsensitiveCompare(file.name) == .orderedSame
+    {
+      return nil
+    }
+    return name
+  }
+
+  /// File › Move (⌘Return) and the Move (or Rename) button: moves the selected file to the chosen destination under
+  /// the entered name.
   ///
   /// With no destination chosen: while focus is in the picker (a click on Move), the picker's highlighted folder is
   /// chosen and the file moves, as ⌘Return in the picker does (the picker handles that key itself). Anywhere else
@@ -140,17 +263,24 @@ extension MainWindowModel {
     }
   }
 
-  /// Moves the selected file into `destination` under the entered name.
+  /// Moves the selected file into `destination` under the entered name: files an unhandled file, renames or moves on
+  /// a filed one.
   private func move(to destination: PickerDestination) {
     guard canMoveSelectedFile, let file = selectedFile, let index = archive.index else { return }
-    let name = FileNaming.finalName(entered: panel.nameText, originalName: file.originalName)
+    let name = FileNaming.finalName(entered: panel.nameText, originalName: file.name)
     guard FileNaming.validationProblem(for: name) == nil else {
       requestFocus(.nameField)
       return
     }
+    let kind: MoveKind =
+      if case .filed(_, let destinationPath, _) = file.mark {
+        destination.path == destinationPath ? .renaming : .refiling
+      } else {
+        .filing
+      }
     let request = MoveRequest(
       itemID: file.id, source: file.url, folderURL: index.url(for: destination.path),
-      archivePath: destination.path, name: name, originalName: file.originalName)
+      archivePath: destination.path, name: name, originalName: file.originalName, kind: kind)
     Task { await perform(request, resolution: .refuse) }
   }
 
@@ -168,23 +298,31 @@ extension MainWindowModel {
     guard !isFilingInProgress else { return }
     isFilingInProgress = true
     defer { isFilingInProgress = false }
+    let markBefore = inboxes.row(for: request.itemID)?.mark
     do {
       let outcome = try await filing.file(
         request.source, into: request.folderURL, archivePath: request.archivePath,
         named: request.name, resolution: resolution)
-      inboxes.markFiled(
-        request.itemID, newURL: outcome.movedURL, destinationPath: request.archivePath)
+      inboxes.setMark(
+        request.itemID,
+        .filed(
+          newURL: outcome.movedURL, destinationPath: request.archivePath, date: outcome.event.date))
       if !outcome.record.createdFolders.isEmpty { archive.rebuild() }
       let filedName = outcome.movedURL.lastPathComponent
       let redoRequest = MoveRequest(
         itemID: request.itemID, source: request.source, folderURL: request.folderURL,
-        archivePath: request.archivePath, name: filedName, originalName: request.originalName)
+        archivePath: request.archivePath, name: filedName, originalName: request.originalName,
+        kind: request.kind)
       registerUndo(
-        of: .move(redoRequest, resolution: resolution == .replace ? .replace : .refuse),
+        of: .move(
+          redoRequest, resolution: resolution == .replace ? .replace : .refuse,
+          markBefore: markBefore),
         ticket: FilingEventTicket(eventID: outcome.event.id))
       statusMessage = WindowStatusMessage(
-        text: "Moved to \(request.archivePath) as \(filedName) · Undo ⌘Z")
-      finishHandling(request.itemID)
+        text: request.kind == .renaming
+          ? "Renamed to \(filedName) · Undo ⌘Z"
+          : "Moved to \(request.archivePath) as \(filedName) · Undo ⌘Z")
+      finishMove(of: request)
     } catch .fileOperation(.nameConflict(let existing)) {
       conflict = FilingConflict(existingName: existing.lastPathComponent, request: request)
     } catch {
@@ -195,17 +333,55 @@ extension MainWindowModel {
     }
   }
 
+  /// After a move: filing an inbox file advances to the next unhandled file; renaming or moving on a filed file stays
+  /// on its row.
+  private func finishMove(of request: MoveRequest) {
+    switch request.kind {
+    case .filing: finishHandling(request.itemID)
+    case .renaming, .refiling: showReturned(request.itemID)
+    }
+  }
+
+  // MARK: Reverting the name
+
+  /// Whether the name field differs from the name the selected file had in its inbox, so Revert (↺, ⇧⌘R) applies.
+  var canRevertName: Bool {
+    guard let file = selectedFile, file.completeness == .complete, !file.isTrashed else {
+      return false
+    }
+    return finalName != file.originalName
+  }
+
+  /// The ↺ button and File › Revert Name (⇧⌘R): puts the name the file had in its inbox back into the name field,
+  /// selected. It renames nothing on disk; ⌘Return does.
+  func revertName() {
+    guard canRevertName, let file = selectedFile else { return }
+    panel.nameText = FileNameParts(file.originalName).stem
+    requestFocus(.nameField)
+  }
+
   // MARK: Trashing
 
-  /// Whether the selected file can be moved to the Trash: an unhandled file, with the history writable.
+  /// Whether the selected file can be moved to the Trash; see `canTrash(_:)`.
   var canTrashSelectedFile: Bool {
-    guard let file = selectedFile, file.mark == nil else { return false }
-    return filing.isHistoryWritable && !isFilingInProgress
+    guard let file = selectedFile else { return false }
+    return canTrash(file)
+  }
+
+  /// Whether `file` can be moved to the Trash: an unhandled file, with the history writable.
+  func canTrash(_ file: SelectedFile) -> Bool {
+    file.mark == nil && filing.isHistoryWritable && !isFilingInProgress
   }
 
   /// File › Move to Trash (⌘⌫): moves the selected file to the Trash, without confirmation (it can be undone).
   func trashSelectedFile() {
-    guard canTrashSelectedFile, let file = selectedFile else { return }
+    guard let file = selectedFile else { return }
+    trash(file)
+  }
+
+  /// Moves `file` to the Trash, without confirmation (it can be undone).
+  func trash(_ file: SelectedFile) {
+    guard canTrash(file) else { return }
     let request = TrashRequest(itemID: file.id, url: file.url, originalName: file.originalName)
     Task { await perform(request) }
   }
@@ -216,7 +392,9 @@ extension MainWindowModel {
     defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.trash(request.url)
-      inboxes.markTrashed(request.itemID)
+      inboxes.setMark(
+        request.itemID,
+        .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
       registerUndo(of: .trash(request), ticket: FilingEventTicket(eventID: outcome.event.id))
       statusMessage = WindowStatusMessage(
         text: "Moved “\(request.originalName)” to the Trash · Undo ⌘Z")
@@ -240,9 +418,118 @@ extension MainWindowModel {
     requestFocus(.sidebar)
   }
 
+  /// After a file changed in place (renamed, moved back, put back, or an undo): selects it, resets the panel for it
+  /// and returns focus to the sidebar.
+  private func showReturned(_ id: InboxItemID) {
+    select(id)
+    resetPanel()
+    requestFocus(.sidebar)
+  }
+
+  // MARK: Move Back and Put Back
+
+  /// What ⌥⌘Z does for the selected file: Move Back for a filed file, Put Back for a trashed one, `nil` otherwise.
+  var selectedReturnToInboxAction: ReturnToInboxAction? {
+    selectedFile?.returnToInboxAction
+  }
+
+  /// Whether the selected file can be returned to its inbox; see `canReturnToInbox(_:)`.
+  var canReturnSelectedFileToInbox: Bool {
+    guard let file = selectedFile else { return false }
+    return canReturnToInbox(file)
+  }
+
+  /// Whether `file` can be returned to its inbox: it was filed or trashed, and the history is writable.
+  func canReturnToInbox(_ file: SelectedFile) -> Bool {
+    file.returnToInboxAction != nil && filing.isHistoryWritable && !isFilingInProgress
+  }
+
+  /// File › Move Back to Inbox / Put Back (⌥⌘Z) and the status strip's button, for the selected file.
+  func returnSelectedFileToInbox() {
+    guard let file = selectedFile else { return }
+    returnToInbox(file)
+  }
+
+  /// Returns `file` to its inbox: moves a filed file back under its inbox name, puts a trashed file back.
+  func returnToInbox(_ file: SelectedFile) {
+    guard canReturnToInbox(file) else { return }
+    switch file.mark {
+    case .filed:
+      let request = MoveBackRequest(
+        itemID: file.id, url: file.url, originalName: file.originalName, inboxName: file.inboxName)
+      Task { await perform(request, resolution: .refuse) }
+    case .trashed(let trashedURL, _):
+      let request = PutBackRequest(
+        itemID: file.id, trashedURL: trashedURL, url: file.url, originalName: file.originalName,
+        inboxName: file.inboxName)
+      Task { await perform(request) }
+    case nil:
+      return
+    }
+  }
+
+  /// Keep Both in the Move Back conflict alert: moves the file back under a numbered name beside the item in the way.
+  func resolve(_ conflict: MoveBackConflict) {
+    Task { await perform(conflict.request, resolution: .keepBoth) }
+  }
+
+  private func perform(_ request: MoveBackRequest, resolution: ConflictResolution) async {
+    guard !isFilingInProgress else { return }
+    isFilingInProgress = true
+    defer { isFilingInProgress = false }
+    let markBefore = inboxes.row(for: request.itemID)?.mark
+    do {
+      let outcome = try await filing.moveBack(request.url, resolution: resolution)
+      inboxes.setMark(request.itemID, nil)
+      registerUndo(
+        of: .moveBack(request, resolution: resolution, markBefore: markBefore),
+        ticket: FilingEventTicket(eventID: outcome.event.id))
+      let returnedName = outcome.movedURL.lastPathComponent
+      statusMessage = WindowStatusMessage(
+        text: returnedName == request.originalName
+          ? "Moved “\(request.originalName)” back to \(request.inboxName) · Undo ⌘Z"
+          : "Moved “\(request.originalName)” back to \(request.inboxName) as \(returnedName) · Undo ⌘Z"
+      )
+      showReturned(request.itemID)
+      // Under a numbered name the file is a new inbox entry, and the row's name now belongs to the item in the way;
+      // a rescan lists both as they are.
+      if returnedName != request.originalName { inboxes.refresh() }
+    } catch .fileOperation(.nameConflict(let existing)) {
+      moveBackConflict = MoveBackConflict(blockingURL: existing, request: request)
+    } catch {
+      Logger.filing.error(
+        "Moving \(request.originalName, privacy: .private) back failed: \(String(describing: error), privacy: .private)"
+      )
+      alert = FilingAlert(
+        title: "“\(request.originalName)” can’t be moved back to \(request.inboxName)",
+        message: FilingMessages.text(for: error))
+    }
+  }
+
+  private func perform(_ request: PutBackRequest) async {
+    guard !isFilingInProgress else { return }
+    isFilingInProgress = true
+    defer { isFilingInProgress = false }
+    do {
+      _ = try await filing.putBack(request.trashedURL)
+      inboxes.setMark(request.itemID, nil)
+      registerUndo(of: .putBack(request), ticket: FilingEventTicket())
+      statusMessage = WindowStatusMessage(
+        text: "Put “\(request.originalName)” back in \(request.inboxName) · Undo ⌘Z")
+      showReturned(request.itemID)
+    } catch {
+      Logger.filing.error(
+        "Putting \(request.originalName, privacy: .private) back failed: \(String(describing: error), privacy: .private)"
+      )
+      alert = FilingAlert(
+        title: "“\(request.originalName)” can’t be put back",
+        message: FilingMessages.text(for: error))
+    }
+  }
+
   // MARK: Undo and redo
 
-  /// Registers undoing `action` (the event in `ticket`) with the window's undo manager.
+  /// Registers undoing `action` with the window's undo manager; `ticket` holds the event the undo acts on.
   ///
   /// Undo and redo run asynchronously, but the undo manager needs the opposite action registered while it is
   /// undoing or redoing; so each handler registers its counterpart at once and the counterpart reads the event it
@@ -254,39 +541,67 @@ extension MainWindowModel {
       return
     }
     undoManager.registerUndo(withTarget: self) { model in
-      model.registerRedo(of: action)
-      Task { await model.undo(action, ticket: ticket) }
+      let redoTicket = FilingEventTicket()
+      model.registerRedo(of: action, ticket: redoTicket)
+      Task { await model.undo(action, ticket: ticket, redoTicket: redoTicket) }
     }
     undoManager.setActionName(action.actionName)
   }
 
-  private func registerRedo(of action: UndoableFiling) {
+  /// Registers redoing `action`; `ticket` holds the event the redo acts on (only Put Back's redo needs one).
+  private func registerRedo(of action: UndoableFiling, ticket: FilingEventTicket) {
     guard let undoManager else { return }
-    let ticket = FilingEventTicket()
     undoManager.registerUndo(withTarget: self) { model in
-      model.registerUndo(of: action, ticket: ticket)
-      Task { await model.redo(action, ticket: ticket) }
+      let undoTicket = FilingEventTicket()
+      model.registerUndo(of: action, ticket: undoTicket)
+      Task { await model.redo(action, ticket: ticket, undoTicket: undoTicket) }
     }
     undoManager.setActionName(action.actionName)
   }
 
-  private func undo(_ action: UndoableFiling, ticket: FilingEventTicket) async {
+  /// The event in `ticket`, or `nil` after telling the user that the step before has not finished yet.
+  private func event(
+    in ticket: FilingEventTicket, for action: UndoableFiling, step: String
+  ) -> FilingEvent.ID? {
     guard let eventID = ticket.eventID else {
       alert = FilingAlert(
-        title: "\(action.actionName) can’t be undone",
+        title: "\(action.actionName) can’t be \(step)",
         message: "The action has not finished yet. Try again in a moment.")
-      return
+      return nil
     }
+    return eventID
+  }
+
+  private func undo(
+    _ action: UndoableFiling, ticket: FilingEventTicket, redoTicket: FilingEventTicket
+  ) async {
     do {
-      _ = try await filing.undo(eventID: eventID)
-      // Undoing a move removes the folders it created (when still empty); a rebuild keeps the old index in use
-      // until the new one is ready, so it is cheap to do whenever a move is undone.
-      if case .move = action { archive.rebuild() }
-      inboxes.unmark(action.itemID)
-      select(action.itemID)
-      resetPanel()
+      switch action {
+      case .move(let request, _, let markBefore):
+        guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        // Undoing a move removes the folders it created (when still empty); a rebuild keeps the old index in use
+        // until the new one is ready, so it is cheap to do whenever a move is undone.
+        archive.rebuild()
+        inboxes.setMark(request.itemID, markBefore)
+      case .moveBack(let request, _, let markBefore):
+        guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        archive.rebuild()
+        inboxes.setMark(request.itemID, markBefore)
+      case .trash(let request):
+        guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        inboxes.setMark(request.itemID, nil)
+      case .putBack(let request):
+        let outcome = try await filing.trash(request.url)
+        redoTicket.eventID = outcome.event.id
+        inboxes.setMark(
+          request.itemID,
+          .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+      }
+      showReturned(action.itemID)
       statusMessage = nil
-      requestFocus(.sidebar)
     } catch {
       Logger.filing.error(
         "Undoing \(action.actionName, privacy: .private) failed: \(String(describing: error), privacy: .private)"
@@ -299,23 +614,41 @@ extension MainWindowModel {
     }
   }
 
-  private func redo(_ action: UndoableFiling, ticket: FilingEventTicket) async {
+  private func redo(
+    _ action: UndoableFiling, ticket: FilingEventTicket, undoTicket: FilingEventTicket
+  ) async {
     do {
       switch action {
-      case .move(let request, let resolution):
+      case .move(let request, let resolution, _):
         let outcome = try await filing.file(
           request.source, into: request.folderURL, archivePath: request.archivePath,
           named: request.name, resolution: resolution)
-        ticket.eventID = outcome.event.id
+        undoTicket.eventID = outcome.event.id
         if !outcome.record.createdFolders.isEmpty { archive.rebuild() }
-        inboxes.markFiled(
-          request.itemID, newURL: outcome.movedURL, destinationPath: request.archivePath)
+        inboxes.setMark(
+          request.itemID,
+          .filed(
+            newURL: outcome.movedURL, destinationPath: request.archivePath,
+            date: outcome.event.date))
+        finishMove(of: request)
+      case .moveBack(let request, let resolution, _):
+        let outcome = try await filing.moveBack(request.url, resolution: resolution)
+        undoTicket.eventID = outcome.event.id
+        inboxes.setMark(request.itemID, nil)
+        showReturned(request.itemID)
       case .trash(let request):
         let outcome = try await filing.trash(request.url)
-        ticket.eventID = outcome.event.id
-        inboxes.markTrashed(request.itemID)
+        undoTicket.eventID = outcome.event.id
+        inboxes.setMark(
+          request.itemID,
+          .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+        finishHandling(request.itemID)
+      case .putBack(let request):
+        guard let eventID = event(in: ticket, for: action, step: "redone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        inboxes.setMark(request.itemID, nil)
+        showReturned(request.itemID)
       }
-      finishHandling(action.itemID)
     } catch {
       Logger.filing.error(
         "Redoing \(action.actionName, privacy: .private) failed: \(String(describing: error), privacy: .private)"

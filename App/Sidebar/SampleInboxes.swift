@@ -15,8 +15,12 @@
           case 1:
             .filed(
               newURL: item.url.deletingLastPathComponent().appending(path: item.name),
-              destinationPath: "Musik Margit/Noten & Bücher")
-          case 2: .trashed
+              destinationPath: "Musik Margit/Noten & Bücher", date: handledDate)
+          case 2:
+            .trashed(
+              trashedURL: item.url.deletingLastPathComponent().appending(
+                path: ".Trash/\(item.name)"),
+              date: handledDate)
           default: nil
           }
         return InboxRow(item: item, mark: mark)
@@ -44,6 +48,37 @@
       return SelectedFile(
         id: InboxItemID(item), url: item.url, originalName: item.name, inboxName: "Web-Downloads",
         completeness: .complete, mark: nil)
+    }
+
+    /// The sample invoice, filed to "Musik Margit/Noten & Bücher" as "2033-10-13 Notenhaus Allegretto.pdf".
+    static func filedInvoice() -> SelectedFile {
+      let invoice = selectedInvoice()
+      let newURL = invoice.url.deletingLastPathComponent().appending(
+        path: "2033-10-13 Notenhaus Allegretto.pdf")
+      return SelectedFile(
+        id: invoice.id, url: newURL, originalName: invoice.originalName,
+        inboxName: invoice.inboxName, completeness: .complete,
+        mark: .filed(
+          newURL: newURL, destinationPath: "Musik Margit/Noten & Bücher", date: handledDate))
+    }
+
+    /// The sample invoice, moved to the Trash.
+    static func trashedInvoice() -> SelectedFile {
+      let invoice = selectedInvoice()
+      return SelectedFile(
+        id: invoice.id, url: invoice.url, originalName: invoice.originalName,
+        inboxName: invoice.inboxName, completeness: .complete,
+        mark: .trashed(
+          trashedURL: invoice.url.deletingLastPathComponent().appending(
+            path: ".Trash/\(invoice.originalName)"),
+          date: handledDate))
+    }
+
+    /// When the sample files were filed or trashed: 13 October 2033, 09:41.
+    private static var handledDate: Date {
+      Calendar.current.date(
+        from: DateComponents(year: 2033, month: 10, day: 13, hour: 9, minute: 41))
+        ?? .distantPast
     }
 
     /// The sample files as the inbox scanner lists them.

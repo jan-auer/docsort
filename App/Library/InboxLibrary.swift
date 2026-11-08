@@ -3,12 +3,18 @@ import Foundation
 import OSLog
 import Observation
 
-/// What happened to an inbox file in this session.
+/// What happened to an inbox file in this session, with what the filing panel's status strip shows about it.
 nonisolated enum InboxItemMark: Hashable, Sendable {
-  /// The file was filed to `destinationPath` (archive-relative) and now lies at `newURL`.
-  case filed(newURL: URL, destinationPath: String)
-  /// The file was moved to the Trash.
-  case trashed
+  /// The file was filed (or later renamed or moved on) to `destinationPath` (archive-relative) at `date` and now lies
+  /// at `newURL`.
+  case filed(newURL: URL, destinationPath: String, date: Date)
+  /// The file was moved to the Trash at `date` and lies at `trashedURL` there.
+  case trashed(trashedURL: URL, date: Date)
+
+  /// Whether the file was moved to the Trash.
+  var isTrashed: Bool {
+    if case .trashed = self { true } else { false }
+  }
 }
 
 /// One file row of an inbox section: the file as it was listed and what happened to it in this session.
@@ -23,7 +29,7 @@ nonisolated struct InboxRow: Hashable, Sendable, Identifiable {
 
   /// Where the file is now: its archive location once filed, otherwise its inbox location.
   var currentURL: URL {
-    if case .filed(let newURL, _) = mark { return newURL }
+    if case .filed(let newURL, _, _) = mark { return newURL }
     return item.url
   }
 
@@ -112,9 +118,10 @@ nonisolated struct InboxSection: Hashable, Sendable, Identifiable {
 /// function, off the main actor: at launch, whenever the inboxes change, and on `refresh()`. A scan whose inboxes
 /// have been superseded is ignored.
 ///
-/// Files filed or trashed in this session are marked (`markFiled`, `markTrashed`) by `InboxItemID`. A marked file
-/// that is no longer on disk keeps its row, in its old place, across rescans (decision `inbox-and-history-behaviour`:
-/// the list never shuffles). `unmark` (for undo) keeps the row until the next scan finds the file back on disk.
+/// Files filed or trashed in this session are marked (`setMark`) by `InboxItemID`. A marked file that is no longer on
+/// disk keeps its row, in its old place, across rescans (decision `inbox-and-history-behaviour`: the list never
+/// shuffles). Removing the mark (for undo, Move Back and Put Back) keeps the row until the next scan finds the file
+/// back on disk.
 ///
 /// Like the other libraries it uses only Foundation, Observation and DocsortCore.
 @Observable
@@ -243,24 +250,15 @@ final class InboxLibrary {
 
   // MARK: Marks
 
-  /// Marks the file `id` as filed to `destinationPath`, where it now lies at `newURL`.
-  func markFiled(_ id: InboxItemID, newURL: URL, destinationPath: String) {
-    mark(id, as: .filed(newURL: newURL, destinationPath: destinationPath))
-  }
-
-  /// Marks the file `id` as moved to the Trash.
-  func markTrashed(_ id: InboxItemID) {
-    mark(id, as: .trashed)
-  }
-
-  /// Removes the mark of the file `id`, after an undo put it back. Its row stays until the next scan of its inbox.
-  func unmark(_ id: InboxItemID) {
-    guard keptRows[id] != nil else { return }
-    keptRows[id]?.mark = nil
-    rebuildSections()
-  }
-
-  private func mark(_ id: InboxItemID, as mark: InboxItemMark) {
+  /// Sets what happened to the file `id` in this session: `mark`, or, for `nil`, nothing (after an undo, Move Back or
+  /// Put Back returned it to its inbox). An unmarked row stays until the next scan of its inbox.
+  func setMark(_ id: InboxItemID, _ mark: InboxItemMark?) {
+    guard let mark else {
+      guard keptRows[id] != nil else { return }
+      keptRows[id]?.mark = nil
+      rebuildSections()
+      return
+    }
     if keptRows[id] == nil {
       guard let kept = keptRow(for: id) else {
         Logger.inbox.error("Cannot mark \(id, privacy: .private): no such row")
