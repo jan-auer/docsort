@@ -1,5 +1,6 @@
 import DocsortCore
 import Foundation
+import OSLog
 import Observation
 
 /// All state and every intent of the destination picker; see ``PickerContract`` for how the filing panel uses it and
@@ -51,6 +52,18 @@ final class DestinationPickerModel {
 
   /// New folders the user named that do not exist on disk yet, in the order they were named.
   private(set) var pendingFolders: [String] = []
+
+  /// The files Folder contents shows; follows ``destination``, else the highlighted folder row.
+  private(set) var contents: FolderContents = .none
+
+  /// The running listing of ``contents``, if any; tests await it.
+  @ObservationIgnored private(set) var contentsTask: Task<Void, Never>?
+
+  /// The folder ``contents`` was last loaded for; `nil` forces the next ``followContents()`` to reload.
+  @ObservationIgnored private var contentsTarget: ContentsTarget?
+
+  /// Counts listings started, so a result that arrives after a newer listing started is dropped.
+  @ObservationIgnored private var contentsLoadNumber = 0
 
   private let folderFiles: any FolderFileListing
 
@@ -136,6 +149,7 @@ final class DestinationPickerModel {
     let current = selectable.firstIndex { $0.id == highlightedRowID } ?? 0
     let target = min(max(current + offset, 0), selectable.count - 1)
     highlightedRowID = selectable[target].id
+    followContents()
   }
 
   /// Highlights the row with `id` (a click), un-choosing a chosen destination first.
@@ -143,6 +157,7 @@ final class DestinationPickerModel {
     unchooseRestoringFilter()
     guard rows.contains(where: { $0.id == id && $0.isSelectable }) else { return }
     highlightedRowID = id
+    followContents()
   }
 
   // MARK: Choosing
@@ -283,6 +298,82 @@ final class DestinationPickerModel {
     }
   }
 
+  // MARK: Folder contents
+
+  /// A click on a file in Folder contents: emits ``PickerEvent/tookFileName(_:)`` with its full name.
+  func takeFileName(_ file: FolderFile) {
+    onEvent(.tookFileName(file.name))
+  }
+
+  /// What ``contents`` should show.
+  private enum ContentsTarget: Equatable {
+    case none
+    case notOnDisk
+    case folder(String)
+  }
+
+  /// The folder Folder contents follows: the destination if chosen, else the highlighted folder row.
+  private var currentContentsTarget: ContentsTarget {
+    let path: String
+    if let destination {
+      if case .newFolder = destination { return .notOnDisk }
+      path = destination.path
+    } else if let highlightedPath = highlightedRow?.folderPath {
+      if pendingFolders.contains(highlightedPath) { return .notOnDisk }
+      path = highlightedPath
+    } else {
+      return .none
+    }
+    return index == nil ? .none : .folder(path)
+  }
+
+  /// Updates ``contents`` when the folder it follows changed, cancelling a listing still running.
+  private func followContents() {
+    let target = currentContentsTarget
+    guard target != contentsTarget else { return }
+    contentsTarget = target
+    contentsTask?.cancel()
+    contentsTask = nil
+    switch target {
+    case .none:
+      contents = .none
+    case .notOnDisk:
+      contents = .notOnDisk
+    case .folder(let folder):
+      loadContents(of: folder)
+    }
+  }
+
+  /// Lists `folder` through ``folderFiles`` and shows the result unless a newer listing started meanwhile.
+  private func loadContents(of folder: String) {
+    guard let index else {
+      contents = .none
+      return
+    }
+    contentsLoadNumber += 1
+    let loadNumber = contentsLoadNumber
+    let listing = folderFiles
+    contents = .loading(folder: folder)
+    contentsTask = Task { [weak self] in
+      let result: Result<[FolderFile], FolderAccessError>
+      do throws(FolderAccessError) {
+        result = .success(try await listing.files(in: folder, of: index))
+      } catch {
+        Logger.picker.error(
+          "Could not list the files in archive folder \(folder) for Folder contents: \(String(describing: error))"
+        )
+        result = .failure(error)
+      }
+      guard let self, loadNumber == self.contentsLoadNumber else { return }
+      switch result {
+      case .success(let files):
+        self.contents = .files(folder: folder, files)
+      case .failure(let error):
+        self.contents = .failed(folder: folder, message: FolderContents.message(for: error))
+      }
+    }
+  }
+
   // MARK: Internals
 
   /// Where the highlight goes when the rows are recomputed.
@@ -306,6 +397,7 @@ final class DestinationPickerModel {
       pendingFolders: pendingFolders
     ).sections()
     highlightedRowID = resolve(request, among: rows.filter(\.isSelectable))
+    followContents()
   }
 
   private func resolve(_ request: HighlightRequest, among selectable: [PickerRow]) -> PickerRow.ID?
@@ -352,6 +444,7 @@ final class DestinationPickerModel {
   /// Chooses `chosen`, keeping the list and the filter it was chosen from for un-choosing.
   private func choose(_ chosen: PickerDestination) {
     destination = chosen
+    followContents()
   }
 
   /// Un-chooses the destination and highlights its row in the list it was chosen from. The filter field shows that
@@ -382,6 +475,8 @@ final class DestinationPickerModel {
         scope = ArchivePath.parent(of: scope)
       }
     }
+    // The folder's files may have changed with the archive (a move adds one), so list them again.
+    contentsTarget = nil
     update(highlight: .keep)
   }
 

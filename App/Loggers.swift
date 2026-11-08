@@ -7,4 +7,7 @@ extension Logger {
 
   /// App launch and termination.
   nonisolated static let lifecycle = Logger(subsystem: subsystem, category: "lifecycle")
+
+  /// The destination picker: listing the files of the chosen or highlighted folder.
+  nonisolated static let picker = Logger(subsystem: subsystem, category: "picker")
 }
