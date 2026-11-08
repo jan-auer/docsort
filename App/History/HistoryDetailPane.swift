@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The History window's inspector: the selected entry's file at its current place, taking the height that its details
-/// and actions below leave, what the entry did, and the actions on it (`HistoryEntryActions`).
+/// and actions below leave; what the entry did, with Reveal in Finder at the end of the destination line; and Open and
+/// Move Back to Inbox or Put Back (`HistoryEntryActions`). Show in Main Window is in the row's context menu.
 struct HistoryDetailPane: View {
   let model: HistoryModel
 
@@ -43,7 +44,11 @@ struct HistoryDetailPane: View {
       Text(entry.newName ?? entry.originalName)
         .font(.headline)
         .accessibilityIdentifier("history-detail-name")
-      Text(entry.destination)
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(entry.destination)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        HistoryRevealButton(model: model, entry: entry)
+      }
       Text(subtitle(of: entry))
         .font(.caption)
         .foregroundStyle(.secondary)

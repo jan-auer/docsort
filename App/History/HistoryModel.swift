@@ -157,6 +157,11 @@ final class HistoryModel {
     return shown == total ? "\(total) \(unit)" : "\(shown) of \(total) \(unit)"
   }
 
+  /// The entry with `id`, shown or not.
+  func entry(id: HistoryEntry.ID) -> HistoryEntry? {
+    entries.first { $0.id == id }
+  }
+
   /// The selected entry, while the search shows it.
   var selectedEntry: HistoryEntry? {
     guard let selection else { return nil }
