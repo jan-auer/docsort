@@ -31,4 +31,7 @@ extension Logger {
 
   /// Building the UI-test fixture (debug builds only).
   nonisolated static let fixture = Logger(subsystem: subsystem, category: "fixture")
+
+  /// The destination picker: listing the files of the chosen or highlighted folder.
+  nonisolated static let picker = Logger(subsystem: subsystem, category: "picker")
 }
