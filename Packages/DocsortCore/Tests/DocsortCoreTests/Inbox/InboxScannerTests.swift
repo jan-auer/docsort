@@ -178,6 +178,34 @@ struct InboxScannerTests {
     #expect(item.url.lastPathComponent == "datei.pdf")
   }
 
+  @Test("keeps an item's identity when it is renamed or moved between scans")
+  func renameKeepsIdentity() throws {
+    let inbox = try TemporaryDirectory()
+    let original = try inbox.createFile("scan-1.pdf")
+    let before = try #require(try scanner.scan(inbox.url).items.first)
+
+    let renamed = try inbox.createFolder("Ordner").appending(path: "Invoice.pdf")
+    try FileManager.default.moveItem(at: original, to: renamed)
+    let after = try #require(try scanner.scan(inbox.url).items.first)
+
+    #expect(after.name == "Invoice.pdf")
+    #expect(after.identity == before.identity)
+    #expect(after.identity == (try FileIdentity.ofItem(at: renamed)))
+  }
+
+  @Test("gives a copy a different identity from its original")
+  func copyHasDifferentIdentity() throws {
+    let inbox = try TemporaryDirectory()
+    let original = try inbox.createFile("scan-1.pdf", modified: testDate(10))
+    try FileManager.default.copyItem(at: original, to: inbox.url.appending(path: "scan-2.pdf"))
+
+    let identitiesByName = Dictionary(
+      uniqueKeysWithValues: try scanner.scan(inbox.url).items.map { ($0.name, $0.identity) })
+
+    #expect(identitiesByName.count == 2)
+    #expect(identitiesByName["scan-1.pdf"] != identitiesByName["scan-2.pdf"])
+  }
+
   @Test("flags incomplete downloads by extension")
   func flagsIncompleteDownloads() throws {
     let inbox = try TemporaryDirectory()

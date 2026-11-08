@@ -6,6 +6,9 @@ public struct InboxItem: Hashable, Sendable, Identifiable {
   public var id: URL { url }
   /// The item's location.
   public let url: URL
+  /// Which item on disk this is, independent of its path: a rename or a move within the volume keeps it, a copy or a
+  /// replacement at the same path gets a new one. The same value `FileIdentity.ofItem(at:)` reports.
+  public let identity: FileIdentity
   /// The item's file name, including its extension.
   public let name: String
   /// The item's own content modification date.
