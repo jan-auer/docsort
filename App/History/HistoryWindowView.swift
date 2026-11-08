@@ -106,10 +106,12 @@ struct HistoryWindowView: View {
         }
       }
     }
-    .contextMenu(forSelectionType: HistoryEntry.ID.self) { _ in
+    .contextMenu(forSelectionType: HistoryEntry.ID.self) { ids in
+      if ids.count == 1, let id = ids.first, let entry = model.entry(id: id) {
+        HistoryEntryMenu(model: model, entry: entry)
+      }
     } primaryAction: { ids in
-      guard let id = ids.first, let entry = model.entries.first(where: { $0.id == id }),
-        model.canOpen(entry)
+      guard let id = ids.first, let entry = model.entry(id: id), model.canOpen(entry)
       else { return }
       FileActions.open(entry.url)
     }
