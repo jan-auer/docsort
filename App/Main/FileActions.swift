@@ -1,9 +1,11 @@
 import AppKit
 import OSLog
 
-/// Opening a file in its default app and revealing it in Finder, shared by the main window and the History window.
+/// Opening a file in its default app and revealing it in Finder, shared by the main window, the History window and
+/// the destination picker (which opens and reveals archive folders).
 enum FileActions {
-  /// Opens the file at `url` in the app Launch Services opens it with by default. A failure is logged.
+  /// Opens the file at `url` in the app Launch Services opens it with by default, a folder in a Finder window. A
+  /// failure is logged.
   static func open(_ url: URL) {
     Task {
       do {

@@ -231,6 +231,8 @@ The panel checks the target path while you type the name:
   Back** (⌘Z, or context menu) restores it.
 - **Open** in the default app: ⌘O. Works for unfiled and filed files (filed files open from their new location).
 - **Reveal in Finder**: ⌥⌘R. Same rule.
+- **Open Destination in Finder**: ⇧⌘O opens the filing panel's chosen folder (else the highlighted one) in a Finder
+  window. Disabled for a pending new folder, which is not on disk yet.
 - **Quick Look**: Space in the sidebar opens the standard Quick Look panel for a full-screen look (Space or Esc
   closes it). Space never starts a search.
 
@@ -341,6 +343,8 @@ the 2026-11-08 destination-search study, concept C, `docs/design/destination-sea
   `Chor Liederkranz`, not a later segment).
 - Tab or Return chooses the highlighted folder and moves to the name field. ⌘Return moves the file at once.
 - ⇧⌘N or the New Folder button under the list creates a folder inside the highlighted folder (see "New folder").
+- **Context menu**: right-clicking a folder row (or the "this folder" row) offers **Open in Finder** and **Reveal in
+  Finder**. A pending new folder has no menu: it is not on disk yet.
 - Inbox folders inside the archive are left out.
 
 **Considered and rejected: columns with filter.** Finder's column view inside the panel, with the filter narrowing the
@@ -383,6 +387,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | ⌘L | Focus the destination filter | File › Choose Destination… |
 | ⌘O | Open selected file in its default app | File › Open |
 | ⌥⌘R | Reveal selected file in Finder | File › Reveal in Finder |
+| ⇧⌘O | Open the chosen (else highlighted) destination folder in Finder | File › Open Destination in Finder |
 | ⌘⌫ | Move selected file to Trash (outside text fields) | File › Move to Trash |
 | ⌘Z / ⇧⌘Z | Undo / Redo last action | Edit |
 | ⌥⌘Z | Move selected filed file back to its inbox | File › Move Back to Inbox |
