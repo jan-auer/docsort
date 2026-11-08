@@ -76,14 +76,14 @@ struct PreviewMessageView: View {
 
 #if DEBUG
   #Preview("Downloading") {
-    DownloadingView(fileName: "2026-05-11 Angebot Musterfirma.pdf")
+    DownloadingView(fileName: "2033-10-26_Tierarztpraxis Aschauer Honorarnote.pdf")
       .frame(width: 520, height: 400)
   }
 
   #Preview("Missing file") {
     PreviewMessageView(
       systemImage: "questionmark.folder",
-      title: "“2026-05-11 Angebot Musterfirma.pdf” is no longer here",
+      title: "“2033-10-26_Tierarztpraxis Aschauer Honorarnote.pdf” is no longer here",
       detail: "It was moved or deleted outside docsort."
     )
     .frame(width: 520, height: 400)

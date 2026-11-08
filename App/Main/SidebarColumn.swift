@@ -50,12 +50,12 @@ struct SidebarColumn<InboxList: View>: View {
 #Preview("Sidebar with invented inboxes") {
   SidebarColumn {
     List {
-      Section("Eingangskorb") {
-        Text("2026-03-02 Rechnung Beispiel GmbH.pdf")
-        Text("2026-04-14 Notiz Musterfirma.txt")
+      Section("Web-Downloads") {
+        Text("Rechnung_NA-33-08812.pdf")
+        Text("2033-10-20 Verlängerung Jahreskarte Konrad.pdf")
       }
-      Section("Scannerablage") {
-        Text("Scan 0007.pdf")
+      Section("Scanner") {
+        Text("2033-10-11_Optik Klarblick.pdf")
       }
     }
     .listStyle(.sidebar)

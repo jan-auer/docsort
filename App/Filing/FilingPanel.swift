@@ -75,8 +75,8 @@ struct FilingPanel: View {
 #Preview("File selected") {
   FilingPanel(
     selectedFile: SelectedFile(
-      url: URL(filePath: "/tmp/Eingangskorb/2026-03-02 Rechnung Beispiel GmbH.pdf"),
-      inboxName: "Eingangskorb",
+      url: URL(filePath: "/tmp/Web-Downloads/Rechnung_NA-33-08812.pdf"),
+      inboxName: "Web-Downloads",
       completeness: .complete
     ),
     archiveAvailability: .available,
@@ -88,11 +88,11 @@ struct FilingPanel: View {
 #Preview("Archive unreachable") {
   FilingPanel(
     selectedFile: SelectedFile(
-      url: URL(filePath: "/tmp/Scannerablage/Scan 0007.pdf"),
-      inboxName: "Scannerablage",
+      url: URL(filePath: "/tmp/Scanner/2033-10-11_Optik Klarblick.pdf"),
+      inboxName: "Scanner",
       completeness: .complete
     ),
-    archiveAvailability: .unreachable(displayPath: "~/Fantasia-Ablage"),
+    archiveAvailability: .unreachable(displayPath: "~/Archiv"),
     locateArchive: {}
   )
   .frame(width: 340, height: 600)

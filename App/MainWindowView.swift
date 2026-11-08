@@ -114,7 +114,7 @@ struct MainWindowView: View {
         areFoldersConfigured: true,
         selectedFile: SelectedFile(
           url: PreviewSampleFiles.invoicePDF(),
-          inboxName: "Eingangskorb",
+          inboxName: "Web-Downloads",
           completeness: .complete
         )
       )
@@ -127,11 +127,11 @@ struct MainWindowView: View {
       areFoldersConfigured: true,
       selectedFile: SelectedFile(
         url: PreviewSampleFiles.textNote(),
-        inboxName: "Scannerablage",
+        inboxName: "Scanner",
         completeness: .complete
       )
     )
-    model.archiveAvailability = .unreachable(displayPath: "~/Fantasia-Ablage")
+    model.archiveAvailability = .unreachable(displayPath: "~/Archiv")
     return MainWindowView(model: model)
       .frame(width: 1280, height: 800)
   }

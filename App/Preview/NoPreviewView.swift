@@ -106,11 +106,11 @@ struct DefaultApplication: Equatable {
     NoPreviewView(
       info: PreviewFileInfo(
         url: PreviewSampleFiles.unknownData(),
-        name: "2026-04-20 Messwerte Musterfirma.dat",
+        name: "2033-10-18 Zählerstände Stadtwerke.dat",
         contentType: .data,
         byteCount: 3_072,
-        creationDate: Date(timeIntervalSince1970: 1_776_675_600),
-        modificationDate: Date(timeIntervalSince1970: 1_776_679_200)
+        creationDate: Date(timeIntervalSince1970: 2_013_238_800),
+        modificationDate: Date(timeIntervalSince1970: 2_013_242_400)
       )
     )
     .frame(width: 520, height: 520)

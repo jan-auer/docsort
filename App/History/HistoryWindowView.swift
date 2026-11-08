@@ -45,31 +45,31 @@ struct HistoryWindowView: View {
   }
 }
 
-#Preview("Invented history") {
+#Preview("Sample history") {
   HistoryWindowView(rows: [
     HistoryRow(
       id: UUID(),
-      filedAt: Date(timeIntervalSince1970: 1_768_215_600),
-      originalName: "Scan 0007.pdf",
-      inboxName: "Scannerablage",
-      newName: "2026-01-12 Stegmiete Fantasia Ruderclub.pdf",
-      destination: "Bootssteg/Fantasia Ruderclub"
+      filedAt: Date(timeIntervalSince1970: 2_012_890_320),
+      originalName: "Rechnung_NA-33-08812.pdf",
+      inboxName: "Web-Downloads",
+      newName: "2033-10-13 Notenhaus Allegretto.pdf",
+      destination: "Musik Margit/Noten & Bücher"
     ),
     HistoryRow(
       id: UUID(),
-      filedAt: Date(timeIntervalSince1970: 1_770_112_800),
-      originalName: "quittung_8841.pdf",
-      inboxName: "Eingangskorb",
-      newName: "2026-02-03 Quittung Beispiel GmbH.pdf",
-      destination: "Lieferanten/Beispiel GmbH"
+      filedAt: Date(timeIntervalSince1970: 2_012_890_500),
+      originalName: "2033-10-11_Optik Klarblick.pdf",
+      inboxName: "Scanner",
+      newName: "2033-10-11 Optik Klarblick Rechnung.pdf",
+      destination: "Gesundheit/Konrad/Augenarzt & Brillen"
     ),
     HistoryRow(
       id: UUID(),
-      filedAt: Date(timeIntervalSince1970: 1_771_498_800),
-      originalName: "Probeabo Bestaetigung.pdf",
-      inboxName: "Eingangskorb",
-      newName: "2026-02-19 Probeabo Musterfirma.pdf",
-      destination: "Lieferanten/Musterfirma"
+      filedAt: Date(timeIntervalSince1970: 2_013_529_200),
+      originalName: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf",
+      inboxName: "Web-Downloads",
+      newName: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf",
+      destination: "Mobilität/Jahreskarte Regio Plus"
     ),
   ])
   .frame(width: 900, height: 420)

@@ -55,12 +55,12 @@ struct PreviewFooter: View {
   #Preview("PDF footer") {
     PreviewFooter(
       info: PreviewFileInfo(
-        url: URL(filePath: "/tmp/2026-03-02 Rechnung Beispiel GmbH.pdf"),
-        name: "2026-03-02 Rechnung Beispiel GmbH.pdf",
+        url: URL(filePath: "/tmp/Rechnung_NA-33-08812.pdf"),
+        name: "Rechnung_NA-33-08812.pdf",
         contentType: .pdf,
         byteCount: 48_213,
-        creationDate: Date(timeIntervalSince1970: 1_772_445_600),
-        modificationDate: Date(timeIntervalSince1970: 1_772_449_200)
+        creationDate: Date(timeIntervalSince1970: 2_012_806_800),
+        modificationDate: Date(timeIntervalSince1970: 2_012_810_400)
       ),
       pagePosition: PDFPagePosition(pageNumber: 1, pageCount: 2)
     )
