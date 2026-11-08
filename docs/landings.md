@@ -2,6 +2,46 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/app-ui-b54b29 (9d757fc) + Move Back fix + History window (a113978)
+- What landed:
+  - filed and trashed status strips with Move Back and Put Back (⌥⌘Z);
+  - renaming or moving a filed file again; Revert Name (⇧⌘R); menu and context-menu items, all undoable;
+  - the History window (⌘Y): a day-grouped table with search, preview, Open, Reveal, Move Back, Put Back and Show in
+    Main Window;
+  - `FilingService.events()`, `moveBack(document:at:resolution:)`, `refile(...)` and `putBack(_:)`.
+  Filed marks now carry the document ID, and Move Back, rename and move-on refuse when another file took the path.
+- Divergence:
+  - The Move Back fix and History were built by hub subagents (the session message cap and the no-new-sessions rule
+    applied while the user was away).
+  - History actions aren't undoable from the main window.
+  - History has no live updates; it refreshes when its window becomes active.
+  - "Replaced" is a History entry kind.
+  - The time sits on its own line in the strips.
+- Follow-ups: hosted tests unrun (screen locked); `docs/backlog.md`.
+
+## 2026-11-08 claude/app-ui-b54b29 (fc94b93) + claude/picker-3b43e7: end-to-end app
+- What landed, the first usable app:
+  - Settings with security-scoped folders and the ranking option;
+  - inbox sidebar (oldest first, groups) and preview (PDFKit / Quick Look);
+  - the drill-down destination picker with scoped search, new folders and folder contents;
+  - a name field, ⌘Return move with check-off and next file, Keep Both / Replace, ⌘⌫ Trash, ⌘Z/⇧⌘Z;
+  - a persistent history with the save-failure policy and quit-time save;
+  - `FilingService`, `InboxLibrary`, `ArchiveLibrary`.
+  Landed while the user was away (`autonomous-while-away`), after two reviews: one blocker in the e2e flow and three
+  in the picker integration were fixed.
+- Divergence: the picker component was merged into the UI branch rather than landing on its own. The name field and
+  filter use AppKit text fields. Hosted tests (app unit tests after 01:30, all UI tests) are written but unrun,
+  because the screen was locked; verified by lint, builds, core tests, launch-log checks and review.
+- Follow-ups: run the hosted tests (`docs/open-questions.md`); `docs/backlog.md`; History window, status strips with
+  Move Back, revert name, and wiring in live folder watching.
+
+## 2026-11-08 claude/architecture-60c7c1: target architecture
+- What landed: `docs/architecture.md`: layers, core services (folder access, filing, inbox listing, destinations,
+  folder contents) with intended signatures, the concurrency model, and per service what to set now and what to move
+  during the cleanup.
+- Divergence: None. It records non-UI Apple frameworks in the core, which `core-apple-frameworks` has since approved.
+- Follow-ups: the architect keeps reviewing branches against it; the cleanup comes once the app works end to end.
+
 ## 2026-11-08 claude/core-engine-79f2d6: core engine
 - What landed: `Packages/DocsortCore`, with 249 tests:
   - settings with security-scoped bookmarks and per-folder status;

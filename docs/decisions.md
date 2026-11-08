@@ -58,6 +58,39 @@ usable end to end, an architecture coordinator reviews the codebase and moves th
 with feature and UX work. Do it earlier only if the code gets too messy. Reason: the user found orchestration landing
 in the UI layer and asked for clean separation, but wants a usable app first.
 
+## core-apple-frameworks
+
+The core package may import non-UI Apple frameworks (CoreServices for FSEvents now; PDFKit text extraction, Vision
+and Spotlight metadata for suggestions later), but never SwiftUI or AppKit. Reason: the app is macOS-only
+(`native-swift-app`), and these are what the core's services need; decided by the hub on the architect's proposal.
+
+## one-xctest-at-a-time
+
+Only one `xcodebuild test` runs on the machine at a time, across all sessions. Parallel runs share one testmanagerd
+and the same bundle ID, and hang. Wrap every run in the shared lock:
+`until mkdir /tmp/docsort-xctest.lock 2>/dev/null; do sleep 15; done; xcodebuild … test …; rc=$?; rmdir /tmp/docsort-xctest.lock`.
+Plain builds and `swift test` don't need it. Also, RenderPreview (Xcode MCP) launches the real app and leaves it
+running, and a running Docsort.app makes `xcodebuild test` hang. Call `XcodeCloseWorkspace` after rendering previews
+and before testing, and check `ps` for a stray Docsort.app when tests hang. Reason: test runs hung on 2026-11-08.
+
+## e2e-first
+
+Get the thinnest usable end-to-end app first, then refine features, UX and architecture in parallel. While getting
+there:
+- one review before landing, with non-critical findings going to a backlog instead of another round;
+- coordinators decide implementation details themselves and escalate only product questions;
+- tests cover core logic and the main flow, not exhaustive suites;
+- privacy reviews only when new sample data is added (all sample data comes from the one reviewed archive).
+Reason: on 2026-11-08 the user found progress too slow: no usable prototype after many review, privacy and design
+rounds.
+
+## autonomous-while-away
+
+While the user is away (from 2026-11-08), the hub lands work that passes the checks and one review without asking.
+Commits are unsigned (`git -c commit.gpgsign=false`), because 1Password can't be unlocked. The goal is the approved
+mockup's functionality; edge cases that resist stay out. Questions that need the user are collected in
+`docs/open-questions.md`. Reason: the user's instruction when signing off.
+
 ## parallel-sessions
 
 Sessions run in parallel wherever their files don't overlap, each owning one piece; avoid long-lived sessions that

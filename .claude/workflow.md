@@ -18,7 +18,9 @@ Every session in this project loads these rules, so the role comes from how the 
 - **The hub** is the user's standing session. It talks with the user, plans, starts and steers the other sessions,
   and lands their work. It does not write project code itself.
 - **A coordinator** is a session in its own git worktree and branch, owning one feature, fix or experiment. It
-  plans the details, delegates to subagents, verifies and reports. It writes code itself only for small glue changes.
+  plans the details, verifies and reports. When the spec is clear and the change is contained, it implements
+  directly, itself or with a single subagent, in one build-and-fix loop. It splits work across subagents only when
+  the pieces are large or independent enough to pay for the extra hand-offs.
 - **An agent session** is a session running one named agent definition (for example a researcher), for work that
   outlives a single subagent call or needs the user's attention on its own.
 - **Subagents** do bounded jobs inside a session: reconnaissance, one well-defined implementation step, tests for one
@@ -54,8 +56,9 @@ Two files in the project carry what sessions learn. Read both before planning; k
 2. Work on your own branch in your own worktree; never on `master`.
 3. Bring design decisions to the hub (or, without a hub, the user) as questions; do not make architectural
    assumptions.
-4. Delegate each step to a subagent with a brief naming the goal, the files, what is already ruled out and what done
-   looks like.
+4. Implement directly when the spec is clear and the change is contained (see Roles). When you do delegate, give
+   the subagent a brief naming the goal, the files, what is already ruled out and what done looks like. Prefer few,
+   larger steps over many small hand-offs.
 5. Run subagents one after another. Run them in parallel only for read-only work or when their files are disjoint.
 6. Verify each result yourself (read the diff, run the relevant tests) before starting the next step. A subagent's
    report is a claim, not proof.
