@@ -1,51 +1,59 @@
 import SwiftUI
 
-/// The chrome of the picker's filter field: magnifier, the scope chip ("in Gesundheit") while inside a folder, the
-/// chosen destination's token in place of the text, and the text field itself (`field`, built by
-/// ``DestinationPickerView`` so its focus binding stays there).
+/// The chrome of the picker's filter field, shaped like the system search field: a capsule with a magnifier, the
+/// chosen destination's token in place of the text, the text field itself (`field`, built by
+/// ``DestinationPickerView`` so its focus binding stays there), a clear button while there is text, and a focus ring
+/// drawn outside the capsule. The folder the picker is in is not repeated here: the placeholder and the path bar show
+/// it.
 struct PickerFilterField<Field: View>: View {
-  /// The folder the picker is in, for the chip; `nil` at the root.
-  let scopeTitle: String?
   /// The chosen destination, shown as a token instead of the query.
   let chosenToken: ChosenToken?
   /// Whether the text field has focus, for the focus ring.
   let focusState: FieldFocusState
+  /// Whether the field holds text, for the clear button.
+  let hasText: Bool
+  /// Empties the field.
+  let clear: () -> Void
   @ViewBuilder let field: () -> Field
 
   var body: some View {
-    HStack(spacing: 5) {
+    HStack(spacing: 6) {
       Image(systemName: "magnifyingglass")
         .foregroundStyle(.secondary)
         .accessibilityHidden(true)
       if let chosenToken {
         ChosenTokenView(token: chosenToken)
-      } else if let scopeTitle {
-        Text("in \(scopeTitle)")
-          .font(.callout)
-          .lineLimit(1)
-          .truncationMode(.middle)
-          .padding(.horizontal, 7)
-          .frame(height: 20)
-          .background(
-            Color(nsColor: .unemphasizedSelectedContentBackgroundColor),
-            in: RoundedRectangle(cornerRadius: 5)
-          )
-          .layoutPriority(-1)
-          .accessibilityLabel("Searching in \(scopeTitle)")
       }
       field()
         .textFieldStyle(.plain)
         .frame(minWidth: 40)
+      if hasText {
+        Button(action: clear) {
+          Image(systemName: "xmark.circle.fill")
+            .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Clear")
+        .accessibilityLabel("Clear")
+        .accessibilityIdentifier("picker-filter-clear")
+      }
     }
-    .padding(.leading, 8)
-    .padding(.trailing, 6)
+    .padding(.leading, 9)
+    .padding(.trailing, 7)
     .frame(height: 28)
-    .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+    .background(FilingPanelStyle.wellBackground, in: Capsule())
     .overlay {
-      RoundedRectangle(cornerRadius: 7)
-        .strokeBorder(
-          focusState == .focused ? Color.accentColor : Color(nsColor: .separatorColor),
-          lineWidth: focusState == .focused ? 2 : 0.5)
+      Capsule().strokeBorder(
+        focusState == .focused ? Color.accentColor : FilingPanelStyle.wellBorder, lineWidth: 0.5)
+    }
+    .overlay {
+      if focusState == .focused {
+        Capsule()
+          .stroke(Color.accentColor.opacity(0.4), lineWidth: 3)
+          .padding(-1.5)
+          .allowsHitTesting(false)
+      }
     }
   }
 }
@@ -71,9 +79,9 @@ struct ChosenTokenView: View {
       }
     }
     .font(.callout)
-    .padding(.horizontal, 7)
+    .padding(.horizontal, 8)
     .frame(height: 20)
-    .background(Color.accentColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 5))
+    .background(Color.accentColor.opacity(0.18), in: Capsule())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(token.isNew ? "Chosen: \(token.text), new folder" : "Chosen: \(token.text)")
     .accessibilityIdentifier("picker-chosen-token")
@@ -88,7 +96,7 @@ struct PickerPathBar: View {
   let jump: (String) -> Void
 
   var body: some View {
-    HStack(spacing: 2) {
+    HStack(spacing: 4) {
       ForEach(Array(segments.enumerated()), id: \.element.id) { position, segment in
         if position > 0 {
           Text("›")
@@ -103,7 +111,6 @@ struct PickerPathBar: View {
           .lineLimit(1)
           .truncationMode(.middle)
           .layoutPriority(isCurrent ? 1 : 0)
-          .padding(.horizontal, 4)
           .padding(.vertical, 1)
           .accessibilityIdentifier("picker-path-segment-\(position)")
           .accessibilityHint(
@@ -111,8 +118,9 @@ struct PickerPathBar: View {
       }
       Spacer(minLength: 0)
     }
-    .font(.system(size: 11.5))
-    .frame(minHeight: 20)
+    .font(.subheadline)
+    .padding(.horizontal, 9)
+    .frame(minHeight: 16)
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Path")
     .accessibilityIdentifier("picker-path-bar")

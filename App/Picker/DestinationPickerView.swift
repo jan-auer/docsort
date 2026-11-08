@@ -1,7 +1,7 @@
 import DocsortCore
 import SwiftUI
 
-/// The destination picker: filter field with scope chip and chosen token, path bar, the folder list and the New
+/// The destination picker: filter field with the chosen token, path bar, the folder list and the New
 /// Folder button (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds
 /// it.
 ///
@@ -46,8 +46,13 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       PickerFilterField(
-        scopeTitle: model.scopeTitle, chosenToken: model.chosenToken,
-        focusState: focusedField == .filter ? .focused : .unfocused
+        chosenToken: model.chosenToken,
+        focusState: focusedField == .filter ? .focused : .unfocused,
+        hasText: !model.filterText.isEmpty,
+        clear: {
+          model.filterText = ""
+          focus.wrappedValue = field(.filter)
+        }
       ) {
         TextField(
           "Destination filter", text: $model.filterText, selection: $filterSelection,
@@ -65,7 +70,8 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
         Divider()
         bottomBar
       }
-      .pickerBox()
+      .panelWell()
+      .padding(.top, 2)
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
@@ -190,33 +196,27 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   private var folderList: some View {
     ScrollViewReader { proxy in
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 1) {
+        LazyVStack(alignment: .leading, spacing: 0) {
           ForEach(model.sections) { section in
             if let title = section.title {
-              Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.top, 6)
-                .padding(.bottom, 3)
-                .accessibilityAddTraits(.isHeader)
+              PickerSectionHeader(title: title)
             }
             ForEach(Array(section.rows.enumerated()), id: \.element.id) { position, row in
               rowView(row)
                 .id(row.id)
               if case .currentFolder = row.kind, position < section.rows.count - 1 {
                 Divider()
-                  .padding(.horizontal, 6)
-                  .padding(.vertical, 3)
+                  .padding(.horizontal, FilingPanelStyle.rowPadding)
+                  .padding(.vertical, 4)
               }
             }
           }
           if model.sections.isEmpty {
             PickerInfoRow(text: "No folders.")
-              .padding(.horizontal, 6)
+              .padding(.horizontal, FilingPanelStyle.rowPadding)
           }
         }
-        .padding(4)
+        .padding(FilingPanelStyle.wellInset)
       }
       .onChange(of: model.highlightedRowID) { _, id in
         guard let id else { return }
@@ -272,7 +272,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       NewFolderRowView(model: model, focus: focus, nameField: field(.newFolderName))
     case .indexing:
       PickerInfoRow(text: "Indexing archive…")
-        .padding(.horizontal, 6)
+        .padding(.horizontal, FilingPanelStyle.rowPadding)
     }
   }
 
@@ -302,21 +302,17 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   // MARK: Bottom bar
 
-  /// The New Folder button with its shortcut, the refresh button, and the keys that step into and out of folders.
+  /// The New Folder button (its tooltip names the parent and the shortcut), the refresh button, and the keys that
+  /// step into and out of folders.
   private var bottomBar: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
-    return HStack(spacing: 8) {
+    return HStack(spacing: 6) {
       Button(action: beginNewFolder) {
-        HStack(spacing: 4) {
-          Image(systemName: "folder.badge.plus")
-          Text("⇧⌘N")
-            .font(.system(size: 10.5))
-        }
-        .padding(.horizontal, 4)
-        .frame(height: 20)
-        .contentShape(Rectangle())
+        Label("New Folder", systemImage: "folder.badge.plus")
+          .contentShape(Rectangle())
       }
       .buttonStyle(.borderless)
+      .controlSize(.small)
       .disabled(model.newFolderDraft != nil)
       .help("\(title) (⇧⌘N)")
       .accessibilityLabel(title)
@@ -325,13 +321,13 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       refreshButton
       Spacer(minLength: 0)
       Text("→ into folder · ← out")
-        .font(.system(size: 10.5))
+        .font(.footnote)
         .foregroundStyle(.tertiary)
         .lineLimit(1)
         .accessibilityIdentifier("picker-navigation-hint")
     }
-    .padding(.horizontal, 4)
-    .frame(height: 24)
+    .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.wellInset - 2)
+    .frame(height: 28)
   }
 
   /// A quiet button that rebuilds the archive index, showing a small spinner in its place while that runs; the list

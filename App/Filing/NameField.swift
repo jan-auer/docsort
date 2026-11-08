@@ -76,7 +76,7 @@ struct NameField: View {
           model.revertName()
         } label: {
           Image(systemName: "arrow.uturn.backward")
-            .font(.system(size: 11))
+            .font(.callout)
             .frame(width: Self.revertSize, height: Self.revertSize)
             .contentShape(Rectangle())
         }

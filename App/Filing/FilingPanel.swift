@@ -1,7 +1,7 @@
 import DocsortCore
 import SwiftUI
 
-/// The filing panel, the main window's inspector: where the selected file gets its destination and name.
+/// The filing panel, the main window's trailing pane: where the selected file gets its destination and name.
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it shows, top to bottom: the destination
 /// picker (filter, path bar, folder list, New Folder), the chosen or highlighted folder's contents, the name field
@@ -28,7 +28,7 @@ struct FilingPanel: View {
   @FocusState private var focusedField: PanelField?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: FilingPanelStyle.sectionSpacing) {
       if case .unreachable(let displayPath) = model.archiveAvailability {
         archiveUnreachableNotice(displayPath: displayPath)
       }
@@ -41,10 +41,13 @@ struct FilingPanel: View {
         inactiveMessage
       }
     }
-    .padding(16)
+    .padding(.horizontal, FilingPanelStyle.margin)
+    .padding(.top, 16)
+    .padding(.bottom, FilingPanelStyle.margin)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    // A plain content background (white, or the dark window colour) instead of the inspector's tint, as in the mockup.
-    .background(Color(nsColor: .textBackgroundColor))
+    // The window colour, so the lists' white wells and the fields stand out from the panel (in dark mode: the
+    // wells are darker than the panel).
+    .background(FilingPanelStyle.background)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }
@@ -59,8 +62,9 @@ struct FilingPanel: View {
     }
 
     if file.mark == nil, file.completeness == .downloading {
-      Label("This file is still downloading.", systemImage: "icloud.and.arrow.down")
-        .foregroundStyle(.secondary)
+      ContentUnavailableView(
+        "Still Downloading", systemImage: "icloud.and.arrow.down",
+        description: Text("This file can be filed once its download has finished."))
     } else {
       // One branch for unhandled, filed and trashed files, so the picker keeps its identity (and focus handling)
       // when the selected file's state changes; a trashed file's sections are shown inactive.
@@ -80,73 +84,89 @@ struct FilingPanel: View {
   }
 
   private func filingSections(for file: SelectedFile) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      filingControls(for: file)
+    VStack(alignment: .leading, spacing: FilingPanelStyle.sectionSpacing) {
+      destinationSection
+      FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
+        .frame(minHeight: 100, maxHeight: 200)
+      nameSection(for: file)
     }
   }
 
-  @ViewBuilder private func filingControls(for file: SelectedFile) -> some View {
-    Text("Destination")
-      .font(.subheadline.weight(.semibold))
-      .foregroundStyle(.secondary)
-    DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
-      .frame(minHeight: 180, maxHeight: .infinity)
-      .task(id: model.focusRequest) {
-        // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
-        // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
-        // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
-        guard model.focusRequest?.target == .destinationFilter else { return }
-        if focusedField != nil {
-          focusedField = nil
-          await Task.yield()
+  private var destinationSection: some View {
+    VStack(alignment: .leading, spacing: FilingPanelStyle.titleSpacing) {
+      Text("Destination")
+        .panelSectionTitle()
+      DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
+        .frame(minHeight: 180, maxHeight: .infinity)
+        .task(id: model.focusRequest) {
+          // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
+          // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
+          // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
+          guard model.focusRequest?.target == .destinationFilter else { return }
+          if focusedField != nil {
+            focusedField = nil
+            await Task.yield()
+          }
+          focusedField = .picker(.filter)
         }
-        focusedField = .picker(.filter)
-      }
-      .onChange(of: focusedField, initial: true) { _, field in
-        if field != nil {
-          model.focus = .destinationFilter
-          model.panel.isFilterFocusPending = false
-        } else if model.focus == .destinationFilter {
-          model.focus = nil
+        .onChange(of: focusedField, initial: true) { _, field in
+          if field != nil {
+            model.focus = .destinationFilter
+            model.panel.isFilterFocusPending = false
+          } else if model.focus == .destinationFilter {
+            model.focus = nil
+          }
         }
-      }
-    FolderContentsView(model: model.picker, conflictingName: model.nameToCheckForConflicts)
-      .frame(minHeight: 80, maxHeight: 200)
-
-    Text("Name")
-      .font(.subheadline.weight(.semibold))
-      .foregroundStyle(.secondary)
-    NameField(model: model, file: file)
-      // The Return toast floats below the field, over the notice and the Move button.
-      .zIndex(1)
-
-    if let notice = model.panel.notice {
-      Label(notice, systemImage: "exclamationmark.octagon.fill")
-        .foregroundStyle(.red)
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityIdentifier("filing-panel-notice")
     }
+  }
 
-    HStack {
-      Spacer()
-      Button {
-        model.moveSelectedFile()
-      } label: {
-        HStack(spacing: 6) {
-          Text(moveButtonTitle)
-          Text("⌘↩")
-            .font(.caption)
-            .padding(.horizontal, 4)
-            .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
-            .accessibilityHidden(true)
-        }
+  /// The name field with its notice, and the Move button at the trailing end of the panel's bottom.
+  private func nameSection(for file: SelectedFile) -> some View {
+    VStack(alignment: .leading, spacing: FilingPanelStyle.titleSpacing) {
+      Text("Name")
+        .panelSectionTitle()
+      NameField(model: model, file: file)
+        // The Return toast floats below the field, over the notice and the Move button.
+        .zIndex(1)
+
+      if let notice = model.panel.notice {
+        Label(notice, systemImage: "exclamationmark.octagon.fill")
+          .foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityIdentifier("filing-panel-notice")
       }
-      .buttonStyle(.borderedProminent)
-      .disabled(!model.canMoveSelectedFile)
-      .help("\(moveButtonTitle) (⌘Return)")
-      .accessibilityLabel(moveButtonTitle)
-      .accessibilityIdentifier("move-button")
+
+      HStack {
+        Spacer()
+        moveButton
+      }
+      .padding(.top, 12)
     }
+  }
+
+  /// Move (or Rename), prominent and large, with its shortcut as a key-cap badge inside, as the user chose.
+  private var moveButton: some View {
+    Button {
+      model.moveSelectedFile()
+    } label: {
+      HStack(spacing: 8) {
+        Text(moveButtonTitle)
+        Text("⌘↩")
+          .font(.callout)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 1)
+          .background(.white.opacity(0.22), in: Capsule())
+          .accessibilityHidden(true)
+      }
+      .padding(.horizontal, 4)
+    }
+    .buttonStyle(.borderedProminent)
+    .buttonBorderShape(.capsule)
+    .controlSize(.large)
+    .disabled(!model.canMoveSelectedFile)
+    .help("\(moveButtonTitle) (⌘Return)")
+    .accessibilityLabel(moveButtonTitle)
+    .accessibilityIdentifier("move-button")
   }
 
   /// The bottom button's title: **Rename** when only a filed file's name changed, **Move** otherwise.
@@ -155,37 +175,29 @@ struct FilingPanel: View {
   }
 
   private var inactiveMessage: some View {
-    Text("Select a file to file it")
-      .foregroundStyle(.tertiary)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .accessibilityIdentifier("filing-panel-inactive")
+    ContentUnavailableView(
+      "Nothing to File", systemImage: "tray",
+      description: Text("Select a file in the sidebar to choose its folder and name.")
+    )
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .accessibilityIdentifier("filing-panel-inactive")
   }
 
   private func archiveUnreachableNotice(displayPath: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Label(
-        "Archive folder not available: \(displayPath)",
-        systemImage: "exclamationmark.triangle.fill"
-      )
-      .symbolRenderingMode(.multicolor)
+    FailureNotice(
+      message: "Archive folder not available: \(displayPath)",
+      identifier: "filing-panel-archive-unreachable"
+    ) {
       Button("Locate…", action: locateArchive)
         .accessibilityIdentifier("filing-panel-locate-archive")
     }
-    .padding(10)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-    .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("filing-panel-archive-unreachable")
   }
 
   private func historyUnreadableNotice(reason: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Label(
-        "The filing history can’t be read: \(reason)",
-        systemImage: "exclamationmark.triangle.fill"
-      )
-      .symbolRenderingMode(.multicolor)
-      .fixedSize(horizontal: false, vertical: true)
+    FailureNotice(
+      message: "The filing history can’t be read: \(reason)",
+      identifier: "filing-panel-history-unreadable"
+    ) {
       HStack {
         Button("Start New History") { model.startNewHistory() }
           .accessibilityIdentifier("filing-panel-start-new-history")
@@ -193,11 +205,36 @@ struct FilingPanel: View {
           .accessibilityIdentifier("filing-panel-show-history-file")
       }
     }
-    .padding(10)
+  }
+}
+
+/// A failure at the top of the panel (archive unreachable, history unreadable): an orange warning symbol and an
+/// orange-tinted box, so it never reads like the neutral filed/trashed status strip.
+private struct FailureNotice<Actions: View>: View {
+  let message: String
+  let identifier: String
+  @ViewBuilder let actions: () -> Actions
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: FilingPanelStyle.wellRadius)
+    VStack(alignment: .leading, spacing: 8) {
+      Label {
+        Text(message)
+          .fixedSize(horizontal: false, vertical: true)
+      } icon: {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.orange)
+      }
+      actions()
+        .controlSize(.small)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+    .background(Color.orange.opacity(0.12), in: shape)
+    .overlay { shape.strokeBorder(Color.orange.opacity(0.35), lineWidth: 0.5) }
     .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("filing-panel-history-unreadable")
+    .accessibilityIdentifier(identifier)
   }
 }
 

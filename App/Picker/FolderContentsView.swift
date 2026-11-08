@@ -30,11 +30,11 @@ struct FolderContentsListing: View {
   let takeFileName: (FolderFile) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: FilingPanelStyle.titleSpacing) {
       header
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pickerBox()
+        .panelWell()
     }
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Folder contents")
@@ -43,34 +43,32 @@ struct FolderContentsListing: View {
 
   // MARK: Header
 
+  /// "Files in Rechnungen" as a section title, the file count trailing; the folder's full path is in its tooltip.
   private var header: some View {
-    HStack(spacing: 4) {
+    HStack(alignment: .firstTextBaseline, spacing: 6) {
       Text(headerTitle)
-        .fontWeight(.semibold)
-        .foregroundStyle(.secondary)
-      if let folder = contents.folder {
-        Text(Self.title(of: folder))
-          .lineLimit(1)
-          .truncationMode(.head)
-          .help(folder)
-      }
+        .panelSectionTitle()
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .help(contents.folder.map(Self.title(of:)) ?? "")
       Spacer(minLength: 4)
       if let fileCount {
         Text(fileCount == 1 ? "1 file" : "\(fileCount) files")
+          .font(.subheadline)
           .foregroundStyle(.secondary)
           .fixedSize()
       }
     }
-    .font(.system(size: 11))
     .accessibilityElement(children: .combine)
   }
 
-  /// "In" before a folder's path, "Folder contents" without one.
+  /// "Files in <folder name>", "Files in new folder", or "Folder contents" without a folder.
   private var headerTitle: String {
     switch contents {
     case .none: "Folder contents"
-    case .notOnDisk: "In new folder"
-    case .loading, .files, .failed: "In"
+    case .notOnDisk: "Files in new folder"
+    case .loading(let folder), .files(let folder, _), .failed(let folder, _):
+      "Files in \(ArchivePath.title(of: folder))"
     }
   }
 
@@ -105,19 +103,17 @@ struct FolderContentsListing: View {
       fileList(files)
     case .failed(_, let message):
       Label(message, systemImage: "exclamationmark.triangle.fill")
-        .font(.system(size: 12))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 6)
+        .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.wellInset)
         .padding(.vertical, 8)
     }
   }
 
   private func note(_ text: String) -> some View {
     Text(text)
-      .font(.system(size: 12))
-      .foregroundStyle(.tertiary)
+      .foregroundStyle(.secondary)
       .fixedSize(horizontal: false, vertical: true)
-      .padding(.horizontal, 6)
+      .padding(.horizontal, FilingPanelStyle.rowPadding + FilingPanelStyle.wellInset)
       .padding(.vertical, 8)
   }
 
@@ -126,17 +122,14 @@ struct FolderContentsListing: View {
     return ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(spacing: 0) {
-          ForEach(Array(files.enumerated()), id: \.element.url) { position, file in
-            FolderContentsFileRow(
-              file: file, isConflict: file.url == conflict?.url, isAlternate: position % 2 == 1
-            ) {
+          ForEach(files, id: \.url) { file in
+            FolderContentsFileRow(file: file, isConflict: file.url == conflict?.url) {
               takeFileName(file)
             }
             .id(file.url)
           }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 3)
+        .padding(FilingPanelStyle.wellInset)
       }
       .defaultScrollAnchor(.bottom)
       .onChange(of: files.map(\.url), initial: true) { _, urls in
@@ -174,17 +167,15 @@ extension FolderContents {
   }
 }
 
-/// One file in Folder contents: its icon and name; a click takes the name.
+/// One file in Folder contents: its icon and name, in the same row style as the folder list; a click takes the name.
 struct FolderContentsFileRow: View {
   let file: FolderFile
   /// Whether the file's name conflicts with the name field's (highlighted in the warning colour).
   let isConflict: Bool
-  /// Whether the row gets the alternating background.
-  let isAlternate: Bool
   let take: () -> Void
 
   var body: some View {
-    HStack(spacing: 7) {
+    HStack(spacing: FilingPanelStyle.rowIconSpacing) {
       Image(nsImage: Self.icon(for: file.name))
         .resizable()
         .frame(width: 16, height: 16)
@@ -195,10 +186,12 @@ struct FolderContentsFileRow: View {
         .truncationMode(.middle)
       Spacer(minLength: 0)
     }
-    .font(.system(size: 12))
-    .padding(.horizontal, 6)
-    .frame(height: 22)
-    .background(background, in: RoundedRectangle(cornerRadius: 4))
+    .padding(.horizontal, FilingPanelStyle.rowPadding)
+    .frame(height: FilingPanelStyle.rowHeight)
+    .background(
+      isConflict ? Color(nsColor: .systemOrange).opacity(0.3) : .clear,
+      in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius)
+    )
     .contentShape(Rectangle())
     .onTapGesture(perform: take)
     .help("Click to use this name")
@@ -209,12 +202,6 @@ struct FolderContentsFileRow: View {
     .accessibilityAddTraits(.isButton)
     .accessibilityAction(.default, take)
     .accessibilityIdentifier("folder-contents-file")
-  }
-
-  private var background: Color {
-    if isConflict { return Color(nsColor: .systemOrange).opacity(0.3) }
-    if isAlternate { return Color(nsColor: .alternatingContentBackgroundColors.last ?? .clear) }
-    return .clear
   }
 
   /// The Finder icon for files named like `name`, from its extension alone (the file itself is not read).
