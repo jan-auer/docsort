@@ -2,6 +2,12 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/ui-toolbar-title-77f493: system window title
+- What landed: the hand-built "docsort  Inbox › file" title is replaced by the system window title (file name) and
+  subtitle (inbox), Finder-style; "docsort" shows when nothing is selected.
+- Divergence: None. Not rendered or run by the session; the user checks in the running app.
+- Follow-ups: None.
+
 ## 2026-11-08 claude/ui-tweaks-2-48cb2d: prev/next buttons, first-file selection
 - What landed: a ‹ › Previous/Next File group left of the title, with menu items; the first file selected after the
   initial scan (empty state otherwise); the filing panel's file-name heading removed.
