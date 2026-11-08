@@ -25,6 +25,8 @@ struct DocsortApp: App {
   @State private var filing: FilingModel
   /// The state of the one main window.
   @State private var mainWindowModel: MainWindowModel
+  /// The state of the History window.
+  @State private var historyModel: HistoryModel
 
   /// Builds the app's models from the environment for this launch: the user's real settings normally, an inert
   /// environment when the app hosts unit tests (see `AppEnvironment`).
@@ -42,9 +44,10 @@ struct DocsortApp: App {
     _search = State(initialValue: search)
     _inboxes = State(initialValue: inboxes)
     _filing = State(initialValue: filing)
-    _mainWindowModel = State(
-      initialValue: MainWindowModel(
-        folders: folders, inboxes: inboxes, archive: archive, filing: filing, search: search))
+    let mainWindowModel = MainWindowModel(
+      folders: folders, inboxes: inboxes, archive: archive, filing: filing, search: search)
+    _mainWindowModel = State(initialValue: mainWindowModel)
+    _historyModel = State(initialValue: HistoryModel(mainWindow: mainWindowModel))
   }
 
   var body: some Scene {
@@ -58,9 +61,9 @@ struct DocsortApp: App {
     }
 
     Window("History", id: SceneID.history) {
-      HistoryWindowView(rows: [])
+      HistoryWindowView(model: historyModel)
     }
-    .defaultSize(width: 960, height: 520)
+    .defaultSize(width: 1040, height: 560)
     // Window › History (⌘Y) in `MainCommands` opens it instead of the item SwiftUI would add for the scene.
     .commandsRemoved()
 
