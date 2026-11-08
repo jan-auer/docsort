@@ -20,7 +20,7 @@ struct PickerRow: Identifiable, Hashable {
     case currentFolder(path: String)
     /// An indexed folder or a pending new one.
     case folder(PickerFolder)
-    /// "New Folder “name” in parent", offered when a non-empty filter finds nothing. `name` is the tidied filter
+    /// "New Folder “name” in parent", offered when a non-empty filter finds nothing in the scope. `name` is the tidied filter
     /// (see ``NewFolderPath``), `parent` the scope; `problem` is why the name cannot be used, and choosing the row
     /// then does nothing.
     case createFolder(name: String, parent: String, problem: NameProblem?)
@@ -28,8 +28,6 @@ struct PickerRow: Identifiable, Hashable {
     case newFolderDraft
     /// The info row "Indexing archive…", shown when the user filters before the index is built.
     case indexing
-    /// The info row under "In <folder>" when a search finds nothing in the folder `scope` but matches elsewhere.
-    case nothingInScope(scope: String)
   }
 
   /// Unique across all sections of the list, stable while the row stands for the same thing.
@@ -41,7 +39,7 @@ struct PickerRow: Identifiable, Hashable {
   var isSelectable: Bool {
     switch kind {
     case .currentFolder, .folder, .createFolder: true
-    case .newFolderDraft, .indexing, .nothingInScope: false
+    case .newFolderDraft, .indexing: false
     }
   }
 
@@ -50,7 +48,7 @@ struct PickerRow: Identifiable, Hashable {
     switch kind {
     case .currentFolder(let path): path
     case .folder(let folder): folder.path
-    case .createFolder, .newFolderDraft, .indexing, .nothingInScope: nil
+    case .createFolder, .newFolderDraft, .indexing: nil
     }
   }
 }

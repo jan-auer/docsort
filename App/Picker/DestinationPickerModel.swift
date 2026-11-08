@@ -122,7 +122,7 @@ final class DestinationPickerModel {
       return destination(for: path)
     case .folder(let folder):
       return destination(for: folder.path)
-    case .createFolder, .newFolderDraft, .indexing, .nothingInScope:
+    case .createFolder, .newFolderDraft, .indexing:
       return nil
     }
   }
@@ -600,7 +600,7 @@ final class DestinationPickerModel {
   private indirect enum HighlightRequest {
     /// The same row id as before, else the first selectable row.
     case keep
-    /// The first selectable row.
+    /// The first selectable row other than the create row, else the create row.
     case first
     /// The "this folder" row, else the first selectable row.
     case currentFolder
@@ -629,7 +629,13 @@ final class DestinationPickerModel {
       }
       return selectable.first?.id
     case .first:
-      return selectable.first?.id
+      // The create row only when nothing else is listed: with matches elsewhere, the first of them (decision
+      // `filing-panel-redesign`); ⌘Return and Tab never create a folder anyway.
+      let firstFolder = selectable.first { row in
+        if case .createFolder = row.kind { return false }
+        return true
+      }
+      return (firstFolder ?? selectable.first)?.id
     case .currentFolder:
       let current = selectable.first { row in
         if case .currentFolder = row.kind { return true }

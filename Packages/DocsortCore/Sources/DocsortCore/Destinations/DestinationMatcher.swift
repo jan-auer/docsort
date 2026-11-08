@@ -35,6 +35,7 @@ public struct DestinationMatch: Hashable, Sendable {
 ///   added.
 /// - Equal scores order fewer path segments first, then the order the paths were given in (Finder order).
 /// - Highlighting prefers the occurrence closest to the scope (see ``MatchHighlighter``).
+/// - A match whose letters are scattered one by one over the path is dropped (see ``isScattered(_:spelling:)``).
 struct DestinationMatcher: Sendable {
   /// The boost for the most recent destination; older ones get proportionally less, down to
   /// `recencyBoost / capacity` for the oldest place in the list.
@@ -137,17 +138,33 @@ struct DestinationMatcher: Sendable {
     }
 
     var highlighters: [Int: MatchHighlighter] = [:]
-    return ranked.prefix(limit).map { best in
+    var matches: [DestinationMatch] = []
+    for best in ranked {
       let candidate = scoped[best.scopedIndex]
+      let spelling = searchQuery.spellings[best.spellingIndex]
       let highlighter =
         highlighters[best.spellingIndex]
-        ?? MatchHighlighter(
-          spelling: searchQuery.spellings[best.spellingIndex], fuzzyMatcher: fuzzyMatcher)
+        ?? MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher)
       highlighters[best.spellingIndex] = highlighter
-      return DestinationMatch(
-        path: candidates[candidate.candidateIndex].path, pathInScope: candidate.pathInScope,
-        score: best.score, matchedRanges: highlighter.ranges(in: candidate.pathInScope))
+      let matchedRanges = highlighter.ranges(in: candidate.pathInScope)
+      guard !Self.isScattered(matchedRanges, spelling: spelling) else { continue }
+      matches.append(
+        DestinationMatch(
+          path: candidates[candidate.candidateIndex].path, pathInScope: candidate.pathInScope,
+          score: best.score, matchedRanges: matchedRanges))
+      if matches.count == limit { break }
     }
+    return matches
+  }
+
+  /// Whether a match is noise: the query's letters land on the path in more separate runs than half the query's
+  /// length (rounded up), so most of them stand alone. FuzzyMatch's score alone doesn't tell this apart: `asdf` scores
+  /// 0.76 against `…/Ableger Stand Föhrenhang` (one letter per word), more than the intended `radwerk` against
+  /// `…/Fahrradwerkstatt Kettenblatt` (0.71). Initials and fragments the user means come in few runs: `fpfl` finds
+  /// `Fußpflege` in two (`F`, `pfl`), `ba37` finds `Bad 2037` in two, `rchng` finds `Rechnungen` in three.
+  static func isScattered(_ matchedRanges: [Range<String.Index>], spelling: String) -> Bool {
+    let queryLength = spelling.count { !$0.isWhitespace && $0 != "/" }
+    return matchedRanges.count > (queryLength + 1) / 2
   }
 
   /// The candidates strictly inside `scope`, in the given order, with their paths relative to it.

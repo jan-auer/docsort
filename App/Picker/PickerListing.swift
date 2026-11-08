@@ -99,8 +99,9 @@ struct PickerListing {
 
   /// The index's matches for the filter. At the root: one untitled section. Inside a folder (soft scope): the whole
   /// archive is searched, the folder's own matches first under "In <folder>" (paths relative to it), the rest under
-  /// "Elsewhere" (full paths); when only the rest matches, "In <folder>" holds a note, so the first highlightable row
-  /// is the first match elsewhere. When nothing matches anywhere, the create row offers a new folder in the scope.
+  /// "Elsewhere" (full paths). When nothing in the folder matches, "In <folder>" holds the create row for a new folder
+  /// there (the highlight still goes to the first match elsewhere); when nothing matches anywhere, the create row is
+  /// all there is.
   private func searchSections(in index: DestinationIndex) -> [PickerSection] {
     guard !scope.isEmpty else {
       let rows = index.search(
@@ -126,12 +127,10 @@ struct PickerListing {
     if inScopeRows.isEmpty, elsewhereRows.isEmpty {
       return [PickerSection(id: "search", title: nil, rows: createRows())]
     }
-    let inScopeTitle = "In \(ArchivePath.title(of: scope))"
-    let inScope =
-      inScopeRows.isEmpty
-      ? [PickerRow(id: "in:nothing", kind: .nothingInScope(scope: scope))] : inScopeRows
+    // Nothing in the folder: offer the new folder there, above the matches elsewhere.
+    let inScope = inScopeRows.isEmpty ? createRows() : inScopeRows
     return [
-      PickerSection(id: "in", title: inScopeTitle, rows: inScope),
+      PickerSection(id: "in", title: "In \(ArchivePath.title(of: scope))", rows: inScope),
       PickerSection(id: "elsewhere", title: "Elsewhere", rows: Array(elsewhereRows)),
     ]
   }

@@ -104,7 +104,9 @@ public struct DestinationIndex: Sendable {
   /// finds nothing.
   ///
   /// An empty or whitespace-only query returns nothing; the UI shows recents and subfolders instead. Recent
-  /// destinations that match rank higher; recents never add a folder that does not match. See
+  /// destinations that match rank higher; recents never add a folder that does not match. A folder the query's letters
+  /// only reach one by one, scattered over its path, does not match (`asdf` finds nothing in
+  /// `Ahnenforschung/Stammbaum/Druckfassung`). See
   /// ``DestinationMatch`` for the matched ranges used for highlighting.
   public func search(
     _ query: String, in scope: String = "", ranking: ScopedRanking = .directChildFirst,

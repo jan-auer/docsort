@@ -100,7 +100,6 @@ extension DestinationPickerModel {
       case .createFolder(let name, let parent, _): "create:\(name) in \(parent)"
       case .newFolderDraft: "draft"
       case .indexing: "indexing"
-      case .nothingInScope(let scope): "nothing in:\(scope)"
       }
     }
   }

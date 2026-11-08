@@ -109,7 +109,9 @@ concept C's structure (`filing-panel-redesign`).
 - **Empty states** use `ContentUnavailableView`, like the preview.
 - **The window's toolbar spans the preview and the filing panel**; the panel starts below it, and the file's actions
   and the panel toggle sit in the toolbar's trailing area above the panel. The panel's backgrounds stop at the
-  toolbar instead of running under it.
+  toolbar instead of running under it. PDF pages scroll under the translucent toolbar (AppKit insets them and draws
+  the scroll edge effect); Quick Look content stays below it. A hairline at the toolbar's bottom edge separates it
+  from the content, as in Finder.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
@@ -311,10 +313,14 @@ the 2026-11-08 destination-search study, concept C, `docs/design/destination-sea
 - **Soft scope**: every search covers the **whole archive**; the current folder only decides what comes first. At the
   root the results are one list. Inside a folder the folder's own matches come first under **In <folder>**, with paths
   relative to it, then the rest of the archive under **Elsewhere**, with full paths. The placeholder reads "Search,
-  Gesundheit first". When nothing in the folder matches, "In Gesundheit" says "Nothing in Gesundheit matches." and
-  the **first Elsewhere match is highlighted**, so Tab takes it. When the query names the folder itself, it is offered
-  as its "this folder" row. Only when nothing matches anywhere is **New Folder "…" in <folder>** offered. So a folder
-  you stand in can never hide the target. Rows show the parent part of their path in secondary colour; → on a result
+  Gesundheit first". When nothing in the folder matches, "In Gesundheit" offers **New Folder "…" in Gesundheit**
+  (click or ⇧⌘N) and the **first Elsewhere match is highlighted**, so Tab takes it; when nothing matches anywhere,
+  the New Folder row is all there is, and highlighted. When the query names the folder itself, it is offered as its
+  "this folder" row. So a folder you stand in can never hide the target.
+- **No scattered matches**: a folder the query's letters reach only one by one, scattered over its path, is not a
+  match (more separate runs than half the query's length): `asdf` doesn't find `Ahnenforschung/Stammbaum/Druckfassung`, while
+  `fpfl` still finds `Fußpflege` and `ba37` `Bad 2037`. A nonsense query then offers only New Folder, and the default
+  highlight never lands on a misleading hit that ⌘Return would file into. Rows show the parent part of their path in secondary colour; → on a result
   steps into it and clears the filter.
 - **Choosing**: Tab or Return chooses the highlighted folder: a check mark on its row (value `chosen`), the destination
   line names it, and the search text and list stay, so ⇧Tab returns to exactly what you chose from. Typing or moving

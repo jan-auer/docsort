@@ -59,7 +59,7 @@ struct DestinationPickerSoftScopeTests {
   }
 
   @Test(
-    "When nothing in the folder matches, a note says so and the first Elsewhere match is highlighted"
+    "When nothing in the folder matches, it offers New Folder there and highlights the first Elsewhere match"
   )
   func firstElsewhereHighlighted() throws {
     let model = try makeModel()
@@ -69,13 +69,30 @@ struct DestinationPickerSoftScopeTests {
     #expect(model.sections.map(\.title) == ["In Mobilität", "Elsewhere"])
     #expect(
       model.rowSummaries == [
-        "nothing in:Mobilität", "Gesundheit/Konrad/Physiotherapie",
+        "create:physio in Mobilität", "Gesundheit/Konrad/Physiotherapie",
         "Gesundheit/Margit/Physiotherapie",
       ])
     #expect(model.highlightedPath == "Gesundheit/Konrad/Physiotherapie")
 
     model.moveHighlight(by: -1)
-    #expect(model.highlightedPath == "Gesundheit/Konrad/Physiotherapie")
+    #expect(
+      model.highlightedRow?.kind == .createFolder(name: "physio", parent: "Mobilität", problem: nil)
+    )
+    model.beginNewFolder()
+    #expect(events.events == [.chose(.newFolder("Mobilität/physio"))])
+  }
+
+  @Test("Letters scattered over unrelated folders are no match, so only New Folder is offered")
+  func scatteredLettersOfferOnlyNewFolder() throws {
+    let model = try makeModel()
+    model.jump(to: "Mobilität")
+    model.filterText = "asdf"
+
+    #expect(model.rowSummaries == ["create:asdf in Mobilität"])
+    #expect(
+      model.highlightedRow?.kind == .createFolder(name: "asdf", parent: "Mobilität", problem: nil))
+    model.requestMove()
+    #expect(events.events.isEmpty)
   }
 
   @Test("When nothing matches anywhere, New Folder is offered in the folder and highlighted")

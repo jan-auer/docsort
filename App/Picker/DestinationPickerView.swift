@@ -280,10 +280,6 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     case .indexing:
       PickerInfoRow(text: "Indexing archive…")
         .padding(.horizontal, FilingPanelStyle.rowPadding)
-    case .nothingInScope(let scope):
-      PickerInfoRow(text: "Nothing in \(ArchivePath.title(of: scope)) matches.")
-        .padding(.horizontal, FilingPanelStyle.rowPadding)
-        .accessibilityIdentifier("picker-nothing-in-scope")
     }
   }
 
