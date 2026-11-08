@@ -8,6 +8,10 @@ import Observation
 ///
 /// The model never touches the disk itself: it lists folders from ``index`` and reads files through the
 /// ``FolderFileListing`` it was created with.
+///
+/// While a new folder is being named (``newFolderDraft``), the new-folder row's own intents apply
+/// (``newFolderName``, ``confirmNewFolder()``, ``cancelNewFolder()``); ``escape()``, ``stepBack()`` and
+/// ``requestMove()`` act on the row, and any other intent cancels it first.
 @Observable
 final class DestinationPickerModel {
   // MARK: Inputs
@@ -53,6 +57,13 @@ final class DestinationPickerModel {
   /// New folders the user named that do not exist on disk yet, in the order they were named.
   private(set) var pendingFolders: [String] = []
 
+  /// The new folder being named in the inline row, `nil` when none is. While it is set, the picker is in its parent
+  /// with an empty filter and nothing chosen.
+  private(set) var newFolderDraft: NewFolderDraft?
+
+  /// The state ``cancelNewFolder()`` returns to.
+  @ObservationIgnored private var stateBeforeDraft: StateBeforeDraft?
+
   /// The files Folder contents shows; follows ``destination``, else the highlighted folder row.
   private(set) var contents: FolderContents = .none
 
@@ -97,10 +108,22 @@ final class DestinationPickerModel {
     return rows.first { $0.id == highlightedRowID }
   }
 
-  /// The folder under the highlight, for ⌘Return from the picker; `nil` when no folder row is highlighted.
+  /// The folder under the highlight, for ⌘Return from the picker: a folder row's folder, or the folder the create
+  /// row would create (not yet pending); `nil` when neither is highlighted or the create row's name is invalid.
   var highlightedDestination: PickerDestination? {
-    guard let path = highlightedRow?.folderPath else { return nil }
-    return destination(for: path)
+    guard let highlightedRow else { return nil }
+    switch highlightedRow.kind {
+    case .currentFolder(let path):
+      return destination(for: path)
+    case .folder(let folder):
+      return destination(for: folder.path)
+    case .createFolder(let name, let parent, let problem):
+      guard problem == nil else { return nil }
+      return NewFolderPath(typed: name).resolved(
+        under: parent, index: index, pendingFolders: pendingFolders)
+    case .newFolderDraft, .indexing:
+      return nil
+    }
   }
 
   /// The path bar's segments: `Archive`, then each segment of the scope; empty at the root.
@@ -130,6 +153,12 @@ final class DestinationPickerModel {
     return "Search in \(scopeTitle)"
   }
 
+  /// The folder ``beginNewFolder()`` would create a folder in, for the button's tooltip "New Folder in Reisen":
+  /// ``ArchivePath/rootTitle`` for the root.
+  var newFolderParentTitle: String {
+    ArchivePath.title(of: newFolderParent)
+  }
+
   /// The chosen destination as the field shows it, `nil` when none is chosen.
   var chosenToken: ChosenToken? {
     guard let destination else { return nil }
@@ -143,6 +172,7 @@ final class DestinationPickerModel {
   /// Moves the highlight `offset` selectable rows down (negative: up), stopping at the first and last row. A chosen
   /// destination is un-chosen first, which highlights its row.
   func moveHighlight(by offset: Int) {
+    cancelNewFolder()
     unchooseRestoringFilter()
     let selectable = rows.filter(\.isSelectable)
     guard !selectable.isEmpty else { return }
@@ -154,6 +184,7 @@ final class DestinationPickerModel {
 
   /// Highlights the row with `id` (a click), un-choosing a chosen destination first.
   func highlight(_ id: PickerRow.ID) {
+    cancelNewFolder()
     unchooseRestoringFilter()
     guard rows.contains(where: { $0.id == id && $0.isSelectable }) else { return }
     highlightedRowID = id
@@ -165,24 +196,29 @@ final class DestinationPickerModel {
   /// Chooses the highlighted row (Tab, Return) and emits ``PickerEvent/chose(_:)``. With a destination already
   /// chosen, emits it again so the panel moves on to the name field.
   func chooseHighlighted() {
+    cancelNewFolder()
     if let destination {
       onEvent(.chose(destination))
       return
     }
-    guard let chosen = destinationForHighlightedRow() else { return }
+    guard let chosen = highlightedDestination else { return }
     choose(chosen)
     onEvent(.chose(chosen))
   }
 
-  /// ⌘Return: moves the file now. Uses the chosen destination, else chooses the highlighted row first (without
-  /// emitting ``PickerEvent/chose(_:)``); emits ``PickerEvent/moveRequested(_:)``. Does nothing when there is
-  /// nothing to choose.
+  /// ⌘Return: moves the file now. Confirms a new folder being named (see ``confirmNewFolderAndMove()``), else uses
+  /// the chosen destination, else chooses the highlighted row first (without emitting ``PickerEvent/chose(_:)``);
+  /// emits ``PickerEvent/moveRequested(_:)``. Does nothing when there is nothing to choose.
   func requestMove() {
+    if newFolderDraft != nil {
+      confirmNewFolderAndMove()
+      return
+    }
     if let destination {
       onEvent(.moveRequested(destination))
       return
     }
-    guard let chosen = destinationForHighlightedRow() else { return }
+    guard let chosen = highlightedDestination else { return }
     choose(chosen)
     onEvent(.moveRequested(chosen))
   }
@@ -201,6 +237,7 @@ final class DestinationPickerModel {
   /// ⌫ in the empty filter: un-chooses a chosen destination (its token turns back into the query), otherwise steps
   /// out.
   func deleteBackward() {
+    cancelNewFolder()
     if destination != nil {
       unchooseRestoringFilter()
     } else {
@@ -208,9 +245,13 @@ final class DestinationPickerModel {
     }
   }
 
-  /// Esc: clears a chosen destination, the filter and the scope (back to the archive root); with nothing left to
-  /// clear, emits ``PickerEvent/steppedBack``.
+  /// Esc: cancels a new folder being named; else clears a chosen destination, the filter and the scope (back to the
+  /// archive root); with nothing left to clear, emits ``PickerEvent/steppedBack``.
   func escape() {
+    if newFolderDraft != nil {
+      cancelNewFolder()
+      return
+    }
     guard destination != nil || !query.isEmpty || !scope.isEmpty else {
       onEvent(.steppedBack)
       return
@@ -221,14 +262,21 @@ final class DestinationPickerModel {
     update(highlight: .first)
   }
 
-  /// ⇧Tab: emits ``PickerEvent/steppedBack`` without clearing anything.
+  /// ⇧Tab: cancels a new folder being named; else emits ``PickerEvent/steppedBack`` without clearing anything.
   func stepBack() {
+    if newFolderDraft != nil {
+      cancelNewFolder()
+      return
+    }
     onEvent(.steppedBack)
   }
 
-  /// Returns to the archive root with an empty filter and no pending folders, with `destination` chosen; call it
-  /// whenever the panel's selected file changes. A ``PickerDestination/newFolder(_:)`` destination stays pending.
+  /// Returns to the archive root with an empty filter, no pending folders and no new-folder row, with `destination`
+  /// chosen; call it whenever the panel's selected file changes. A ``PickerDestination/newFolder(_:)`` destination
+  /// stays pending.
   func reset(choosing destination: PickerDestination? = nil) {
+    newFolderDraft = nil
+    stateBeforeDraft = nil
     scope = ""
     query = ""
     pendingFolders = []
@@ -241,9 +289,10 @@ final class DestinationPickerModel {
     }
   }
 
-  /// Entry from the sidebar by typing: drops a chosen destination without restoring its filter and appends `text`
-  /// to the filter.
+  /// Entry from the sidebar by typing: cancels a new-folder row, drops a chosen destination without restoring its
+  /// filter and appends `text` to the filter.
   func enter(typing text: String) {
+    cancelNewFolder()
     let base = filterText
     destination = nil
     query = base + text
@@ -255,6 +304,7 @@ final class DestinationPickerModel {
   /// →: steps into the highlighted folder row (indexed or pending), highlighting its "this folder" row. Un-chooses
   /// a chosen destination first.
   func stepIn() {
+    cancelNewFolder()
     unchooseRestoringFilter()
     guard case .folder(let folder) = highlightedRow?.kind else { return }
     scope = folder.path
@@ -265,6 +315,7 @@ final class DestinationPickerModel {
   /// ← or ⌫: steps out to the scope's parent and highlights the folder it came from. At the root, a nested row (a
   /// recent or a search result) steps out to the folder containing it. Un-chooses a chosen destination first.
   func stepOut() {
+    cancelNewFolder()
     unchooseRestoringFilter()
     if !scope.isEmpty {
       let origin = scope
@@ -286,6 +337,7 @@ final class DestinationPickerModel {
   /// A path-bar click: to `target` (archive-relative, `""` for the root) with an empty filter, highlighting the
   /// folder the picker came from where it is listed. Drops a chosen destination without restoring its filter.
   func jump(to target: String) {
+    cancelNewFolder()
     let origin = scope
     destination = nil
     scope = target
@@ -296,6 +348,148 @@ final class DestinationPickerModel {
     } else {
       update(highlight: otherwise)
     }
+  }
+
+  // MARK: New folder
+
+  /// ⇧⌘N or the New Folder button. With the create row highlighted, creates its folder at once (as choosing it).
+  /// Otherwise opens the new-folder row in ``newFolderParentTitle``'s folder: the chosen destination if it exists,
+  /// else the highlighted folder row if it is not new, else the scope. The view then focuses
+  /// ``PickerField/newFolderName``.
+  func beginNewFolder() {
+    guard newFolderDraft == nil else { return }
+    if destination == nil, case .createFolder = highlightedRow?.kind {
+      chooseHighlighted()
+      return
+    }
+    let parent = newFolderParent
+    stateBeforeDraft = StateBeforeDraft(
+      scope: scope, query: query, highlightedRowID: highlightedRowID, destination: destination)
+    destination = nil
+    scope = parent
+    query = ""
+    newFolderDraft = NewFolderDraft(parent: parent, name: "", notice: nil)
+    update(highlight: .currentFolder)
+  }
+
+  /// The name typed into the new-folder row, bound to its field; setting it updates the row's position and notice.
+  var newFolderName: String {
+    get { newFolderDraft?.name ?? "" }
+    set {
+      guard var draft = newFolderDraft else { return }
+      draft.name = newValue
+      draft.notice = notice(for: draft)
+      newFolderDraft = draft
+      update(highlight: .keep)
+    }
+  }
+
+  /// Tab or Return in the new-folder row: chooses the folder the name gives and emits ``PickerEvent/chose(_:)``.
+  /// A new folder becomes pending; a name that exists (ignoring case) chooses the existing folder. An empty name
+  /// cancels the row.
+  ///
+  /// - Returns: `false` when the row stays because the name is invalid (or there is no row); `true` when it ended,
+  ///   chosen or cancelled.
+  @discardableResult
+  func confirmNewFolder() -> Bool {
+    switch confirmDraft() {
+    case .chose(let chosen):
+      onEvent(.chose(chosen))
+      return true
+    case .cancelled:
+      return true
+    case .unchanged:
+      return false
+    }
+  }
+
+  /// ⌘Return in the new-folder row: confirms it like ``confirmNewFolder()`` but emits
+  /// ``PickerEvent/moveRequested(_:)`` instead.
+  @discardableResult
+  func confirmNewFolderAndMove() -> Bool {
+    switch confirmDraft() {
+    case .chose(let chosen):
+      onEvent(.moveRequested(chosen))
+      return true
+    case .cancelled:
+      return true
+    case .unchanged:
+      return false
+    }
+  }
+
+  /// Esc or ⇧Tab in the new-folder row: removes it and restores the filter, scope, highlight and destination from
+  /// before it opened. Does nothing without a row.
+  func cancelNewFolder() {
+    guard newFolderDraft != nil, let saved = stateBeforeDraft else { return }
+    newFolderDraft = nil
+    stateBeforeDraft = nil
+    scope = saved.scope
+    query = saved.query
+    destination = saved.destination
+    highlightedRowID = saved.highlightedRowID
+    update(highlight: .keep)
+  }
+
+  /// What ``cancelNewFolder()`` restores.
+  private struct StateBeforeDraft {
+    let scope: String
+    let query: String
+    let highlightedRowID: PickerRow.ID?
+    let destination: PickerDestination?
+  }
+
+  /// The parent ``beginNewFolder()`` uses; see there.
+  private var newFolderParent: String {
+    if case .folder(let path) = destination, index?.contains(path) == true { return path }
+    if case .folder(let folder) = highlightedRow?.kind, !folder.isNew { return folder.path }
+    return scope
+  }
+
+  /// How confirming the new-folder row ended.
+  private enum DraftConfirmation {
+    /// The row's folder was chosen.
+    case chose(PickerDestination)
+    /// The name was empty, so the row was cancelled.
+    case cancelled
+    /// The name is invalid (or there is no row); nothing changed.
+    case unchanged
+  }
+
+  /// Ends the new-folder row by choosing what its name gives, cancels it for an empty name, keeps it for an invalid
+  /// one.
+  private func confirmDraft() -> DraftConfirmation {
+    guard let draft = newFolderDraft else { return .unchanged }
+    let typed = NewFolderPath(typed: draft.name)
+    guard
+      let chosen = typed.resolved(under: draft.parent, index: index, pendingFolders: pendingFolders)
+    else {
+      cancelNewFolder()
+      return .cancelled
+    }
+    guard typed.problem == nil else { return .unchanged }
+    newFolderDraft = nil
+    stateBeforeDraft = nil
+    scope = draft.parent
+    query = ""
+    choose(chosen)
+    return .chose(chosen)
+  }
+
+  /// The notice the new-folder row shows for `draft`'s name.
+  private func notice(for draft: NewFolderDraft) -> NewFolderNotice? {
+    let typed = NewFolderPath(typed: draft.name)
+    if let problem = typed.problem { return .invalid(problem) }
+    guard
+      let resolved = typed.resolved(
+        under: draft.parent, index: index, pendingFolders: pendingFolders),
+      let relativePath = ArchivePath.relative(resolved.path, to: draft.parent)
+    else { return nil }
+    if case .folder = resolved {
+      return .existing(parentTitle: ArchivePath.title(of: draft.parent), existingName: relativePath)
+    }
+    let components = ArchivePath.segments(of: relativePath)
+    return components.count > 1 ? .nested(components) : nil
   }
 
   // MARK: Folder contents
@@ -314,6 +508,7 @@ final class DestinationPickerModel {
 
   /// The folder Folder contents follows: the destination if chosen, else the highlighted folder row.
   private var currentContentsTarget: ContentsTarget {
+    if newFolderDraft != nil { return .notOnDisk }
     let path: String
     if let destination {
       if case .newFolder = destination { return .notOnDisk }
@@ -394,7 +589,7 @@ final class DestinationPickerModel {
   private func update(highlight request: HighlightRequest) {
     sections = PickerListing(
       index: index, recents: recents, ranking: ranking, scope: scope, query: query,
-      pendingFolders: pendingFolders
+      pendingFolders: pendingFolders, draft: newFolderDraft
     ).sections()
     highlightedRowID = resolve(request, among: rows.filter(\.isSelectable))
     followContents()
@@ -428,23 +623,28 @@ final class DestinationPickerModel {
     }
   }
 
-  /// The user edited the filter field.
+  /// The user edited the filter field. Typing cancels a new-folder row and drops a chosen destination without
+  /// restoring its filter (the field was empty for both).
   private func changeFilter(to text: String) {
-    if destination != nil {
-      // The field is empty while a destination is chosen; only typing into it un-chooses.
-      guard !text.isEmpty else { return }
-      destination = nil
-    } else if text == query {
-      return
-    }
+    guard text != filterText else { return }
+    cancelNewFolder()
+    destination = nil
     query = text
     update(highlight: .first)
   }
 
-  /// Chooses `chosen`, keeping the list and the filter it was chosen from for un-choosing.
+  /// Chooses `chosen`, keeping the list and the filter it was chosen from for un-choosing. A new folder becomes
+  /// pending, and the highlight moves to its row where it is listed.
   private func choose(_ chosen: PickerDestination) {
+    if case .newFolder(let path) = chosen, !pendingFolders.contains(path) {
+      pendingFolders.append(path)
+    }
     destination = chosen
-    followContents()
+    if highlightedRow?.folderPath == chosen.path {
+      update(highlight: .keep)
+    } else {
+      update(highlight: .anyRow(chosen.path, otherwise: .keep))
+    }
   }
 
   /// Un-chooses the destination and highlights its row in the list it was chosen from. The filter field shows that
@@ -453,11 +653,6 @@ final class DestinationPickerModel {
     guard let chosen = destination else { return }
     destination = nil
     update(highlight: .anyRow(chosen.path, otherwise: .keep))
-  }
-
-  /// The destination choosing the highlighted row gives, `nil` when no folder row is highlighted.
-  private func destinationForHighlightedRow() -> PickerDestination? {
-    highlightedDestination
   }
 
   /// The destination for the folder at `path`: a new folder when it is pending, else an existing one.
@@ -473,6 +668,11 @@ final class DestinationPickerModel {
       }
       while !scope.isEmpty, !index.contains(scope), !pendingFolders.contains(scope) {
         scope = ArchivePath.parent(of: scope)
+      }
+      if var draft = newFolderDraft {
+        draft = NewFolderDraft(parent: scope, name: draft.name, notice: nil)
+        draft.notice = notice(for: draft)
+        newFolderDraft = draft
       }
     }
     // The folder's files may have changed with the archive (a move adds one), so list them again.

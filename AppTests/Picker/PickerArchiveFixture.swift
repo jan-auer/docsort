@@ -90,12 +90,15 @@ final class PickerEventLog {
 }
 
 extension DestinationPickerModel {
-  /// The display paths of the folder rows (and the scope's path for "this folder", prefixed with `this:`), in order.
+  /// The rows in order: folder rows by display path (`new:` for pending ones), "this folder" as `this:<path>`, the
+  /// create row as `create:<name> in <parent>`, the new-folder row as `draft`.
   var rowSummaries: [String] {
     rows.map { row in
       switch row.kind {
       case .currentFolder(let path): "this:\(path)"
       case .folder(let folder): folder.isNew ? "new:\(folder.displayPath)" : folder.displayPath
+      case .createFolder(let name, let parent, _): "create:\(name) in \(parent)"
+      case .newFolderDraft: "draft"
       case .indexing: "indexing"
       }
     }

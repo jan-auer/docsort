@@ -19,6 +19,8 @@ struct PickerListing {
   let query: String
   /// New folders the user named that do not exist on disk yet.
   let pendingFolders: [String]
+  /// The new folder being named, listed among the scope's children; the scope is its parent then.
+  let draft: NewFolderDraft?
 
   /// The sections to list, without empty ones.
   func sections() -> [PickerSection] {
@@ -33,7 +35,24 @@ struct PickerListing {
           id: "indexing", title: nil, rows: [PickerRow(id: "indexing", kind: .indexing)])
       ]
     }
-    return sections.filter { !$0.rows.isEmpty }
+    return sections.map(insertingDraftRow).filter { !$0.rows.isEmpty }
+  }
+
+  /// `section` with the new-folder row at the alphabetical position of the draft name's first component (at the
+  /// end while the name is empty), if this is the section listing the scope's children.
+  private func insertingDraftRow(into section: PickerSection) -> PickerSection {
+    guard let draft, section.id == (scope.isEmpty ? "all" : "browse") else { return section }
+    var rows = section.rows
+    let draftRow = PickerRow(id: "draft", kind: .newFolderDraft)
+    let position =
+      NewFolderPath(typed: draft.name).components.first.flatMap { firstComponent in
+        rows.firstIndex { row in
+          guard case .folder(let folder) = row.kind else { return false }
+          return folder.displayPath.localizedStandardCompare(firstComponent) == .orderedDescending
+        }
+      } ?? rows.endIndex
+    rows.insert(draftRow, at: position)
+    return PickerSection(id: section.id, title: section.title, rows: rows)
   }
 
   /// Recent (indexed recents, then pending folders), then the top-level folders.
@@ -63,10 +82,11 @@ struct PickerListing {
         isNew: false)
     }
     let pendingRows = pendingFolders.compactMap { path -> PickerRow? in
-      guard let displayPath = ArchivePath.relative(path, to: scope) else { return nil }
-      let firstComponent = ArchivePath.joining(scope, ArchivePath.segments(of: displayPath)[0])
+      guard let displayPath = ArchivePath.relative(path, to: scope),
+        let firstComponent = ArchivePath.segments(of: displayPath).first
+      else { return nil }
       // A pending folder inside an existing child is listed inside that child, not here.
-      guard index?.contains(firstComponent) != true else { return nil }
+      guard index?.contains(ArchivePath.joining(scope, firstComponent)) != true else { return nil }
       return folderRow(section: section, path: path, displayPath: displayPath, isNew: true)
     }
     let childRows = (subfolderRows + pendingRows).sorted { lhs, rhs in
@@ -81,13 +101,20 @@ struct PickerListing {
     let section = "search"
     let matches = index.search(
       query, in: scope, ranking: ranking, recents: recents, limit: Self.searchLimit)
-    let rows = matches.map { match in
+    var rows = matches.map { match in
       PickerRow(
         id: "\(section):\(match.path)",
         kind: .folder(
           PickerFolder(
             path: match.path, displayPath: match.pathInScope, matchedRanges: match.matchedRanges,
             hasSubfolders: !index.subfolders(of: match.path).isEmpty, isNew: false)))
+    }
+    let newFolder = NewFolderPath(typed: query)
+    if rows.isEmpty, !newFolder.components.isEmpty {
+      rows.append(
+        PickerRow(
+          id: "\(section):create",
+          kind: .createFolder(name: newFolder.name, parent: scope, problem: newFolder.problem)))
     }
     return PickerSection(id: section, title: nil, rows: rows)
   }
