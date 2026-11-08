@@ -258,7 +258,7 @@ final class HistoryModel {
       do {
         let outcome = try await filing.moveBack(
           document: entry.documentID, at: entry.url, resolution: resolution)
-        returned(rowID, to: outcome.movedURL)
+        returned(rowID)
         await refresh()
         selection = outcome.event.id
         statusMessage =
@@ -284,8 +284,8 @@ final class HistoryModel {
       }
     case .putBack:
       do {
-        let outcome = try await filing.putBack(entry.url)
-        returned(rowID, to: outcome.restored.url)
+        _ = try await filing.putBack(entry.url)
+        returned(rowID)
         await refresh()
         statusMessage = "Put “\(entry.originalName)” back in \(inbox)"
       } catch {
@@ -300,19 +300,12 @@ final class HistoryModel {
     }
   }
 
-  /// After a file came back to its inbox at `url`: unmarks its row (`rowID`), as the filing panel does, and rescans the
-  /// inboxes when the row does not show it there (a file filed in an earlier session, or one back under a numbered
-  /// name).
-  private func returned(_ rowID: InboxItemID?, to url: URL) {
-    guard let rowID else {
-      inboxes.refresh()
-      return
-    }
+  /// After a file came back to its inbox: unmarks its row (`rowID`), as the filing panel does. A file without a row (filed
+  /// in an earlier session) gets one, and a row shows the file under a numbered name, once the watcher lists it.
+  private func returned(_ rowID: InboxItemID?) {
+    guard let rowID else { return }
     inboxes.setMark(rowID, nil)
     if mainWindow.selectedFile?.id == rowID { mainWindow.resetPanel() }
-    if let row = inboxes.row(for: rowID), !Self.isSameLocation(row.item.url, url) {
-      inboxes.refresh()
-    }
   }
 
   /// The main window's row of `entry`'s file. A file in the archive is found by its filing history document, the way

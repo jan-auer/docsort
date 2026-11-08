@@ -29,6 +29,9 @@ nonisolated struct InboxRow: Hashable, Sendable, Identifiable {
   let item: InboxItem
   /// What happened to the file in this session; `nil` while it is unhandled.
   let mark: InboxItemMark?
+  /// Whether the file arrived from outside docsort while the inbox was watched and has not been selected since: the
+  /// row shows the "new" dot.
+  var isNewArrival = false
 
   /// The file's identity.
   var id: InboxItemID { InboxItemID(item) }
@@ -101,6 +104,15 @@ nonisolated enum InboxSectionContent: Hashable, Sendable {
   case unreachable(InboxProblem)
 }
 
+/// A change made outside docsort that the main window follows.
+nonisolated enum InboxExternalChange: Hashable, Sendable {
+  /// The file `id`, named `name`, was removed from the inbox labelled `inboxLabel`; `next` is the next unhandled row
+  /// after it in display order as it was listed, for a selection that has to move.
+  case removed(InboxItemID, name: String, inboxLabel: String, next: InboxItemID?)
+  /// The file `id` became the file `replacement`: a download completed into a file of its own.
+  case replaced(InboxItemID, by: InboxItemID)
+}
+
 /// One configured inbox as the sidebar shows it.
 nonisolated struct InboxSection: Hashable, Sendable, Identifiable {
   /// The inbox's identity in the folder settings.
@@ -120,9 +132,11 @@ nonisolated struct InboxSection: Hashable, Sendable, Identifiable {
 /// The one owner of the inbox rows the sidebar shows: lists every configured inbox and merges in what happened to
 /// its files in this session.
 ///
-/// One per app. It follows a `FolderLibrary`'s inboxes and scans them with `InboxScanner` in a `@concurrent`
-/// function, off the main actor: at launch, whenever the inboxes change, and on `refresh()`. A scan whose inboxes
-/// have been superseded is ignored.
+/// One per app. It follows a `FolderLibrary`'s inboxes and watches them with an `InboxWatcher`, which scans off the
+/// main actor: one subscription for all usable inboxes, started at launch and again whenever the inboxes change and on
+/// `refresh()` (⌘R). Each update's listing is the source of truth; its changes (made outside docsort) only annotate
+/// it: an arrival shows the "new" dot until the row is first selected (`markSeen`), and removals and completed
+/// downloads are reported through `onExternalChange`, so the window can move its selection.
 ///
 /// Files filed or trashed in this session are marked (`setMark`) by `InboxItemID`. A marked file that is no longer on
 /// disk keeps its row, in its old place, across rescans (decision `inbox-and-history-behaviour`: the list never
@@ -139,22 +153,44 @@ final class InboxLibrary {
   @ObservationIgnored private var inboxes: [ConfiguredInbox] = []
   /// The latest scan result per inbox.
   @ObservationIgnored private var scans: [InboxFolder.ID: ScanResult] = [:]
-  /// Rows to keep showing: marked files, and unmarked ones until the next scan of their inbox.
+  /// Rows to keep showing: marked files, files with an operation in flight, and unmarked ones until the next scan of
+  /// their inbox.
   @ObservationIgnored private var keptRows: [InboxItemID: KeptRow] = [:]
+  /// Rows whose file an operation is moving out of its inbox right now (`keepingRow(_:during:)`).
+  @ObservationIgnored private var pinnedRows: Set<InboxItemID> = []
   /// The rows of `sections` by identity, with the label of their section. Observed like `sections`, so a view that
   /// looks up one row (the selected file) follows its changes.
   private var rowsByID: [InboxItemID: (row: InboxRow, sectionLabel: String)] = [:]
-  /// Counts scans, so a superseded scan's result is ignored.
-  @ObservationIgnored private var scanGeneration = 0
-  @ObservationIgnored private var scanTask: Task<Void, Never>?
+  /// Files that arrived from outside docsort and have not been selected since.
+  @ObservationIgnored private var newArrivals: Set<InboxItemID> = []
+  /// Called after an update with each removal and completed download made outside docsort, in order.
+  @ObservationIgnored var onExternalChange: ((InboxExternalChange) -> Void)?
+
+  @ObservationIgnored private let watcher: InboxWatcher
+  /// Counts subscriptions, so an update from a superseded one is ignored.
+  @ObservationIgnored private var watchGeneration = 0
+  @ObservationIgnored private var watchTask: Task<Void, Never>?
+  /// The inboxes of the current subscription that have not had their first update yet.
+  @ObservationIgnored private var inboxesAwaitingFirstUpdate: Set<InboxFolder.ID> = []
+  @ObservationIgnored private var firstUpdateWaiters: [CheckedContinuation<Void, Never>] = []
   @ObservationIgnored private var observationTask: Task<Void, Never>?
 
-  /// An inbox library that is told its inboxes through `update(inboxes:)`.
-  init() {}
+  /// An inbox library that is told its inboxes through `update(inboxes:)` and watches them with `watcher`, which must
+  /// use the `ExpectedChanges` the app's `FilingService` registers its operations with.
+  init(watcher: InboxWatcher) {
+    self.watcher = watcher
+  }
 
-  /// An inbox library listing `folders`' inboxes, rescanning whenever they change.
-  convenience init(folders: FolderLibrary) {
-    self.init()
+  #if DEBUG
+    /// A library with a watcher of its own, for previews and tests that file nothing through a `FilingService`.
+    convenience init() {
+      self.init(watcher: InboxWatcher(expectedChanges: ExpectedChanges()))
+    }
+  #endif
+
+  /// An inbox library listing `folders`' inboxes with `watcher`, resubscribing whenever they change.
+  convenience init(folders: FolderLibrary, watcher: InboxWatcher) {
+    self.init(watcher: watcher)
     observationTask = Task { [weak self] in
       for await inboxes in Observations({ folders.inboxes }) {
         guard let self else { return }
@@ -165,71 +201,127 @@ final class InboxLibrary {
 
   isolated deinit {
     observationTask?.cancel()
-    scanTask?.cancel()
+    watchTask?.cancel()
+    resumeFirstUpdateWaiters()
   }
 
-  // MARK: Scanning
+  // MARK: Watching
 
-  /// Lists `inboxes` from now on and scans them, unless they are the inboxes already listed.
+  /// Lists and watches `inboxes` from now on, unless they are the inboxes already listed.
   func update(inboxes: [ConfiguredInbox]) {
     guard inboxes != self.inboxes else { return }
     self.inboxes = inboxes
     let ids = Set(inboxes.map(\.id))
     scans = scans.filter { ids.contains($0.key) }
-    rescan()
+    restartWatching()
   }
 
-  /// Scans every inbox again, for example on View › Refresh.
+  /// Watches every inbox anew, which scans each again (View › Refresh, ⌘R).
   func refresh() {
-    rescan()
+    restartWatching()
   }
 
-  /// Waits until the scan in progress, if any, has finished and been applied.
+  /// Waits until every inbox of the current subscription has had its first update applied.
   func waitForScan() async {
-    await scanTask?.value
+    guard !inboxesAwaitingFirstUpdate.isEmpty else { return }
+    await withCheckedContinuation { firstUpdateWaiters.append($0) }
   }
 
-  private func rescan() {
-    scanGeneration += 1
-    let generation = scanGeneration
-    var folders: [(InboxFolder.ID, URL)] = []
+  /// Ends the current subscription and starts one for the usable inboxes. Until their first updates arrive, the
+  /// sections keep their previous listings.
+  private func restartWatching() {
+    watchTask?.cancel()
+    watchGeneration += 1
+    let generation = watchGeneration
+    var watched: [WatchedInbox] = []
     for inbox in inboxes {
       if let url = inbox.url, inbox.folder.isUsable {
-        folders.append((inbox.id, url))
+        watched.append(WatchedInbox(id: inbox.id, folder: url))
       } else {
         scans[inbox.id] = .failed(Self.problem(for: inbox.folder))
       }
     }
+    inboxesAwaitingFirstUpdate = Set(watched.map(\.id))
     rebuildSections()
-    scanTask?.cancel()
-    scanTask = Task { [weak self] in
-      let results = await Self.scan(folders)
-      self?.apply(results, generation: generation)
+    if inboxesAwaitingFirstUpdate.isEmpty { resumeFirstUpdateWaiters() }
+    let updates = watcher.updates(for: watched)
+    watchTask = Task { [weak self] in
+      for await update in updates {
+        guard let self else { return }
+        apply(update, generation: generation)
+      }
     }
   }
 
-  /// Applies a finished scan, unless a newer one has started meanwhile.
-  private func apply(_ results: [InboxFolder.ID: ScanResult], generation: Int) {
-    guard generation == scanGeneration, !Task.isCancelled else {
-      Logger.inbox.debug("Ignoring an inbox scan superseded by a newer one")
+  private func resumeFirstUpdateWaiters() {
+    let waiters = firstUpdateWaiters
+    firstUpdateWaiters = []
+    for waiter in waiters { waiter.resume() }
+  }
+
+  /// Applies `update`, unless its subscription has been superseded.
+  private func apply(_ update: InboxUpdate, generation: Int) {
+    guard generation == watchGeneration, !Task.isCancelled else {
+      Logger.inbox.debug("Ignoring an inbox update from a superseded subscription")
       return
     }
-    for (id, result) in results {
-      scans[id] = result
-      // The scan shows what is on disk now; rows kept only for an undo are no longer needed.
-      keptRows = keptRows.filter { $0.value.sectionID != id || $0.value.mark != nil }
-      // A filed or trashed file is no longer at its inbox URL (an undo unmarks it before it comes back), so an item
-      // listed there is a new file that reuses the name: it must not inherit the old file's mark.
-      if case .listed(let listing) = result {
-        for item in listing.items {
-          keptRows[InboxItemID(item)] = nil
-        }
-      }
+    let id = update.inboxID
+    guard let inbox = inboxes.first(where: { $0.id == id }) else { return }
+    let rowsBefore = orderedRows
+    let externalChanges = annotate(
+      update.changes, inboxLabel: inbox.displayLabel, rowsBefore: rowsBefore)
+    switch update.state {
+    case .listed(let listing): scans[id] = .listed(listing)
+    case .unreachable(let error): scans[id] = .failed(Self.problem(for: error))
+    }
+    // The update shows what is on disk now; rows kept only for an undo are no longer needed. Rows with an operation
+    // in flight stay until the operation's outcome marks them.
+    keptRows = keptRows.filter {
+      $0.value.sectionID != id || $0.value.mark != nil || pinnedRows.contains($0.key)
     }
     rebuildSections()
-    let itemCount = sections.reduce(0) { $0 + $1.rows.count }
+    if inboxesAwaitingFirstUpdate.remove(id) != nil, inboxesAwaitingFirstUpdate.isEmpty {
+      resumeFirstUpdateWaiters()
+    }
     Logger.inbox.notice(
-      "Scanned \(results.count, privacy: .public) inbox(es): \(itemCount, privacy: .public) row(s)")
+      "Updated inbox \(inbox.displayLabel, privacy: .private): \(self.sections.first { $0.id == id }?.rows.count ?? 0, privacy: .public) row(s), \(update.changes.count, privacy: .public) external change(s)"
+    )
+    for change in externalChanges { onExternalChange?(change) }
+  }
+
+  /// Records what `changes` (made outside docsort) mean for the rows, and returns the changes the window follows.
+  private func annotate(
+    _ changes: [InboxChange], inboxLabel: String, rowsBefore: [InboxRow]
+  ) -> [InboxExternalChange] {
+    let removedIDs: Set<InboxItemID> = Set(
+      changes.compactMap { change in
+        if case .removed(let item) = change { InboxItemID(item) } else { nil }
+      })
+    var externalChanges: [InboxExternalChange] = []
+    for change in changes {
+      switch change {
+      case .arrived(let item):
+        let arrivedID = InboxItemID(item)
+        newArrivals.insert(arrivedID)
+        // A handled file brought back by someone else (Put Back in Finder) is unhandled again.
+        keptRows[arrivedID] = nil
+      case .removed(let item):
+        let removedID = InboxItemID(item)
+        newArrivals.remove(removedID)
+        let next = Self.nextUnhandledRow(after: removedID, in: rowsBefore) {
+          !removedIDs.contains($0.id)
+        }
+        externalChanges.append(
+          .removed(removedID, name: item.name, inboxLabel: inboxLabel, next: next?.id))
+      case .changed(let old, let new):
+        let oldID = InboxItemID(old)
+        let newID = InboxItemID(new)
+        guard oldID != newID else { continue }
+        if newArrivals.remove(oldID) != nil { newArrivals.insert(newID) }
+        externalChanges.append(.replaced(oldID, by: newID))
+      }
+    }
+    return externalChanges
   }
 
   /// The outcome of scanning one inbox.
@@ -238,23 +330,25 @@ final class InboxLibrary {
     case failed(InboxProblem)
   }
 
-  /// Scans each of `folders`, off the main actor.
-  @concurrent private static func scan(
-    _ folders: [(InboxFolder.ID, URL)]
-  ) async -> [InboxFolder.ID: ScanResult] {
-    var results: [InboxFolder.ID: ScanResult] = [:]
-    let scanner = InboxScanner()
-    for (id, url) in folders {
-      do {
-        results[id] = .listed(try scanner.scan(url))
-      } catch {
-        results[id] = .failed(problem(for: error))
-      }
-    }
-    return results
-  }
-
   // MARK: Marks
+
+  /// Runs `operation`, which moves the file `id` out of its inbox (filing, trashing, an undo or redo), keeping the row
+  /// while it runs.
+  ///
+  /// The watcher may deliver the inbox's new listing before the caller marks the row with the outcome: without the
+  /// pin, that update would drop the row and the mark would find none. The caller marks the row right after this
+  /// returns, on the main actor, so no update comes in between. After a failure the row goes with the next update
+  /// that no longer lists the file, as an unmarked row does.
+  func keepingRow<T, E: Error>(
+    _ id: InboxItemID, during operation: () async throws(E) -> T
+  ) async throws(E) -> T {
+    if keptRows[id] == nil, let kept = keptRow(for: id) {
+      keptRows[id] = kept
+    }
+    pinnedRows.insert(id)
+    defer { pinnedRows.remove(id) }
+    return try await operation()
+  }
 
   /// Sets what happened to the file `id` in this session: `mark`, or, for `nil`, nothing (after an undo, Move Back or
   /// Put Back returned it to its inbox). An unmarked row stays until the next scan of its inbox.
@@ -307,12 +401,27 @@ final class InboxLibrary {
   /// The next unhandled row after the file `id` in display order, wrapping from the last section to the first;
   /// `nil` when there is none other than `id`.
   func nextUnhandledRow(after id: InboxItemID) -> InboxRow? {
-    let rows = orderedRows
+    Self.nextUnhandledRow(after: id, in: orderedRows) { _ in true }
+  }
+
+  /// The next unhandled row of `rows` after the file `id` that `isEligible`, wrapping around; the first such row when
+  /// `rows` does not hold `id`.
+  private static func nextUnhandledRow(
+    after id: InboxItemID, in rows: [InboxRow], where isEligible: (InboxRow) -> Bool
+  ) -> InboxRow? {
     guard let index = rows.firstIndex(where: { $0.id == id }) else {
-      return rows.first(where: \.isUnhandled)
+      return rows.first { $0.isUnhandled && isEligible($0) }
     }
     let following = rows[(index + 1)...] + rows[..<index]
-    return following.first(where: \.isUnhandled)
+    return following.first { $0.isUnhandled && isEligible($0) }
+  }
+
+  // MARK: New arrivals
+
+  /// Clears the "new" dot of the file `id`, once it is selected.
+  func markSeen(_ id: InboxItemID) {
+    guard newArrivals.remove(id) != nil else { return }
+    rebuildSections()
   }
 
   /// The first row of the section at `index` (0-based), or `nil` when there is no such section or it has no rows.
@@ -401,7 +510,8 @@ final class InboxLibrary {
   }
 
   private func row(for item: InboxItem) -> InboxRow {
-    InboxRow(item: item, mark: keptRows[InboxItemID(item)]?.mark)
+    let id = InboxItemID(item)
+    return InboxRow(item: item, mark: keptRows[id]?.mark, isNewArrival: newArrivals.contains(id))
   }
 
   /// Puts a kept row that the scan no longer lists back where it was: into its group (recreating the group when the

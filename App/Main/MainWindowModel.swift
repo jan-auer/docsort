@@ -100,6 +100,8 @@ final class MainWindowModel {
   var sidebarSelection: SidebarRowID? {
     didSet {
       guard sidebarSelection != oldValue else { return }
+      if case .item(let id) = sidebarSelection { inboxes.markSeen(id) }
+      guard !isFollowingReplacement else { return }
       resetPanel()
     }
   }
@@ -146,6 +148,8 @@ final class MainWindowModel {
   /// Whether the sidebar is hidden because the window became narrow, rather than by the user. Only then does the
   /// sidebar come back by itself when the window is widened again.
   @ObservationIgnored private var isSidebarCollapsedForWidth = false
+  /// Set while the selection moves to the file that replaced the selected one, which keeps the filing panel as it is.
+  @ObservationIgnored private var isFollowingReplacement = false
   /// Keeps the picker's index, recents and ranking in step with the app's models.
   @ObservationIgnored private var pickerInputsTask: Task<Void, Never>?
 
@@ -165,6 +169,7 @@ final class MainWindowModel {
     self.filing = filing
     self.search = search
     picker.onEvent = { [weak self] event in self?.handlePickerEvent(event) }
+    inboxes.onExternalChange = { [weak self] change in self?.follow(change) }
     pickerInputsTask = Task { [weak self, archive, filing, search] in
       for await inputs in Observations({
         PickerInputs(index: archive.index, recents: filing.recents, ranking: search.ranking)
@@ -258,6 +263,28 @@ final class MainWindowModel {
   }
 
   /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
+  /// Follows a change made outside docsort: when the selected file was removed, selects the next unfiled file (the
+  /// panel resets, discarding what was typed) and says so in the bottom bar; when the selected download completed into
+  /// a file of its own (or a safe-save replaced it), selects that file, keeping what the filing panel holds.
+  private func follow(_ change: InboxExternalChange) {
+    switch change {
+    case .removed(let id, let name, let inboxLabel, let next):
+      guard sidebarSelection == .item(id) else { return }
+      if let next {
+        select(next)
+      } else {
+        sidebarSelection = nil
+      }
+      statusMessage = WindowStatusMessage(
+        text: "“\(name)” was removed from \(inboxLabel) outside docsort.")
+    case .replaced(let id, let replacement):
+      guard sidebarSelection == .item(id) else { return }
+      isFollowingReplacement = true
+      defer { isFollowingReplacement = false }
+      select(replacement)
+    }
+  }
+
   private static func folderPath(of url: URL) -> String {
     let path = url.standardizedFileURL.path(percentEncoded: false)
     return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
@@ -291,7 +318,7 @@ final class MainWindowModel {
       let model = MainWindowModel(
         folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
         filing: FilingModel(
-          service: .make(environment: environment),
+          service: .make(environment: environment, expectedChanges: ExpectedChanges()),
           historyFileURL: environment.filingHistoryURL),
         search: SearchSettings(defaults: environment.defaults))
       model.previewSelectedFile = selectedFile
