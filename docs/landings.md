@@ -2,6 +2,12 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-08 claude/sidebar-dates-5eef76: absolute dates in the sidebar
+- What landed: sidebar rows show a compact absolute date ("12 Oct", with the year when it isn't the current one)
+  instead of a relative one; group ranges are absolute too.
+- Divergence: None.
+- Follow-ups: None.
+
 ## 2026-11-08 Published: jan-auer/docsort (public)
 - What happened: history rewritten after the first three commits to replace a real folder name and a real path
   (`screenshots-stay-private`); private links, a machine path and the open-questions file removed; old unreachable
