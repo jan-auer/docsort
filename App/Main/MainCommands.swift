@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The main window's menu-bar commands: Open, Reveal in Finder, Move, Revert Name, Move to Trash and Move Back to
 /// Inbox (Put Back for a trashed file) (File), Refresh, the filing
-/// panel toggle and the preview zoom (View), the sidebar toggle, and History (Window). Undo and Redo (Edit) come
+/// panel toggle and the preview zoom (View), the sidebar toggle, Previous File and Next File (Go), and History
+/// (Window). Undo and Redo (Edit) come
 /// from the window's undo manager.
 ///
 /// The file and view commands act on the key main window through the `mainWindowModel` focused value and are
@@ -89,6 +90,20 @@ struct MainCommands: Commands {
       }
       .keyboardShortcut("0")
       .disabled(!(previewController?.canZoomToFit ?? false))
+    }
+
+    CommandMenu("Go") {
+      Button("Previous File") {
+        mainWindowModel?.selectFile(.previous)
+      }
+      .keyboardShortcut(.upArrow, modifiers: [.option, .command])
+      .disabled(mainWindowModel?.file(.previous) == nil)
+
+      Button("Next File") {
+        mainWindowModel?.selectFile(.next)
+      }
+      .keyboardShortcut(.downArrow, modifiers: [.option, .command])
+      .disabled(mainWindowModel?.file(.next) == nil)
     }
 
     CommandGroup(after: .singleWindowList) {

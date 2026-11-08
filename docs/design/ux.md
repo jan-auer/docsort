@@ -74,7 +74,8 @@ One main window, three columns (a `NavigationSplitView` with an inspector). Acce
      key-cap badge to the right of the label: `Move  ⌘↩`. For a filed file the label reads Rename or Move.
 
   The panel is always visible but inactive until a file is selected; it never covers the preview.
-- **Toolbar**: sidebar toggle, then plain title text like Finder's folder title (no box): "docsort" in bold, the
+- **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
+  at the list's start or end), then plain title text like Finder's folder title (no box): "docsort" in bold, the
   selected file's inbox in secondary colour, a › separator and its name in primary colour. At the right, the three
   actions on that file (Open, Reveal in Finder, Move to Trash) as one group, and the inspector toggle on its own at the
   very right. Everything in the toolbar is about the selected file; History,
@@ -87,7 +88,9 @@ Minimum window size 1000 × 640 pt. Below about 1180 pt wide the sidebar collaps
 
 Three focus stops: sidebar, destination picker, name field. Focus decides what keys do.
 
-1. **Pick a file.** Select it in the sidebar with ↑/↓. The preview follows the selection at once.
+1. **Pick a file.** Select it in the sidebar with ↑/↓ (or ‹ › in the toolbar, ⌥⌘↑/⌥⌘↓ from anywhere). The preview
+   follows the selection at once. At launch, once the inboxes are listed, the first file is selected (unless the
+   user already picked one).
 2. **Choose the destination.** Start typing: with a file selected in the sidebar, any printable key goes straight
    into the destination filter (Return, Tab or ⌘L also move focus there without typing). See "Destination picker"
    for browsing, filtering, Recent and creating folders.
@@ -329,7 +332,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | ⌃⌘S | Show/hide sidebar | View |
 | ⌥⌘I | Show/hide filing panel | View |
 | ⌘1 … ⌘9 | Jump to inbox section 1…9 | Go |
-| ⌥⌘↓ / ⌥⌘↑ | Select next / previous unfiled file, from any focus | Go |
+| ⌥⌘↓ / ⌥⌘↑ | Select next / previous file in sidebar order (as ↓/↑ do), from any focus | Go › Next File / Previous File |
 | ⌘+ / ⌘− / ⌘0 | Zoom preview in / out / to fit | View |
 | ⌘, | Settings | docsort |
 | ⌘/ | Show keyboard shortcuts overlay | Help |
