@@ -48,6 +48,11 @@ struct MainWindowView: View {
       .navigationTitle(windowTitle)
       .navigationSubtitle(windowSubtitle)
     }
+    // The minimum size goes on the split view, inside the inspector: the inspector's width adds to it, so the window
+    // keeps its 1000 pt minimum at the panel's default 340 pt. Outside `.inspector`, a minimum width held the content
+    // at the window's width while the inspector slid in: the whole window content grew wider than the window and
+    // shifted left until the animation ended, pushing toolbar items into the overflow menu.
+    .frame(minWidth: 1000 - 340, minHeight: 640)
     // Spike (`inspector-glass`): the filing panel as the window's inspector, attached to the split view itself, so
     // the system draws it full height as edge-to-edge glass beside the content (WWDC25 310 and 323). The system
     // slides it in and out; its user-dragged width is kept in `filingPanelWidth` and used as the next window's ideal.
@@ -77,7 +82,6 @@ struct MainWindowView: View {
         max: Self.filingPanelWidths.upperBound
       )
     }
-    .frame(minWidth: 1000, minHeight: 640)
     .background(QuickLookPanelHost(controller: quickLookPanel))
     .environment(\.quickLookPanel, quickLookPanel)
     .onGeometryChange(for: MainWindowWidthClass.self) { geometry in

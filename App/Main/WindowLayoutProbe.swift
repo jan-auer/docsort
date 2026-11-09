@@ -35,7 +35,8 @@
           Logger.windowLayout.debug("[\(delay, privacy: .public)s] \(line, privacy: .public)")
         }
         emit(
-          "window \(frame(of: contentView)), contentLayoutRect \(window.contentLayoutRect), "
+          "window \(frame(of: contentView)), minSize \(window.minSize), contentMinSize \(window.contentMinSize), "
+            + "contentLayoutRect \(window.contentLayoutRect), "
             + "titlebarSeparatorStyle \(window.titlebarSeparatorStyle.rawValue) (0 automatic, 1 none, 2 line, 3 shadow)"
         )
         let splitViews = splitViews(in: contentView)
