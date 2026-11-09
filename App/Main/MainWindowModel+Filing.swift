@@ -169,10 +169,10 @@ extension MainWindowModel {
           redoRequest, resolution: resolution == .replace ? .replace : .refuse,
           markBefore: markBefore, replacedRows: replacedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: request.kind.isRenaming
-          ? "Renamed to \(filedName) · Undo ⌘Z"
-          : "Moved to \(request.archivePath) as \(filedName) · Undo ⌘Z")
+      statusMessage = .undoable(
+        request.kind.isRenaming
+          ? "Renamed to \(filedName)"
+          : "Moved to \(request.archivePath) as \(filedName)")
       finishMove(of: request)
     } catch .fileOperation(.nameConflict(let existing)) {
       conflict = FilingConflict(existingName: existing.lastPathComponent, request: request)
@@ -290,10 +290,9 @@ extension MainWindowModel {
       let outcome = try await trashKeepingRow(request.itemID, url: request.url)
       inboxes.setMark(
         request.itemID,
-        .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+        .trashed(by: outcome))
       registerUndo(of: .trash(request), ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: "Moved “\(request.originalName)” to the Trash · Undo ⌘Z")
+      statusMessage = .undoable("Moved “\(request.originalName)” to the Trash")
       finishHandling(request.itemID)
     } catch {
       Logger.filing.error(
@@ -419,10 +418,10 @@ extension MainWindowModel {
         of: .moveBack(request, resolution: resolution, markBefore: markBefore),
         ticket: FilingEventTicket(eventID: outcome.event.id))
       let returnedName = outcome.movedURL.lastPathComponent
-      statusMessage = WindowStatusMessage(
-        text: returnedName == request.originalName
-          ? "Moved “\(request.originalName)” back to \(request.inboxName) · Undo ⌘Z"
-          : "Moved “\(request.originalName)” back to \(request.inboxName) as \(returnedName) · Undo ⌘Z"
+      statusMessage = .undoable(
+        returnedName == request.originalName
+          ? "Moved “\(request.originalName)” back to \(request.inboxName)"
+          : "Moved “\(request.originalName)” back to \(request.inboxName) as \(returnedName)"
       )
       showReturned(request.itemID)
     } catch .fileOperation(.nameConflict(let existing)) {
@@ -446,9 +445,8 @@ extension MainWindowModel {
       registerUndo(
         of: .putBack(request, returnedTo: returnedURL, markAfter: markAfter),
         ticket: FilingEventTicket())
-      statusMessage = WindowStatusMessage(
-        text:
-          "Put “\(returnedURL.lastPathComponent)” back in \(placeName(ofFolderHolding: returnedURL)) · Undo ⌘Z"
+      statusMessage = .undoable(
+        "Put “\(returnedURL.lastPathComponent)” back in \(placeName(ofFolderHolding: returnedURL))"
       )
       showReturned(request.itemID)
       // Resetting the panel to the same folder lists nothing new, so Folder contents is listed again.

@@ -66,6 +66,11 @@ nonisolated struct WindowStatusMessage: Hashable, Sendable, Identifiable {
   let id = UUID()
   /// The message.
   let text: String
+
+  /// The confirmation `text` of an action, offering ⌘Z to undo it.
+  static func undoable(_ text: String) -> WindowStatusMessage {
+    WindowStatusMessage(text: "\(text) · Undo ⌘Z")
+  }
 }
 
 /// An alert about a failed filing action.

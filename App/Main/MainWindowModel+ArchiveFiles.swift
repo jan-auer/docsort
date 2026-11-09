@@ -42,8 +42,8 @@ extension MainWindowModel {
       registerUndo(
         of: .archiveRename(request, filedRows: filedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: "Renamed “\(request.originalName)” to \(request.name) · Undo ⌘Z")
+      statusMessage = .undoable(
+        "Renamed “\(request.originalName)” to \(request.name)")
     } catch {
       Logger.filing.error(
         "Renaming \(request.originalName, privacy: .private) failed: \(String(describing: error), privacy: .private)"
@@ -61,8 +61,7 @@ extension MainWindowModel {
       registerUndo(
         of: .archiveTrash(request, filedRows: filedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: "Moved “\(request.originalName)” to the Trash · Undo ⌘Z")
+      statusMessage = .undoable("Moved “\(request.originalName)” to the Trash")
     } catch {
       Logger.filing.error(
         "Trashing \(request.originalName, privacy: .private) failed: \(String(describing: error), privacy: .private)"
@@ -92,7 +91,7 @@ extension MainWindowModel {
   @discardableResult
   func applyTrash(_ outcome: TrashOutcome, selectingAfterwards selection: URL?) -> [MarkedRow] {
     let filedRows = remark(filedAs: outcome.event.documentID) { _ in
-      .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date)
+      .trashed(by: outcome)
     }
     picker.reloadContents(selecting: selection)
     return filedRows

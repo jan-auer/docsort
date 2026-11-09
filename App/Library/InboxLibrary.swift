@@ -21,6 +21,11 @@ nonisolated enum InboxItemMark: Hashable, Sendable {
   var filedDocumentID: UUID? {
     if case .filed(_, _, _, let documentID) = self { documentID } else { nil }
   }
+
+  /// The mark of a file that `outcome`'s move to the Trash put there.
+  static func trashed(by outcome: TrashOutcome) -> InboxItemMark {
+    .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date)
+  }
 }
 
 /// One file row of an inbox section: the file as it was listed and what happened to it in this session.

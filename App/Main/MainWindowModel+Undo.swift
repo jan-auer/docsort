@@ -142,7 +142,7 @@ extension MainWindowModel {
         redoTicket.eventID = outcome.event.id
         inboxes.setMark(
           request.itemID,
-          .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+          .trashed(by: outcome))
       case .archiveRename(let request, let filedRows):
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
         _ = try await filing.undo(eventID: eventID)
@@ -193,7 +193,7 @@ extension MainWindowModel {
         undoTicket.eventID = outcome.event.id
         inboxes.setMark(
           request.itemID,
-          .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+          .trashed(by: outcome))
         finishHandling(request.itemID)
       case .putBack(let request, let returnedURL, let markAfter):
         guard let eventID = event(in: ticket, for: action, step: "redone") else { return }
