@@ -1,7 +1,7 @@
 import DocsortCore
 import SwiftUI
 
-/// The filing panel, the main window's trailing pane: where the selected file gets its destination and name.
+/// The filing panel, the main window's inspector: where the selected file gets its destination and name.
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
 /// panel: the search field at the top, the folder list edge to edge with New Folder under it, Folder contents as a
@@ -30,9 +30,6 @@ struct FilingPanel: View {
 
   @FocusState private var focusedField: PanelField?
 
-  /// Points per pixel on the current display, for the one-pixel line under the toolbar.
-  @Environment(\.displayScale) private var displayScale
-
   /// The height of Folder contents' list, kept with the window.
   @SceneStorage("filing-panel.contents-height") private var contentsHeight = 150.0
   /// Whether Folder contents is collapsed to its header, kept with the window.
@@ -58,19 +55,8 @@ struct FilingPanel: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    // The bars' colour, so the edge-to-edge lists (content colour) stand apart from them. It stops at the top safe
-    // area: the window's toolbar spans the preview and the panel, and a background reaching under it made the panel
-    // look like a full-height column of its own beside the toolbar.
-    .background(FilingPanelStyle.background, ignoresSafeAreaEdges: [])
-    // The system draws its toolbar line (`titlebarSeparatorStyle = .line`) only where content scrolls under the
-    // toolbar, which is the PDF preview. The panel starts below the toolbar and must not show through it, so it draws
-    // the same one-pixel separator-colour line at its top edge, continuing the system's line.
-    .overlay(alignment: .top) {
-      Rectangle()
-        .fill(Color(nsColor: .separatorColor))
-        .frame(height: 1 / displayScale)
-        .accessibilityHidden(true)
-    }
+    // No background of its own: the panel is the window's inspector, and the system's edge-to-edge glass behind it
+    // runs from the window's top edge to its bottom, toolbar section included, with no seam between them.
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }

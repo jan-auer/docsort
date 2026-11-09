@@ -1,8 +1,7 @@
 import DocsortCore
 import SwiftUI
 
-/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it
-/// (340 pt to start, dragged between 300 and 480 pt),
+/// The content of the main window: the inbox sidebar, the preview and the filing panel as the window's inspector,
 /// with the selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
@@ -18,11 +17,11 @@ struct MainWindowView: View {
   /// The window's Quick Look panel, shared by the sidebar and Folder contents.
   @State private var quickLookPanel = QuickLookPanelController(panel: SystemQuickLookPanel())
 
-  /// The filing panel's width, kept with the window.
+  /// The filing panel's width as the user last left it, kept with the window.
   @SceneStorage("filing-panel.width") private var filingPanelWidth = 340.0
-
-  /// The widths the filing panel can be dragged to.
-  private static let filingPanelWidths = 300.0...480.0
+  /// The width the inspector opens at in this window: the stored width, read once, because the inspector takes its
+  /// ideal width only when it first lays out and a changing ideal would fight the user's drag.
+  @State private var initialFilingPanelWidth: Double?
 
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
@@ -33,34 +32,50 @@ struct MainWindowView: View {
       }
       .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
     } detail: {
-      // The filing panel is the main work surface, not details about the selection, so it is a pane of the detail
-      // column (HIG: inspectors are for details), resizable against the preview by dragging the divider between them.
-      HStack(spacing: 0) {
-        VStack(spacing: 0) {
-          detailColumn
-            .frame(maxHeight: .infinity)
-          WindowBottomBar(model: model)
-        }
-        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-        if model.isFilingPanelShown {
-          HStack(spacing: 0) {
-            PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
-            FilingPanel(
-              model: model,
-              locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
-            )
-            .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
-            .frame(maxHeight: .infinity)
-          }
-          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
-          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
-          .transition(.move(edge: .trailing))
-        }
+      VStack(spacing: 0) {
+        detailColumn
+          .frame(maxHeight: .infinity)
+        WindowBottomBar(model: model)
       }
-      .animation(.smooth(duration: 0.3), value: model.isFilingPanelShown)
-      .toolbar { fileToolbar }
+      .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      // Declared on the detail column, so these items sit over the preview: the file actions at the trailing end of
+      // the content's part of the toolbar, left of the inspector's.
+      .toolbar {
+        fileNavigationToolbar
+        ToolbarSpacer(.flexible)
+        fileActionsToolbar
+      }
       .navigationTitle(windowTitle)
       .navigationSubtitle(windowSubtitle)
+    }
+    // Spike (`inspector-glass`): the filing panel as the window's inspector, attached to the split view itself, so
+    // the system draws it full height as edge-to-edge glass beside the content (WWDC25 310 and 323). The system
+    // slides it in and out; its user-dragged width is kept in `filingPanelWidth` and used as the next window's ideal.
+    .inspector(isPresented: $model.isFilingPanelShown) {
+      FilingPanel(
+        model: model,
+        locateArchive: { FolderChooser(folders: model.folders).chooseArchiveRoot() }
+      )
+      .onAppear {
+        if initialFilingPanelWidth == nil { initialFilingPanelWidth = filingPanelWidth }
+      }
+      .onGeometryChange(for: Double.self) { geometry in
+        geometry.size.width
+      } action: { width in
+        if Self.filingPanelWidths.contains(width) { filingPanelWidth = width }
+      }
+      // Declaring an item here gives the inspector a toolbar section of its own (SwiftUI adds a tracking separator
+      // at its edge), so the content's items end where the panel begins. The flexible space keeps the toggle at the
+      // window's trailing edge, where it also stays while the inspector is hidden.
+      .toolbar {
+        ToolbarSpacer(.flexible)
+        filingPanelToggleToolbar
+      }
+      .inspectorColumnWidth(
+        min: Self.filingPanelWidths.lowerBound,
+        ideal: initialFilingPanelWidth ?? filingPanelWidth,
+        max: Self.filingPanelWidths.upperBound
+      )
     }
     .frame(minWidth: 1000, minHeight: 640)
     .background(QuickLookPanelHost(controller: quickLookPanel))
@@ -103,9 +118,13 @@ struct MainWindowView: View {
     } message: { alert in
       Text(alert.message)
     }
-    // The system's line between the toolbar and the content scrolling under it, as Finder shows it.
+    // The system's line between the toolbar and the content scrolling under it, as Finder shows it, and none over the
+    // inspector's glass.
     .background(TitlebarSeparatorLine())
     .background(AttachedSheetObserver(model: model))
+    #if DEBUG
+      .background(WindowLayoutProbe())
+    #endif
     .focusedSceneValue(\.mainWindowModel, model)
     .keyboardShortcutsSheet()
     .accessibilityElement(children: .contain)
@@ -167,9 +186,12 @@ struct MainWindowView: View {
     model.selectedFile?.inboxName ?? ""
   }
 
+  /// The widths the filing panel can be dragged to.
+  private static let filingPanelWidths = 300.0...480.0
+
   /// Previous File and Next File as one back/forward pair at the leading edge, before the system window title (like
-  /// Finder's), the file's actions as one group at the right, and the filing panel toggle on its own at the far right.
-  @ToolbarContentBuilder private var fileToolbar: some ToolbarContent {
+  /// Finder's).
+  @ToolbarContentBuilder private var fileNavigationToolbar: some ToolbarContent {
     ToolbarItemGroup(placement: .navigation) {
       Button {
         model.selectFile(.previous)
@@ -189,9 +211,11 @@ struct MainWindowView: View {
       .disabled(model.file(.next) == nil)
       .accessibilityIdentifier("toolbar-next-file")
     }
+  }
 
-    ToolbarSpacer(.flexible)
-
+  /// The selected file's actions as one group. Its own piece, so it can move over the filing panel (into the
+  /// inspector's `.toolbar`) if the toolbar study decides so.
+  @ToolbarContentBuilder private var fileActionsToolbar: some ToolbarContent {
     ToolbarItemGroup {
       Button {
         if let selectedFile = model.selectedFile { FileActions.open(selectedFile.url) }
@@ -220,9 +244,12 @@ struct MainWindowView: View {
       .disabled(!model.canTrashSelectedFile)
       .accessibilityIdentifier("toolbar-trash")
     }
+  }
 
-    ToolbarSpacer(.fixed)
-
+  /// The filing panel toggle, at the window's trailing edge as WWDC25 323 places its inspector toggle. SwiftUI has no
+  /// system toolbar toggle for an inspector, so it is the app's own button. Declared in the inspector's toolbar, it
+  /// sits over the panel while the panel is shown, and the system keeps it in place while the panel is hidden.
+  @ToolbarContentBuilder private var filingPanelToggleToolbar: some ToolbarContent {
     ToolbarItem {
       Button {
         model.isFilingPanelShown.toggle()
