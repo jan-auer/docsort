@@ -117,7 +117,7 @@ struct FilingPanel: View {
           canChangeFiles: model.canChangeArchiveFiles, focus: $focusedField,
           field: .folderContents, listHeight: $contentsHeight, isCollapsed: $isContentsCollapsed,
           maxListHeight: max(
-            listsHeight - Self.pickerMinHeight, FolderContentsListing.minListHeight))
+            listsHeight - Self.pickerMinHeight, FilingPanelStyle.contentsMinListHeight))
       }
       .onGeometryChange(for: Double.self) { geometry in
         geometry.size.height

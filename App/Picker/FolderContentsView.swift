@@ -41,11 +41,10 @@ struct FolderContentsView<FocusValue: Hashable>: View {
   var body: some View {
     FolderContentsListing(
       contents: model.contents, selectedURL: model.selectedContentsFile?.url,
-      conflictingName: conflictingName, isListFocused: focus.wrappedValue == field,
-      listHeight: $listHeight, isCollapsed: $isCollapsed, maxListHeight: maxListHeight,
-      actions: actions
+      conflictingName: conflictingName, focus: focus, field: field,
+      isListFocused: focus.wrappedValue == field, listHeight: $listHeight,
+      isCollapsed: $isCollapsed, maxListHeight: maxListHeight, actions: actions
     )
-    .focused(focus, equals: field)
   }
 
   /// What the listing's clicks, keys and menu items do.
@@ -92,11 +91,15 @@ struct FolderContentsActions {
 }
 
 /// Folder contents for one ``FolderContents`` value; ``FolderContentsView`` feeds it from the picker model.
-struct FolderContentsListing: View {
+struct FolderContentsListing<FocusValue: Hashable>: View {
   let contents: FolderContents
   /// The selected file, if any.
   var selectedURL: URL? = nil
   let conflictingName: String?
+  /// The panel's focus, and the value that stands for the file list. Only the list carries it: on the whole drawer,
+  /// focusing it would focus the first focusable view inside, the header's chevron when keyboard navigation is on.
+  let focus: FocusState<FocusValue?>.Binding
+  let field: FocusValue
   /// Whether the file list has keyboard focus: the selection shows in the accent colour then, grey otherwise.
   var isListFocused = false
   @Binding var listHeight: Double
@@ -110,9 +113,6 @@ struct FolderContentsListing: View {
   @State private var fileToRename: FolderFile?
   /// The name typed in the Rename dialog, without the extension.
   @State private var newName = ""
-
-  /// The shortest the list gets while expanded.
-  static let minListHeight: Double = 48
 
   var body: some View {
     VStack(spacing: 0) {
@@ -131,7 +131,9 @@ struct FolderContentsListing: View {
   }
 
   private var clampedListHeight: Double {
-    min(max(listHeight, Self.minListHeight), max(maxListHeight, Self.minListHeight))
+    min(
+      max(listHeight, FilingPanelStyle.contentsMinListHeight),
+      max(maxListHeight, FilingPanelStyle.contentsMinListHeight))
   }
 
   // MARK: Header
@@ -191,7 +193,8 @@ struct FolderContentsListing: View {
     .accessibilityAdjustableAction { direction in
       switch direction {
       case .increment: listHeight = min(clampedListHeight + 24, maxListHeight)
-      case .decrement: listHeight = max(clampedListHeight - 24, Self.minListHeight)
+      case .decrement:
+        listHeight = max(clampedListHeight - 24, FilingPanelStyle.contentsMinListHeight)
       @unknown default: break
       }
     }
@@ -204,11 +207,13 @@ struct FolderContentsListing: View {
         if isCollapsed {
           guard drag.translation.height < -8 else { return }
           isCollapsed = false
-          listHeight = Self.minListHeight
+          listHeight = FilingPanelStyle.contentsMinListHeight
         }
         let start = dragStartHeight ?? clampedListHeight
         dragStartHeight = start
-        listHeight = min(max(start - drag.translation.height, Self.minListHeight), maxListHeight)
+        listHeight = min(
+          max(start - drag.translation.height, FilingPanelStyle.contentsMinListHeight),
+          maxListHeight)
       }
       .onEnded { _ in
         dragStartHeight = nil
@@ -295,6 +300,7 @@ struct FolderContentsListing: View {
       .defaultScrollAnchor(.bottom)
       .focusable()
       .focusEffectDisabled()
+      .focused(focus, equals: field)
       .onKeyPress(phases: .down, action: handle)
       .accessibilityIdentifier("folder-contents-list")
       .onChange(of: files.map(\.url), initial: true) { _, urls in
@@ -464,29 +470,45 @@ struct FolderContentsFileRow: View {
     }
   }
 
+  /// Gives a previewed ``FolderContentsListing`` a focus of its own.
+  private struct ListingPreview<Listing: View>: View {
+    @ViewBuilder let listing: (FocusState<Bool?>.Binding) -> Listing
+    @FocusState private var focus: Bool?
+
+    var body: some View {
+      listing($focus)
+    }
+  }
+
   #Preview("Files") {
-    FolderContentsListing(
-      contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
-      conflictingName: nil,
-      listHeight: .constant(120), isCollapsed: .constant(false), maxListHeight: 400
-    )
-    .frame(width: 340, height: 160)
+    ListingPreview { focus in
+      FolderContentsListing(
+        contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
+        conflictingName: nil, focus: focus, field: true,
+        listHeight: .constant(120), isCollapsed: .constant(false), maxListHeight: 400
+      )
+      .frame(width: 340, height: 160)
+    }
   }
 
   #Preview("Selected") {
     let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
-    FolderContentsListing(
-      contents: contents, selectedURL: contents.firstFileURL, conflictingName: nil,
-      isListFocused: true, listHeight: .constant(120), isCollapsed: .constant(false),
-      maxListHeight: 400
-    )
-    .frame(width: 340, height: 160)
+    ListingPreview { focus in
+      FolderContentsListing(
+        contents: contents, selectedURL: contents.firstFileURL, conflictingName: nil,
+        focus: focus, field: true, isListFocused: true, listHeight: .constant(120),
+        isCollapsed: .constant(false),
+        maxListHeight: 400
+      )
+      .frame(width: 340, height: 160)
+    }
   }
 
   /// Every row state at once: selected with the list focused and unfocused, the conflict row, and the selected
   /// conflict row, in one colour scheme.
   private struct RowStatesPreview: View {
     let colorScheme: ColorScheme
+    @FocusState private var focus: Bool?
 
     var body: some View {
       let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
@@ -495,12 +517,14 @@ struct FolderContentsFileRow: View {
         ForEach([true, false], id: \.self) { isFocused in
           FolderContentsListing(
             contents: contents, selectedURL: files.first?.url,
-            conflictingName: files.last?.name, isListFocused: isFocused,
+            conflictingName: files.last?.name, focus: $focus, field: true,
+            isListFocused: isFocused,
             listHeight: .constant(84), isCollapsed: .constant(false), maxListHeight: 84)
         }
         FolderContentsListing(
           contents: contents, selectedURL: files.last?.url, conflictingName: files.last?.name,
-          isListFocused: true, listHeight: .constant(84), isCollapsed: .constant(false),
+          focus: $focus, field: true, isListFocused: true, listHeight: .constant(84),
+          isCollapsed: .constant(false),
           maxListHeight: 84)
       }
       .frame(width: 340)
@@ -518,30 +542,39 @@ struct FolderContentsFileRow: View {
   }
 
   #Preview("Conflict") {
-    FolderContentsListing(
-      contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
-      conflictingName: "2033-07-19 gutschrift störung.pdf", listHeight: .constant(60),
-      isCollapsed: .constant(false), maxListHeight: 400
-    )
-    .frame(width: 340, height: 100)
+    ListingPreview { focus in
+      FolderContentsListing(
+        contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
+        conflictingName: "2033-07-19 gutschrift störung.pdf", focus: focus, field: true,
+        listHeight: .constant(60),
+        isCollapsed: .constant(false), maxListHeight: 400
+      )
+      .frame(width: 340, height: 100)
+    }
   }
 
   #Preview("New folder") {
-    FolderContentsListing(
-      contents: .notOnDisk, conflictingName: nil, listHeight: .constant(60),
-      isCollapsed: .constant(false), maxListHeight: 400
-    )
-    .frame(width: 340, height: 100)
+    ListingPreview { focus in
+      FolderContentsListing(
+        contents: .notOnDisk, conflictingName: nil, focus: focus, field: true,
+        listHeight: .constant(60),
+        isCollapsed: .constant(false), maxListHeight: 400
+      )
+      .frame(width: 340, height: 100)
+    }
   }
 
   #Preview("Failed") {
-    FolderContentsListing(
-      contents: .failed(
-        folder: "Reisen/Reiseplanung Ideen", message: "The folder no longer exists."),
-      conflictingName: nil, listHeight: .constant(60), isCollapsed: .constant(false),
-      maxListHeight: 400
-    )
-    .frame(width: 340, height: 100)
+    ListingPreview { focus in
+      FolderContentsListing(
+        contents: .failed(
+          folder: "Reisen/Reiseplanung Ideen", message: "The folder no longer exists."),
+        conflictingName: nil, focus: focus, field: true, listHeight: .constant(60),
+        isCollapsed: .constant(false),
+        maxListHeight: 400
+      )
+      .frame(width: 340, height: 100)
+    }
   }
 
   /// Folder contents fed by a sample picker, with focus of its own.
