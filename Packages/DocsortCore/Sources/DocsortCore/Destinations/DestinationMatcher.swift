@@ -57,6 +57,7 @@ struct DestinationMatcher: Sendable {
 
   /// A path prepared for matching.
   private struct Candidate: Sendable {
+    /// The path as given, stored as contiguous UTF-8 so that scoring reads its bytes without converting it.
     let path: String
     /// The path's segments as given, to find the scope's descendants.
     let segments: [String]
@@ -65,14 +66,14 @@ struct DestinationMatcher: Sendable {
   }
 
   /// A candidate inside the search scope, seen relative to the scope.
-  private struct ScopedCandidate {
+  private struct ScopedCandidate: Sendable {
     let candidateIndex: Int
     let pathInScope: String
     let foldedSegmentsInScope: ArraySlice<String>
   }
 
   /// The best score a scoped candidate reached over all spellings of the query.
-  private struct Scored {
+  private struct Scored: Sendable {
     let scopedIndex: Int
     var score: Double
     var spellingIndex: Int
@@ -84,46 +85,49 @@ struct DestinationMatcher: Sendable {
   /// A matcher over `paths`, which are given in the order ties should keep (Finder order).
   init(paths: [String]) {
     candidates = paths.map { path in
-      Candidate(
-        path: path, segments: Self.segments(of: path),
+      // Paths from Foundation (the index's NFC paths) are bridged strings; FuzzyMatch reads UTF-8 bytes, which a
+      // bridged string would have to convert on every keystroke.
+      var contiguousPath = path
+      contiguousPath.makeContiguousUTF8()
+      return Candidate(
+        path: contiguousPath, segments: Self.segments(of: path),
         foldedSegments: SegmentBonus.foldedSegments(of: path))
     }
   }
 
   /// The descendants of `scope` matching `query`, best first, at most `limit` of them.
   ///
-  /// `scope` is an archive-relative folder path in any Unicode normalisation, `""` for the archive root. `ranking`
-  /// decides whether a folder named exactly like a query word outweighs one level of depth. An empty or
-  /// whitespace-only query matches nothing.
+  /// `scope` is an archive-relative folder path in any Unicode normalisation, `""` for the archive root. With
+  /// `excludedFolder`, that folder and everything inside it are left out; the other matches keep their scores and
+  /// order. `ranking` decides whether a folder named exactly like a query word outweighs one level of depth. An empty
+  /// or whitespace-only query matches nothing.
   func matches(
-    for query: String, in scope: String = "", ranking: ScopedRanking = .directChildFirst,
-    recents: RecentDestinations = RecentDestinations(), limit: Int = 50
+    for query: String, in scope: String = "", outside excludedFolder: String? = nil,
+    ranking: ScopedRanking = .directChildFirst, recents: RecentDestinations = RecentDestinations(),
+    limit: Int = 50
   ) -> [DestinationMatch] {
     guard limit > 0, let searchQuery = SearchQuery(query) else { return [] }
 
-    let scoped = scopedCandidates(in: scope)
-    let preparedSpellings = searchQuery.spellings.map(fuzzyMatcher.prepare)
-    let spellingWords = searchQuery.spellings.map(SegmentBonus.foldedWords(of:))
-    var bestByScoped = [Scored?](repeating: nil, count: scoped.count)
-    var buffer = fuzzyMatcher.makeBuffer()
-    for (spellingIndex, prepared) in preparedSpellings.enumerated() {
-      for (scopedIndex, candidate) in scoped.enumerated() {
+    let scoped = scopedCandidates(in: scope, outside: excludedFolder)
+    // Each candidate is scored on its own, so chunks of them are scored concurrently. Each chunk prepares the query
+    // itself: shared prepared queries would have their reference counts updated from every core at once, which costs
+    // more than preparing them a few dozen times.
+    var ranked = ParallelChunks.flatMap(
+      scoped.indices, chunkSize: ParallelChunks.chunkSize(for: scoped.count, minimum: 1024)
+    ) { chunk -> [Scored] in
+      let spellings = PreparedSpellings(searchQuery, fuzzyMatcher: fuzzyMatcher)
+      var buffer = fuzzyMatcher.makeBuffer()
+      return chunk.compactMap { scopedIndex in
+        let candidate = scoped[scopedIndex]
         guard
-          let match = fuzzyMatcher.score(candidate.pathInScope, against: prepared, buffer: &buffer)
-        else { continue }
-        let score =
-          match.score
-          + SegmentBonus.value(
-            words: spellingWords[spellingIndex], segments: candidate.foldedSegmentsInScope,
-            ranking: ranking)
-        if score > bestByScoped[scopedIndex]?.score ?? -.infinity {
-          bestByScoped[scopedIndex] = Scored(
-            scopedIndex: scopedIndex, score: score, spellingIndex: spellingIndex)
-        }
+          let best = bestSpelling(
+            for: candidate.pathInScope, segments: candidate.foldedSegmentsInScope,
+            among: spellings, ranking: ranking, buffer: &buffer)
+        else { return nil }
+        return Scored(
+          scopedIndex: scopedIndex, score: best.score, spellingIndex: best.spellingIndex)
       }
     }
-
-    var ranked = bestByScoped.compactMap { $0 }
     for index in ranked.indices {
       let levelsBelowChildren = scoped[ranked[index].scopedIndex].foldedSegmentsInScope.count - 1
       ranked[index].score -= Self.depthPenalty * Double(levelsBelowChildren)
@@ -137,24 +141,101 @@ struct DestinationMatcher: Sendable {
       return lhs.scopedIndex < rhs.scopedIndex
     }
 
-    var highlighters: [Int: MatchHighlighter] = [:]
+    // Highlighting tells scattered matches apart, so the best `limit` matches that are not scattered are found by
+    // highlighting the ranked matches window by window (each window concurrently), until enough are found.
+    let rankedMatches = ranked
     var matches: [DestinationMatch] = []
-    for best in ranked {
-      let candidate = scoped[best.scopedIndex]
-      let spelling = searchQuery.spellings[best.spellingIndex]
-      let highlighter =
-        highlighters[best.spellingIndex]
-        ?? MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher)
-      highlighters[best.spellingIndex] = highlighter
-      let matchedRanges = highlighter.ranges(in: candidate.pathInScope)
-      guard !Self.isScattered(matchedRanges, spelling: spelling) else { continue }
-      matches.append(
-        DestinationMatch(
-          path: candidates[candidate.candidateIndex].path, pathInScope: candidate.pathInScope,
-          score: best.score, matchedRanges: matchedRanges))
-      if matches.count == limit { break }
+    var windowStart = 0
+    var windowSize = limit
+    while matches.count < limit, windowStart < ranked.count {
+      let window = windowStart..<windowStart + min(windowSize, ranked.count - windowStart)
+      let highlighted = ParallelChunks.flatMap(
+        window, chunkSize: ParallelChunks.chunkSize(for: window.count, minimum: 8)
+      ) { chunk in
+        let highlighters = searchQuery.spellings.map { spelling in
+          MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher)
+        }
+        return chunk.map { rankedIndex -> DestinationMatch? in
+          let best = rankedMatches[rankedIndex]
+          let candidate = scoped[best.scopedIndex]
+          let matchedRanges = highlighters[best.spellingIndex].ranges(in: candidate.pathInScope)
+          let spelling = searchQuery.spellings[best.spellingIndex]
+          guard !Self.isScattered(matchedRanges, spelling: spelling) else { return nil }
+          return DestinationMatch(
+            path: candidates[candidate.candidateIndex].path, pathInScope: candidate.pathInScope,
+            score: best.score, matchedRanges: matchedRanges)
+        }
+      }
+      matches += highlighted.compactMap(\.self).prefix(limit - matches.count)
+      windowStart = window.upperBound
+      windowSize = min(windowSize, ranked.count) * 2
     }
     return matches
+  }
+
+  /// Whether the folder at `path` (archive-relative, in any Unicode normalisation) matches `query` from the archive
+  /// root: a search from the root without a limit would list it. `false` for a path that is not a candidate.
+  func matches(_ query: String, folder path: String, ranking: ScopedRanking = .directChildFirst)
+    -> Bool
+  {
+    let segments = Self.segments(of: path)
+    guard !segments.isEmpty, let searchQuery = SearchQuery(query),
+      let candidate = candidates.first(where: { $0.segments == segments })
+    else { return false }
+    var buffer = fuzzyMatcher.makeBuffer()
+    guard
+      let best = bestSpelling(
+        for: candidate.path, segments: candidate.foldedSegments[...],
+        among: PreparedSpellings(searchQuery, fuzzyMatcher: fuzzyMatcher), ranking: ranking,
+        buffer: &buffer)
+    else { return false }
+    let spelling = searchQuery.spellings[best.spellingIndex]
+    let highlighter = MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher)
+    return !Self.isScattered(highlighter.ranges(in: candidate.path), spelling: spelling)
+  }
+
+  /// A query's spellings prepared for scoring.
+  private struct PreparedSpellings {
+    /// Each spelling prepared for FuzzyMatch, in ``SearchQuery/spellings`` order.
+    let queries: [FuzzyQuery]
+    /// Each spelling's folded words, for the segment bonus.
+    let words: [[String]]
+
+    init(_ searchQuery: SearchQuery, fuzzyMatcher: FuzzyMatcher) {
+      queries = searchQuery.spellings.map(fuzzyMatcher.prepare)
+      words = searchQuery.spellings.map(SegmentBonus.foldedWords(of:))
+    }
+  }
+
+  /// The best score `path` (seen relative to the scope, with folded `segments`) reaches over `spellings`, FuzzyMatch's
+  /// score plus the segment bonus, and the first spelling reaching it; `nil` when no spelling matches.
+  private func bestSpelling(
+    for path: String, segments: ArraySlice<String>, among spellings: PreparedSpellings,
+    ranking: ScopedRanking, buffer: inout ScoringBuffer
+  ) -> (score: Double, spellingIndex: Int)? {
+    var best: (score: Double, spellingIndex: Int)?
+    for (spellingIndex, prepared) in spellings.queries.enumerated() {
+      guard let match = score(path, against: prepared, buffer: &buffer) else { continue }
+      let score =
+        match.score
+        + SegmentBonus.value(
+          words: spellings.words[spellingIndex], segments: segments, ranking: ranking)
+      if score > best?.score ?? -.infinity {
+        best = (score, spellingIndex)
+      }
+    }
+    return best
+  }
+
+  /// FuzzyMatch's match of `path` against `prepared`, read from the path's UTF-8 bytes where they are contiguous.
+  private func score(_ path: String, against prepared: FuzzyQuery, buffer: inout ScoringBuffer)
+    -> ScoredMatch?
+  {
+    let contiguousMatch = path.utf8.withContiguousStorageIfAvailable { bytes in
+      fuzzyMatcher.score(utf8: bytes, against: prepared, buffer: &buffer)
+    }
+    if let contiguousMatch { return contiguousMatch }
+    return fuzzyMatcher.score(path, against: prepared, buffer: &buffer)
   }
 
   /// Whether a match is noise: the query's letters land on the path in more separate runs than half the query's
@@ -167,21 +248,30 @@ struct DestinationMatcher: Sendable {
     return matchedRanges.count > (queryLength + 1) / 2
   }
 
-  /// The candidates strictly inside `scope`, in the given order, with their paths relative to it.
-  private func scopedCandidates(in scope: String) -> [ScopedCandidate] {
+  /// The candidates strictly inside `scope` and not in or inside `excludedFolder`, in the given order, with their
+  /// paths relative to the scope.
+  private func scopedCandidates(in scope: String, outside excludedFolder: String?)
+    -> [ScopedCandidate]
+  {
     let scopeSegments = Self.segments(of: scope)
+    let excludedSegments = excludedFolder.map(Self.segments(of:)) ?? []
+    // String equality is canonical-equivalence aware, so a scope in either normalisation finds NFC and NFD paths.
+    func isExcluded(_ candidate: Candidate) -> Bool {
+      !excludedSegments.isEmpty && candidate.segments.starts(with: excludedSegments)
+    }
     guard !scopeSegments.isEmpty else {
-      return candidates.enumerated().map { index, candidate in
-        ScopedCandidate(
+      return candidates.enumerated().compactMap { index, candidate in
+        guard !isExcluded(candidate) else { return nil }
+        return ScopedCandidate(
           candidateIndex: index, pathInScope: candidate.path,
           foldedSegmentsInScope: candidate.foldedSegments[...])
       }
     }
-    // String equality is canonical-equivalence aware, so a scope in either normalisation finds NFC and NFD paths.
     return candidates.enumerated().compactMap { index, candidate in
       guard
         candidate.segments.count > scopeSegments.count,
-        candidate.segments.starts(with: scopeSegments)
+        candidate.segments.starts(with: scopeSegments),
+        !isExcluded(candidate)
       else { return nil }
       return ScopedCandidate(
         candidateIndex: index,

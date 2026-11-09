@@ -442,6 +442,64 @@ struct DestinationMatcherTests {
 
     #expect(highlighted(match).joined() == "Rchng")
   }
+
+  // MARK: Outside a folder
+
+  @Test(
+    "a search outside a folder leaves out the folder and its subtree and keeps the other matches in order",
+    arguments: ["rech", "hund", "imk volk", "kontoauszuege", "s", "2036"])
+  func outsideLeavesOutTheSubtree(query: String) {
+    let matcher = DestinationRankingTests.matcher
+    for excluded in ["Hund", "Hobbys/Imkerei", "Finanzen/Bank/Kontoauszu\u{0308}ge"] {
+      let everywhere = matcher.matches(for: query, limit: .max)
+      let expected = everywhere.filter { match in
+        match.path.precomposedStringWithCanonicalMapping
+          != excluded.precomposedStringWithCanonicalMapping
+          && !match.path.precomposedStringWithCanonicalMapping.hasPrefix(
+            excluded.precomposedStringWithCanonicalMapping + "/")
+      }
+
+      #expect(
+        matcher.matches(for: query, outside: excluded, limit: 20) == Array(expected.prefix(20)),
+        "\(query) outside \(excluded)")
+    }
+  }
+
+  @Test("a search inside a scope can leave out a folder in it")
+  func outsideInsideAScope() {
+    let matcher = DestinationMatcher(paths: [
+      "Hund", "Hund/Rechnungen", "Hund/Tierarzt", "Hund/Tierarzt/Rechnungen", "Rechnungen",
+    ])
+
+    #expect(
+      paths(matcher.matches(for: "rech", in: "Hund", outside: "Hund/Tierarzt")) == [
+        "Hund/Rechnungen"
+      ])
+  }
+
+  // MARK: One folder
+
+  @Test(
+    "a folder matches a query exactly when a search from the root without a limit lists it",
+    arguments: ["rech", "hund", "imk volk", "kontoauszuege", "s", "2036", "asdf", "rchng"])
+  func folderMatchesLikeASearch(query: String) {
+    let matcher = DestinationRankingTests.matcher
+    let listed = Set(paths(matcher.matches(for: query, limit: .max)))
+    for folder in fixtureCorpus() {
+      #expect(
+        matcher.matches(query, folder: folder) == listed.contains(folder), "\(query) in \(folder)")
+    }
+  }
+
+  @Test("the root and a folder that is not a candidate match nothing")
+  func folderMatchOutsideTheCandidates() {
+    let matcher = DestinationMatcher(paths: ["Hund", "Hund/Rechnungen"])
+
+    #expect(matcher.matches("hund", folder: "Hund"))
+    #expect(!matcher.matches("hund", folder: ""))
+    #expect(!matcher.matches("katze", folder: "Katze"))
+    #expect(!matcher.matches("  ", folder: "Hund"))
+  }
 }
 
 /// The paths of `matches`, in order.
