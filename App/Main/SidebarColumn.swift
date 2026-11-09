@@ -33,7 +33,7 @@ struct SidebarColumn<InboxList: View>: View {
       HStack(spacing: 6) {
         Label("History", systemImage: "clock")
         Spacer(minLength: 8)
-        Text("⌘Y")
+        Text(MenuCommand.history.keys.notation)
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
       }
@@ -42,7 +42,7 @@ struct SidebarColumn<InboxList: View>: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .help("Show History (⌘Y)")
+    .help("Show History (\(MenuCommand.history.keys.notation))")
     .accessibilityIdentifier("sidebar-history")
   }
 }

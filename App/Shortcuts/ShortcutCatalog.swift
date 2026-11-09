@@ -20,6 +20,20 @@ enum ShortcutContext: Hashable, Sendable {
   /// In the History window.
   case history
 
+  /// The context's part of accessibility identifiers, for example `keyboard-shortcuts-section-name-field`.
+  var identifier: String {
+    switch self {
+    case .anywhere: "anywhere"
+    case .sidebar: "sidebar"
+    case .destinationPicker: "destination-picker"
+    case .newFolderName: "new-folder-name"
+    case .nameField: "name-field"
+    case .folderContents: "folder-contents"
+    case .quickLookPanel: "quick-look-panel"
+    case .history: "history"
+    }
+  }
+
   /// The context's heading in the sheet.
   var title: String {
     switch self {
@@ -43,6 +57,15 @@ enum ShortcutTrigger: Hashable, Sendable {
   case pair(KeyCombination, KeyCombination)
   /// Typing text.
   case typing
+
+  /// The trigger as VoiceOver should say it: "Tab or Return", "Up Arrow, Down Arrow", "Type".
+  var spokenName: String {
+    switch self {
+    case .keys(let keys): keys.map(\.spokenName).joined(separator: " or ")
+    case .pair(let first, let second): "\(first.spokenName), \(second.spokenName)"
+    case .typing: "Type"
+    }
+  }
 
   /// Every key combination the trigger names.
   var combinations: [KeyCombination] {

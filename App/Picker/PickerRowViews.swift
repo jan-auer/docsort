@@ -122,7 +122,7 @@ struct PickerCreateFolderRow: View {
         }
       }
       Spacer(minLength: 0)
-      Text("⇧⌘N")
+      Text(KeyCombination(pickerKey: .shiftCommandN).notation)
         .font(.subheadline)
         .foregroundStyle(tone.secondary)
         .accessibilityHidden(true)

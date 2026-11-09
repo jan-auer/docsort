@@ -5,8 +5,8 @@ final class KeyboardShortcutsUITests: XCTestCase {
     continueAfterFailure = false
   }
 
-  /// ⌘/ opens the sheet over the main window with the search field focused, typing filters the rows, Esc closes it,
-  /// and ⌘/ closes it again after reopening.
+  /// ⌘/ opens the sheet over the main window with the search field focused, typing filters the rows, Esc clears the
+  /// search and then closes the sheet, and ⌘/ closes it again after reopening.
   @MainActor
   func testCommandSlashOpensAndClosesTheShortcutsSheet() throws {
     let app = XCUIApplication()
@@ -23,12 +23,16 @@ final class KeyboardShortcutsUITests: XCTestCase {
     let search = sheet.descendants(matching: .any)["keyboard-shortcuts-search"]
     XCTAssertTrue(search.waitForExistence(timeout: 2))
     sheet.typeText("trash")
-    let rows = sheet.descendants(matching: .any).matching(identifier: "keyboard-shortcut-row")
+    let rows = sheet.descendants(matching: .any).matching(identifier: "keyboard-shortcuts-row")
     let trashRow = rows.matching(NSPredicate(format: "label == %@", "Move to Trash")).firstMatch
     XCTAssertTrue(trashRow.waitForExistence(timeout: 2))
     let historyRow = rows.matching(NSPredicate(format: "label == %@", "History")).firstMatch
     XCTAssertFalse(historyRow.exists)
 
+    // The first Esc clears the search, the second closes the sheet.
+    sheet.typeKey(.escape, modifierFlags: [])
+    XCTAssertTrue(historyRow.waitForExistence(timeout: 2))
+    XCTAssertTrue(sheet.exists)
     sheet.typeKey(.escape, modifierFlags: [])
     XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
 

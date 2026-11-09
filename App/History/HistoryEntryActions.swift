@@ -44,7 +44,7 @@ struct HistoryRevealButton: View {
     }
     .buttonStyle(.borderless)
     .keyboardShortcut(for: .revealInFinder)
-    .help("\(title) (⌥⌘R)")
+    .help("\(title) (\(MenuCommand.revealInFinder.keys.notation))")
     .accessibilityLabel(title)
     .accessibilityIdentifier(revealsFile ? "history-reveal" : "history-reveal-folder")
   }

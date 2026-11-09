@@ -29,6 +29,13 @@ struct KeyCombination: Hashable, Sendable {
     keycaps.joined()
   }
 
+  /// The combination as VoiceOver should say it, for example "Shift Command O" or "Command Up Arrow".
+  var spokenName: String {
+    let modifierNames = Self.modifierOrder.filter { modifiers.contains($0.modifier) }
+      .map { $0.names[0].capitalized }
+    return (modifierNames + [spokenKeyName]).joined(separator: " ")
+  }
+
   /// The words a search for this combination may use: each glyph, the notation, and the keys' names ("cmd",
   /// "shift", "esc", "up").
   var searchWords: [String] {
@@ -47,23 +54,24 @@ struct KeyCombination: Hashable, Sendable {
     (.command, "⌘", ["command", "cmd"]),
   ]
 
-  /// The special keys with their glyphs and names.
-  private static let specialKeys: [(key: KeyEquivalent, glyph: String, names: [String])] = [
-    (.return, "↩", ["return", "enter"]),
-    (.tab, "⇥", ["tab"]),
-    (.escape, "⎋", ["escape", "esc"]),
-    (.delete, "⌫", ["delete", "backspace"]),
-    (.deleteForward, "⌦", ["forward", "delete"]),
-    (.space, "Space", ["space"]),
-    (.upArrow, "↑", ["up", "arrow"]),
-    (.downArrow, "↓", ["down", "arrow"]),
-    (.leftArrow, "←", ["left", "arrow"]),
-    (.rightArrow, "→", ["right", "arrow"]),
-    (.pageUp, "⇞", ["page", "up"]),
-    (.pageDown, "⇟", ["page", "down"]),
-    (.home, "↖", ["home"]),
-    (.end, "↘", ["end"]),
-  ]
+  /// The special keys with their glyphs, spoken names and search names.
+  private static let specialKeys:
+    [(key: KeyEquivalent, glyph: String, spoken: String, names: [String])] = [
+      (.return, "↩", "Return", ["return", "enter"]),
+      (.tab, "⇥", "Tab", ["tab"]),
+      (.escape, "⎋", "Escape", ["escape", "esc"]),
+      (.delete, "⌫", "Delete", ["delete", "backspace"]),
+      (.deleteForward, "⌦", "Forward Delete", ["forward", "delete"]),
+      (.space, "Space", "Space", ["space"]),
+      (.upArrow, "↑", "Up Arrow", ["up", "arrow"]),
+      (.downArrow, "↓", "Down Arrow", ["down", "arrow"]),
+      (.leftArrow, "←", "Left Arrow", ["left", "arrow"]),
+      (.rightArrow, "→", "Right Arrow", ["right", "arrow"]),
+      (.pageUp, "⇞", "Page Up", ["page", "up"]),
+      (.pageDown, "⇟", "Page Down", ["page", "down"]),
+      (.home, "↖", "Home", ["home"]),
+      (.end, "↘", "End", ["end"]),
+    ]
 
   /// The names of printable keys that are punctuation.
   private static let punctuationNames: [Character: [String]] = [
@@ -77,6 +85,17 @@ struct KeyCombination: Hashable, Sendable {
     }
     if key.character == "-" {
       return "−"
+    }
+    return String(key.character).uppercased()
+  }
+
+  /// The key's name for VoiceOver: a special key's or punctuation's name, else the uppercase character.
+  private var spokenKeyName: String {
+    if let special = Self.specialKeys.first(where: { $0.key == key }) {
+      return special.spoken
+    }
+    if let name = Self.punctuationNames[key.character]?.first {
+      return name.capitalized
     }
     return String(key.character).uppercased()
   }

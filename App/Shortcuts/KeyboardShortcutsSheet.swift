@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The read-only list of every keyboard shortcut (`docs/design/keyboard-shortcuts-sheet.md`): a sheet over the main
 /// window with a search field, the catalog's sections in two balanced columns, each row's title on the left and its
-/// keys as keycaps on the right. Esc, ⌘/ and Done close it.
+/// keys as keycaps on the right. Esc clears the search first, as in History, then closes the sheet; ⌘/ and Done close
+/// it at once.
 struct KeyboardShortcutsSheet: View {
   let catalog: ShortcutCatalog
 
@@ -25,14 +26,9 @@ struct KeyboardShortcutsSheet: View {
       footer
     }
     .frame(width: 760, height: 640)
-    .background {
-      // ⌘/ closes the sheet as it opened it, whether or not the menu bar's command reaches the sheet.
-      Button("Close Keyboard Shortcuts") { dismiss() }
-        .keyboardShortcut(for: .keyboardShortcuts)
-        .opacity(0)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
+    // Esc reaches the sheet as `cancelOperation(_:)` from the search field's editor. ⌘/ closes the sheet through
+    // Help › Keyboard Shortcuts, which stays on while the sheet is attached.
+    .onExitCommand(perform: escape)
     .defaultFocus($isSearchFocused, true)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("keyboard-shortcuts-sheet")
@@ -76,16 +72,26 @@ struct KeyboardShortcutsSheet: View {
 
   private var footer: some View {
     HStack {
-      Text("Every command is also in the menu bar.")
+      Text("The commands under Anywhere are also in the menu bar.")
         .font(.callout)
         .foregroundStyle(.secondary)
       Spacer()
       Button("Done") { dismiss() }
-        .keyboardShortcut(.cancelAction)
         .accessibilityIdentifier("keyboard-shortcuts-done")
     }
     .padding(.horizontal, 24)
     .padding(.vertical, 14)
+  }
+}
+
+extension KeyboardShortcutsSheet {
+  /// Esc: clears a search, else closes the sheet.
+  private func escape() {
+    if query.isEmpty {
+      dismiss()
+    } else {
+      query = ""
+    }
   }
 }
 
@@ -126,6 +132,7 @@ private struct ShortcutSearchField: View {
         }
         .buttonStyle(.borderless)
         .accessibilityLabel("Clear Search")
+        .accessibilityIdentifier("keyboard-shortcuts-clear-search")
       }
     }
     .padding(.horizontal, 8)
@@ -150,7 +157,7 @@ private struct ShortcutSectionView: View {
       }
     }
     .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("keyboard-shortcuts-section")
+    .accessibilityIdentifier("keyboard-shortcuts-section-\(section.context.identifier)")
   }
 }
 
@@ -175,9 +182,10 @@ private struct ShortcutRow: View {
     .padding(.vertical, 3)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(entry.title)
-    .accessibilityValue(entry.trigger.combinations.map(\.notation).joined(separator: ", "))
+    .accessibilityValue(entry.trigger.spokenName)
+    .accessibilityHint(entry.note ?? "")
     .accessibilityAddTraits(.isStaticText)
-    .accessibilityIdentifier("keyboard-shortcut-row")
+    .accessibilityIdentifier("keyboard-shortcuts-row")
   }
 }
 
@@ -193,12 +201,12 @@ private struct ShortcutTriggerView: View {
           if index > 0 {
             Separator(text: "or")
           }
-          Keycap(text: combination.notation)
+          Keycap(keys: combination)
         }
       case .pair(let first, let second):
-        Keycap(text: first.notation)
+        Keycap(keys: first)
         Separator(text: "/")
-        Keycap(text: second.notation)
+        Keycap(keys: second)
       case .typing:
         Keycap(text: "Type", style: .typing)
       }
@@ -228,11 +236,21 @@ private struct Keycap: View {
   let text: String
   var style: Style = .key
 
+  /// The cap for `keys`: its keycaps with a hair space between them, so the glyphs don't crowd but a word such as
+  /// "Space" keeps its own spacing.
+  init(keys: KeyCombination) {
+    self.init(text: keys.keycaps.joined(separator: "\u{200A}"))
+  }
+
+  init(text: String, style: Style = .key) {
+    self.text = text
+    self.style = style
+  }
+
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: 5, style: .continuous)
     Text(text)
       .font(.system(.callout, design: .rounded).weight(.medium))
-      .tracking(style == .key ? 1.5 : 0)
       .foregroundStyle(style == .key ? .primary : .secondary)
       .padding(.horizontal, 6)
       .frame(minWidth: 26, minHeight: 22)

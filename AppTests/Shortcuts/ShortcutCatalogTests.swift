@@ -127,6 +127,28 @@ struct ShortcutCatalogTests {
     #expect(KeyCombination("/", modifiers: .command).notation == "⌘/")
   }
 
+  @Test("VoiceOver hears key names, not glyphs")
+  func spokenNames() {
+    #expect(KeyCombination("o", modifiers: [.shift, .command]).spokenName == "Shift Command O")
+    #expect(
+      KeyCombination(.upArrow, modifiers: [.option, .command]).spokenName
+        == "Option Command Up Arrow")
+    #expect(KeyCombination("-", modifiers: .command).spokenName == "Command Minus")
+    #expect(
+      ShortcutTrigger.keys([KeyCombination(.tab), KeyCombination(.return)]).spokenName
+        == "Tab or Return")
+    #expect(
+      ShortcutTrigger.pair(KeyCombination(.upArrow), KeyCombination(.downArrow)).spokenName
+        == "Up Arrow, Down Arrow")
+    #expect(ShortcutTrigger.typing.spokenName == "Type")
+  }
+
+  @Test("Section identifiers are distinct")
+  func sectionIdentifiers() {
+    let identifiers = catalog.sections.map(\.context.identifier)
+    #expect(identifiers.count == Set(identifiers).count)
+  }
+
   @Test("Search matches titles, section names and key names, ignoring case and order")
   func search() {
     #expect(titles(matching: "trash").first == "Move to Trash")

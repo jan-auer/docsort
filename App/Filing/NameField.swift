@@ -81,7 +81,7 @@ struct NameField: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
-        .help("Revert to “\(file.originalName)” (⇧⌘R)")
+        .help("Revert to “\(file.originalName)” (\(MenuCommand.revertName.keys.notation))")
         .accessibilityLabel("Revert Name")
         .accessibilityIdentifier("name-revert")
       } else {
