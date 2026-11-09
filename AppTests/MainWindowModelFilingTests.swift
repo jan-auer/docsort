@@ -56,7 +56,7 @@ struct MainWindowModelFilingTests {
     #expect(model.picker.highlightedRowID == "recent:\(tierarztPath)")
   }
 
-  @Test("Filing says in the bottom bar where the file went and offers Undo")
+  @Test("Filing says in the bottom bar where the file went and can be undone")
   func filingConfirmsInTheBottomBar() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
@@ -64,7 +64,7 @@ struct MainWindowModelFilingTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     try FileManager.default.createDirectory(
       at: environment.archive.appending(path: tierarztPath), withIntermediateDirectories: true)
-    let model = try await TestWindow.open(on: environment).model
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     model.select(try #require(model.inboxes.orderedRows.first).id)
 
     try await fileSelected(of: model, filtering: "tierarzt", into: tierarztPath)
@@ -72,6 +72,6 @@ struct MainWindowModelFilingTests {
     let status = try #require(model.statusMessage?.text)
     #expect(status.contains(tierarztPath))
     #expect(status.contains("Rechnung_NA-33-08812.pdf"))
-    #expect(status.contains("Undo"))
+    #expect(undoManager.canUndo)
   }
 }

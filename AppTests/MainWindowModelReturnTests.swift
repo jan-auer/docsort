@@ -206,7 +206,7 @@ struct MainWindowModelReturnTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     let folder = environment.archive.appending(path: notenPath)
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    let (model, _) = try await TestWindow.open(on: environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let row = try #require(model.inboxes.row(listing: invoice))
     let filed = try await model.filing.file(
       invoice, into: folder, archivePath: notenPath, named: invoice.lastPathComponent,
@@ -230,7 +230,7 @@ struct MainWindowModelReturnTests {
     let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
     let status = try #require(model.statusMessage?.text)
     #expect(status.contains(renamedName))
-    #expect(status.contains("Undo"))
+    #expect(undoManager.canUndo)
     #expect(model.selectedFile?.id == row.id)
     #expect(model.selectedFile?.name == renamedName)
     #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")
