@@ -586,10 +586,9 @@ extension MainWindowModel {
 
   /// The label of the configured inbox holding `url`, if one does.
   private func inboxLabel(ofFolderHolding url: URL) -> String? {
-    folders.inboxes.first { inbox in
-      guard let inboxURL = inbox.url else { return false }
-      return DestinationIndex.archiveRelativePath(of: url, under: inboxURL) != nil
-    }?.displayLabel
+    InboxLocation.label(
+      ofInboxHolding: url,
+      among: folders.inboxes.compactMap { inbox in inbox.url.map { (inbox.displayLabel, $0) } })
   }
 
   /// Keep Both in the Move Back conflict alert: moves the file back under a numbered name beside the item in the way.
@@ -645,6 +644,8 @@ extension MainWindowModel {
           "Put “\(returnedURL.lastPathComponent)” back in \(placeName(ofFolderHolding: returnedURL)) · Undo ⌘Z"
       )
       showReturned(request.itemID)
+      // Resetting the panel to the same folder lists nothing new, so Folder contents is listed again.
+      picker.reloadContents(selecting: returnedURL)
     } catch {
       Logger.filing.error(
         "Putting \(request.originalName, privacy: .private) back failed: \(String(describing: error), privacy: .private)"
@@ -747,6 +748,8 @@ extension MainWindowModel {
         picker.reloadContents(selecting: request.url)
       }
       if let returnedRowID { showReturned(returnedRowID) }
+      // The file left the folder Folder contents may show, which the panel reset doesn't list again.
+      if case .putBack = action { picker.reloadContents(selecting: nil) }
       statusMessage = nil
     } catch {
       Logger.filing.error(
@@ -785,11 +788,12 @@ extension MainWindowModel {
           request.itemID,
           .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
         finishHandling(request.itemID)
-      case .putBack(let request, _, let markAfter):
+      case .putBack(let request, let returnedURL, let markAfter):
         guard let eventID = event(in: ticket, for: action, step: "redone") else { return }
         _ = try await filing.undo(eventID: eventID)
         inboxes.setMark(request.itemID, markAfter)
         showReturned(request.itemID)
+        picker.reloadContents(selecting: returnedURL)
       case .archiveRename(let request, _):
         let outcome = try await filing.rename(request.source, to: request.name)
         undoTicket.eventID = outcome.event.id

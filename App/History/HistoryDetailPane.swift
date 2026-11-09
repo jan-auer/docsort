@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The History window's inspector: the selected entry's file at its current place, taking the height that its details
 /// and actions below leave; what the entry did, with Reveal in Finder at the end of the destination line; and Open and
-/// Move Back to Inbox or Put Back (`HistoryEntryActions`). Show in Main Window is in the row's context menu.
+/// the return action, Move Back to Inbox, Revert Name or Put Back (`HistoryEntryActions`). Show in Main Window is in
+/// the row's context menu.
 struct HistoryDetailPane: View {
   let model: HistoryModel
 

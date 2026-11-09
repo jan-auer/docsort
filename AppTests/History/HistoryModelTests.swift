@@ -382,4 +382,34 @@ struct HistoryModelTests {
     #expect(documentID == filed.event.documentID)
     #expect(history.statusMessage?.contains("Noten & Bücher") == true)
   }
+
+  @Test("Revert Name into a taken name asks about Keep Both without mentioning an inbox")
+  func revertNameConflict() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let folder = environment.archive.appending(path: notenPath)
+    let sheet = try writeInboxFile(
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(13))
+    let history = await makeModel(environment)
+    let renamed = try await history.mainWindow.filing.rename(
+      sheet, to: "2033-10-13 Notenhaus Allegretto.pdf")
+    // Another file takes the earlier name.
+    _ = try writeInboxFile(named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(14))
+    await history.refresh()
+    let entry = try #require(history.entries.first)
+
+    await history.returnToInbox(entry)
+    let conflict = try #require(history.moveBackConflict)
+    let title = history.moveBackFailureTitle(for: conflict.entry)
+    let message = history.conflictMessage(for: conflict)
+    #expect(title.contains("renamed back"))
+    #expect(!title.contains("inbox"))
+    #expect(!message.contains("moves the file back"))
+    #expect(message.contains("Keep Both"))
+
+    await history.resolve(conflict)
+    #expect(exists(folder.appending(path: "2033-10-13 Notenhaus 2.pdf")))
+    #expect(!exists(renamed.movedURL))
+    #expect(history.statusMessage?.contains("inbox") == false)
+  }
 }

@@ -29,13 +29,13 @@ struct MainWindowModelArchiveFileTests {
         trash: FixtureTrash(folder: environment.root.appending(path: "Trash"))),
       expectedChanges: expectedChanges)
     let model = MainWindowModel(
-      folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
+      folders: folders, inboxes: inboxes, archive: ArchiveLibrary(folders: folders),
       filing: FilingModel(service: service, historyFileURL: historyURL),
       search: SearchSettings(defaults: environment.defaults))
     let undoManager = UndoManager()
     model.undoManager = undoManager
-    // The history loads asynchronously; archive files can be changed once it has.
-    try await waitUntil { model.filing.isHistoryWritable }
+    // The history loads asynchronously; archive files can be changed once it has. Folder contents needs the index.
+    try await waitUntil { model.filing.isHistoryWritable && model.picker.index != nil }
     return (model, undoManager)
   }
 
@@ -254,5 +254,40 @@ struct MainWindowModelArchiveFileTests {
 
     undoManager.redo()
     try await waitUntil { model.panel.nameText == "2033-10-13 Notenhaus Allegretto Advent" }
+  }
+
+  /// The names Folder contents lists; empty unless it lists files.
+  private func listedNames(_ model: MainWindowModel) -> [String] {
+    model.picker.contentsFiles.map(\.name)
+  }
+
+  @Test(
+    "Folder contents lists a file put back into its folder, drops it on undo and lists it again on redo"
+  )
+  func putBackReloadsFolderContents() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let (model, undoManager) = try await makeModel(environment)
+    let row = try #require(model.inboxes.orderedRows.first)
+    let (filed, _) = try await fileInvoice(
+      invoice, row: row.id, in: model, environment: environment)
+    model.select(row.id)
+    model.resetPanel()
+    try await waitUntil { listedNames(model) == ["2033-10-13 Notenhaus Allegretto.pdf"] }
+    model.handlePickerEvent(.trashFileRequested(folderFile(at: filed.movedURL)))
+    try await waitUntil { undoManager.canUndo && listedNames(model).isEmpty }
+    undoManager.removeAllActions()
+
+    model.returnToInbox(try #require(model.file(row.id)))
+    try await waitUntil { undoManager.canUndo }
+    try await waitUntil { listedNames(model) == ["2033-10-13 Notenhaus Allegretto.pdf"] }
+
+    undoManager.undo()
+    try await waitUntil { listedNames(model).isEmpty }
+
+    undoManager.redo()
+    try await waitUntil { listedNames(model) == ["2033-10-13 Notenhaus Allegretto.pdf"] }
   }
 }

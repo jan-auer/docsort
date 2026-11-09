@@ -39,8 +39,8 @@ nonisolated struct HistoryEntry: Identifiable, Hashable, Sendable {
   let kind: HistoryEntryKind
   /// The file's name before the entry.
   let originalName: String
-  /// The display name of the inbox the file came from; `nil` when it did not come from an inbox (an archive item a
-  /// Replace sent to the Trash).
+  /// The display name of the inbox the file came from; `nil` when it did not come from an inbox: an archive item a
+  /// Replace sent to the Trash, or an archive file renamed or trashed in Folder contents.
   let inboxName: String?
   /// The file's name after the entry; `nil` for a move to the Trash.
   let newName: String?

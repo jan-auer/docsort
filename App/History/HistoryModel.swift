@@ -249,6 +249,25 @@ final class HistoryModel {
     }
   }
 
+  /// The title of an alert saying `entry`'s Move Back failed or ran into a taken name: "can’t be moved back to
+  /// Web-Downloads", or "can’t be renamed back" for an archive file's Revert Name.
+  func moveBackFailureTitle(for entry: HistoryEntry) -> String {
+    guard let inboxName = entry.inboxName else {
+      return "“\(entry.currentName)” can’t be renamed back"
+    }
+    return "“\(entry.currentName)” can’t be moved back to \(inboxName)"
+  }
+
+  /// The message of the Keep Both alert for `conflict`: what is in the way and what Keep Both does.
+  func conflictMessage(for conflict: HistoryMoveBackConflict) -> String {
+    let blocking = DisplayPath.abbreviating(conflict.blockingURL.path(percentEncoded: false))
+    let keepBoth =
+      conflict.entry.inboxName == nil
+      ? "Keep Both gives the file its earlier name with a number."
+      : "Keep Both moves the file back under a numbered name."
+    return "Something else is now at \(blocking). \(keepBoth)"
+  }
+
   /// Whether `entry`'s file can be returned to its inbox now: the entry allows it, the history is writable and no
   /// other action is under way.
   func canReturnToInbox(_ entry: HistoryEntry) -> Bool {
@@ -280,10 +299,7 @@ final class HistoryModel {
     let inbox = entry.inboxName ?? "its inbox"
     // An archive file's Move Back reverts its rename in its folder (see `returnAction(for:)`).
     let isArchiveFile = entry.inboxName == nil
-    let moveBackFailure =
-      isArchiveFile
-      ? "“\(entry.currentName)” can’t be renamed back"
-      : "“\(entry.currentName)” can’t be moved back to \(inbox)"
+    let moveBackFailure = moveBackFailureTitle(for: entry)
     switch action {
     case .moveBack:
       do {
@@ -322,6 +338,8 @@ final class HistoryModel {
         returned(
           rowID,
           mark: mainWindow.mark(afterPutBackTo: returnedURL, documentID: outcome.documentID))
+        // The file is back in a folder Folder contents may show; the panel reset doesn't list it again.
+        mainWindow.picker.reloadContents(selecting: nil)
         await refresh()
         statusMessage =
           "Put “\(returnedURL.lastPathComponent)” back in \(mainWindow.placeName(ofFolderHolding: returnedURL))"

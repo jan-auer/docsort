@@ -118,10 +118,11 @@ nonisolated enum HistoryListing {
   /// every inbox, `nil` inside the archive (an archive item) and the folder's name elsewhere (an inbox no longer
   /// configured).
   private static func inboxName(of origin: URL, in folders: HistoryFolders) -> String? {
-    let inbox = folders.inboxes
-      .filter { relativePath(of: origin, in: $0.url) != nil }
-      .max { path(of: $0.url).count < path(of: $1.url).count }
-    if let inbox { return inbox.label }
+    if let label = InboxLocation.label(
+      ofInboxHolding: origin, among: folders.inboxes.map { ($0.label, $0.url) })
+    {
+      return label
+    }
     if let archiveRoot = folders.archiveRoot, relativePath(of: origin, in: archiveRoot) != nil {
       return nil
     }
@@ -130,12 +131,7 @@ nonisolated enum HistoryListing {
 
   /// `url`'s path relative to `ancestor` (`""` when they are the same folder), or `nil` when it lies outside.
   private static func relativePath(of url: URL, in ancestor: URL) -> String? {
-    let urlPath = path(of: url)
-    let ancestorPath = path(of: ancestor)
-    if urlPath == ancestorPath { return "" }
-    let prefix = ancestorPath == "/" ? "/" : ancestorPath + "/"
-    guard urlPath.hasPrefix(prefix) else { return nil }
-    return String(urlPath.dropFirst(prefix.count))
+    DestinationIndex.archiveRelativePath(of: url, under: ancestor)
   }
 
   /// The standardized path of `url` without a trailing slash, under which equal locations compare equal.
