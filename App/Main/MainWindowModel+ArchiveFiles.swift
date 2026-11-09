@@ -42,8 +42,7 @@ extension MainWindowModel {
       registerUndo(
         of: .archiveRename(request, filedRows: filedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = .undoable(
-        "Renamed “\(request.originalName)” to \(request.name)")
+      statusMessage = .undoable("Renamed “\(request.originalName)” to \(request.name)")
     } catch {
       Logger.filing.error(
         "Renaming \(request.originalName, privacy: .private) failed: \(String(describing: error), privacy: .private)"

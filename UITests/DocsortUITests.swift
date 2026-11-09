@@ -257,9 +257,10 @@ final class DocsortUITests: XCTestCase {
     line: UInt = #line
   ) {
     let expectation = XCTNSPredicateExpectation(
-      predicate: NSPredicate(
-        format: "value CONTAINS %@ OR value CONTAINS %@",
-        text.precomposedStringWithCanonicalMapping, text.decomposedStringWithCanonicalMapping),
+      predicate: NSCompoundPredicate(
+        orPredicateWithSubpredicates: normalizationForms(of: text).map {
+          NSPredicate(format: "value CONTAINS %@", $0)
+        }),
       object: element)
     let result = XCTWaiter().wait(for: [expectation], timeout: 5)
     let shown = element.exists ? String(describing: element.value ?? "") : "(no element)"

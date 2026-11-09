@@ -140,9 +140,7 @@ extension MainWindowModel {
       case .putBack(let request, let returnedURL, _):
         let outcome = try await trashKeepingRow(request.itemID, url: returnedURL)
         redoTicket.eventID = outcome.event.id
-        inboxes.setMark(
-          request.itemID,
-          .trashed(by: outcome))
+        inboxes.setMark(request.itemID, .trashed(by: outcome))
       case .archiveRename(let request, let filedRows):
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
         _ = try await filing.undo(eventID: eventID)
@@ -191,9 +189,7 @@ extension MainWindowModel {
       case .trash(let request):
         let outcome = try await trashKeepingRow(request.itemID, url: request.url)
         undoTicket.eventID = outcome.event.id
-        inboxes.setMark(
-          request.itemID,
-          .trashed(by: outcome))
+        inboxes.setMark(request.itemID, .trashed(by: outcome))
         finishHandling(request.itemID)
       case .putBack(let request, let returnedURL, let markAfter):
         guard let eventID = event(in: ticket, for: action, step: "redone") else { return }
