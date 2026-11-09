@@ -40,7 +40,7 @@ struct PDFPreview: NSViewRepresentable {
     view.displayMode = .singlePageContinuous
     view.displayDirection = .vertical
     view.displaysPageBreaks = true
-    view.pageBreakMargins = Self.pageMargins
+    view.pageMargins = Self.pageMargins
     view.autoScales = true
     view.document = document
     view.trailingInset = trailingInset
