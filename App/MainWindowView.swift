@@ -24,9 +24,6 @@ struct MainWindowView: View {
   /// The widths the filing panel can be dragged to.
   private static let filingPanelWidths = 300.0...480.0
 
-  /// The width the filing panel and its divider cover at the preview's trailing edge while the panel is shown.
-  @State private var previewCoveredWidth = 0.0
-
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
       SidebarColumn {
@@ -58,12 +55,6 @@ struct MainWindowView: View {
             )
             .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
             .frame(maxHeight: .infinity)
-          }
-          // The width the PDF keeps its pages clear of; it follows divider drags at once.
-          .onGeometryChange(for: Double.self) { geometry in
-            geometry.size.width
-          } action: { width in
-            previewCoveredWidth = width
           }
           // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
           // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
@@ -165,11 +156,19 @@ struct MainWindowView: View {
     } else if let selectedFile = model.selectedFile {
       PreviewView(
         document: selectedFile.previewDocument, controller: model.previewController,
-        coveredWidth: model.isFilingPanelShown ? previewCoveredWidth : 0)
+        coveredWidth: previewCoveredWidth)
     } else {
       ContentUnavailableView("No file selected", systemImage: "doc")
         .accessibilityIdentifier("no-selection")
     }
+  }
+
+  /// The width the filing panel and its divider cover at the preview's trailing edge: the PDF keeps its pages clear of
+  /// it. Derived from the panel's width rather than measured, so the pages fit it from the first layout and follow a
+  /// divider drag in the same frame; it changes with the panel toggle's animation, so they also follow the slide.
+  private var previewCoveredWidth: Double {
+    model.isFilingPanelShown
+      ? filingPanelWidth.clamped(to: Self.filingPanelWidths) + PaneDivider.width : 0
   }
 
   /// The window title: the selected file's name, or the app name while nothing is selected.
