@@ -19,7 +19,9 @@ enum RowHighlight: Hashable {
     switch self {
     case .none: .clear
     case .focused: .accentColor
-    case .unfocused: Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
+    // A translucent tint rather than the opaque unemphasized selection colour, which reads as a solid block on the
+    // inspector's glass.
+    case .unfocused: Color(nsColor: .labelColor).opacity(0.1)
     }
   }
 

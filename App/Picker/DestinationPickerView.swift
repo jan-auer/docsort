@@ -71,10 +71,10 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       .padding(.horizontal, FilingPanelStyle.edgeMargin + 2)
       .padding(.top, 7)
       .padding(.bottom, 9)
-      Divider()
+      // The list runs straight on the inspector's glass, set apart by inset dividers.
+      FilingPanelStyle.insetDivider
       folderList
-        .background(FilingPanelStyle.listBackground)
-      Divider()
+      FilingPanelStyle.insetDivider
       bottomBar
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))

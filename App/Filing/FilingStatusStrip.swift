@@ -71,11 +71,12 @@ struct FilingStatusStrip: View {
     .accessibilityIdentifier("filing-strip")
   }
 
-  /// A green tint for a filed file, the list colour for a trashed one; both neutral next to the orange failures.
+  /// A green tint for a filed file, a faint neutral tint for a trashed one; both translucent on the inspector's glass
+  /// and neutral next to the orange failures.
   private var background: Color {
     switch status {
     case .filed: Color.green.opacity(0.1)
-    case .trashed: FilingPanelStyle.listBackground
+    case .trashed: Color(nsColor: .labelColor).opacity(0.06)
     }
   }
 

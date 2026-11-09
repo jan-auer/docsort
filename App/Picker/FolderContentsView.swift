@@ -118,11 +118,10 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
     VStack(spacing: 0) {
       header
       if !isCollapsed {
-        Divider()
+        FilingPanelStyle.insetDivider
         content
           .frame(maxWidth: .infinity, alignment: .topLeading)
           .frame(height: clampedListHeight, alignment: .topLeading)
-          .background(FilingPanelStyle.listBackground)
       }
     }
     .accessibilityElement(children: .contain)

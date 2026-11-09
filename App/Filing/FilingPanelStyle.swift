@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 /// The filing panel's spacing, shapes and colours in one place (`docs/design/ux.md`, "Filing panel"), so its parts
-/// share one rhythm: bars (search, footers, bottom bar) on the inspector's glass with a 12 pt margin, edge-to-edge lists
-/// on the content colour, and one 24 pt row style for both lists.
+/// share one rhythm: bars (search, footers, bottom bar) and lists on the inspector's glass, a 12 pt margin, inset
+/// dividers between them, and one 24 pt row style for both lists.
 enum FilingPanelStyle {
   /// The margin of the bars above, between and below the edge-to-edge lists.
   static let edgeMargin: CGFloat = 12
@@ -25,8 +25,13 @@ enum FilingPanelStyle {
   /// panel's parts use it to stand in for that glass.
   static let background = Color(nsColor: .windowBackgroundColor)
     .mix(with: Color(nsColor: .labelColor), by: 0.05)
-  /// The background of the edge-to-edge lists and of fields: the text background (white, or near black).
+  /// The background of fields: the text background (white, or near black). The lists don't use it: they sit on the
+  /// inspector's glass.
   static let listBackground = Color(nsColor: .textBackgroundColor)
+  /// A divider inset by the bars' margin, setting the lists on the inspector's glass apart from the bars.
+  static var insetDivider: some View {
+    Divider().padding(.horizontal, edgeMargin)
+  }
   /// The hairline around fields.
   static let fieldBorder = Color(nsColor: .separatorColor)
 }

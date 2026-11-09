@@ -4,7 +4,7 @@ import SwiftUI
 /// The filing panel, the main window's inspector: where the selected file gets its destination and name.
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
-/// panel: the search field at the top, the folder list edge to edge with New Folder under it, Folder contents as a
+/// panel: the search field at the top, the folder list on the inspector's glass with New Folder under it, Folder contents as a
 /// drawer the user resizes by dragging its header, and a bottom bar with the name field (extension and Revert inside
 /// it) and the Move button (⌘Return, also File › Move). The destination line, the full path shown once, sits under the
 /// search field. The file's name is in the window's title, not repeated here.
@@ -110,7 +110,7 @@ struct FilingPanel: View {
       } action: { height in
         listsHeight = height
       }
-      Divider()
+      FilingPanelStyle.insetDivider
       bottomBar(for: file)
     }
   }
