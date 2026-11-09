@@ -5,13 +5,13 @@ import Foundation
 nonisolated enum HistoryEntryKind: Hashable, Sendable {
   /// Filed an inbox file into the archive.
   case filed
-  /// Renamed a file in its folder.
+  /// Renamed a file in its folder: a filed file, or an archive file from Folder contents.
   case renamed
   /// Moved a filed file on to another folder.
   case movedOn
   /// Moved a filed file back to its inbox.
   case movedBack
-  /// Moved an inbox file to the Trash.
+  /// Moved a file to the Trash: an inbox file, or an archive file from Folder contents.
   case trashed
   /// Moved the item a Replace replaced to the Trash; it comes back only by undoing that move.
   case replaced

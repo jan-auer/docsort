@@ -26,12 +26,12 @@ struct FilingServiceArchiveTests {
     defer { environment.remove() }
     let folder = environment.archive.appending(path: notenPath)
     let sheet = try writeInboxFile(
-      named: "2033-09-02 Notenhaus Rondo.pdf", in: folder, date: october2033(2))
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(2))
     let service = makeService(environment)
 
-    let outcome = try await service.rename(sheet, to: "2033-09-02 Notenhaus Rondo Klavier.pdf")
+    let outcome = try await service.rename(sheet, to: "2033-10-13 Notenhaus Allegretto.pdf")
 
-    #expect(outcome.movedURL.lastPathComponent == "2033-09-02 Notenhaus Rondo Klavier.pdf")
+    #expect(outcome.movedURL.lastPathComponent == "2033-10-13 Notenhaus Allegretto.pdf")
     #expect(outcome.movedURL.deletingLastPathComponent().lastPathComponent == "Noten & Bücher")
     #expect(exists(outcome.movedURL))
     #expect(!exists(sheet))
@@ -49,13 +49,13 @@ struct FilingServiceArchiveTests {
     defer { environment.remove() }
     let folder = environment.archive.appending(path: notenPath)
     let sheet = try writeInboxFile(
-      named: "2033-09-02 Notenhaus Rondo.pdf", in: folder, date: october2033(2))
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(2))
     _ = try writeInboxFile(
-      named: "2033-09-03 Notenhaus Menuett.pdf", in: folder, date: october2033(3))
+      named: "2033-10-13 Notenhaus Allegretto alt.pdf", in: folder, date: october2033(3))
     let service = makeService(environment)
 
     await #expect(throws: FilingError.self) {
-      try await service.rename(sheet, to: "2033-09-03 Notenhaus Menuett.pdf")
+      try await service.rename(sheet, to: "2033-10-13 Notenhaus Allegretto alt.pdf")
     }
     #expect(exists(sheet))
     #expect(await service.events().isEmpty)

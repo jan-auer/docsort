@@ -102,7 +102,7 @@ struct FolderContentsSelectionTests {
     let model = try await makeModel()
     let october = try file(named: Self.october, in: model)
     let renamed = october.url.deletingLastPathComponent().appending(
-      path: "2033-10-04 Rechnung Oktober korrigiert.pdf")
+      path: "2033-09-04 Rechnung September.pdf")
     try FileManager.default.moveItem(at: october.url, to: renamed)
 
     model.reloadContents(selecting: renamed)
@@ -112,7 +112,7 @@ struct FolderContentsSelectionTests {
       return
     }
     await model.contentsTask?.value
-    #expect(selectedName(model) == "2033-10-04 Rechnung Oktober korrigiert.pdf")
+    #expect(selectedName(model) == "2033-09-04 Rechnung September.pdf")
 
     model.reloadContents(selecting: october.url)
     await model.contentsTask?.value
@@ -124,11 +124,11 @@ struct FolderContentsSelectionTests {
     let model = try await makeModel()
     let march = try file(named: Self.march, in: model)
 
-    model.requestRename(of: march, to: "2033-03-04 Rechnung März Kopie")
+    model.requestRename(of: march, to: "2033-07-04 Rechnung Juli")
     model.requestTrash(of: march)
     #expect(
       events.events == [
-        .renameFileRequested(march, to: "2033-03-04 Rechnung März Kopie"),
+        .renameFileRequested(march, to: "2033-07-04 Rechnung Juli"),
         .trashFileRequested(march),
       ])
   }

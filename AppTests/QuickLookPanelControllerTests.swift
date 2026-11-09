@@ -24,7 +24,7 @@ private final class FakeQuickLookSource: QuickLookSource {
   var selectedIndex: Int?
 
   init(names: [String], selectedIndex: Int?) {
-    urls = names.map { URL(filePath: "/Archiv/Reisen/\($0)") }
+    urls = names.map { URL(filePath: "/Archiv/Kommunikation/Ilmnet Internet/Rechnungen/\($0)") }
     self.selectedIndex = selectedIndex
   }
 
@@ -39,7 +39,10 @@ private final class FakeQuickLookSource: QuickLookSource {
 @MainActor
 @Suite("Quick Look panel controller")
 struct QuickLookPanelControllerTests {
-  private let names = ["2034-05-01 Fähre.pdf", "2034-05-02 Hotel.pdf", "2034-05-03 Museum.pdf"]
+  private let names = [
+    "2033-03-04 Rechnung März.pdf", "2033-07-19 Gutschrift Störung.pdf",
+    "2033-10-04 Rechnung Oktober.pdf",
+  ]
 
   /// Waits up to five seconds for `condition`, which observation makes true on a later main-actor turn.
   private func waitUntil(_ condition: () -> Bool) async throws {

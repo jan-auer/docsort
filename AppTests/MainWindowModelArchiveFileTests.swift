@@ -66,17 +66,19 @@ struct MainWindowModelArchiveFileTests {
     defer { environment.remove() }
     let folder = environment.archive.appending(path: notenPath)
     let sheet = try writeInboxFile(
-      named: "2033-09-02 Notenhaus Rondo.pdf", in: folder, date: october2033(2))
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(2))
     let (model, undoManager) = try await makeModel(environment)
-    let renamed = folder.appending(path: "2033-09-02 Notenhaus Rondo Klavier.pdf")
+    let renamed = folder.appending(path: "2033-10-13 Notenhaus Allegretto.pdf")
 
     // The name is entered without its extension, as in the name field.
     model.handlePickerEvent(
-      .renameFileRequested(folderFile(at: sheet), to: "2033-09-02 Notenhaus Rondo Klavier"))
-    try await waitUntil { exists(renamed) }
+      .renameFileRequested(folderFile(at: sheet), to: "2033-10-13 Notenhaus Allegretto"))
+    // The file is renamed on disk before the model registers the undo.
+    try await waitUntil { undoManager.canUndo }
+    #expect(exists(renamed))
     #expect(!exists(sheet))
-    #expect(undoManager.undoActionName == "Rename of “2033-09-02 Notenhaus Rondo.pdf”")
-    #expect(model.statusMessage?.text.contains("2033-09-02 Notenhaus Rondo Klavier.pdf") == true)
+    #expect(undoManager.undoActionName == "Rename of “2033-10-13 Notenhaus.pdf”")
+    #expect(model.statusMessage?.text.contains("2033-10-13 Notenhaus Allegretto.pdf") == true)
 
     undoManager.undo()
     try await waitUntil { exists(sheet) }
@@ -89,10 +91,11 @@ struct MainWindowModelArchiveFileTests {
     defer { environment.remove() }
     let folder = environment.archive.appending(path: notenPath)
     let sheet = try writeInboxFile(
-      named: "2033-09-02 Notenhaus Rondo.pdf", in: folder, date: october2033(2))
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(2))
     let (model, undoManager) = try await makeModel(environment)
 
-    model.handlePickerEvent(.renameFileRequested(folderFile(at: sheet), to: "Rondo: Klavier"))
+    model.handlePickerEvent(
+      .renameFileRequested(folderFile(at: sheet), to: "Notenhaus: Allegretto"))
     #expect(model.alert != nil)
     #expect(exists(sheet))
     #expect(!undoManager.canUndo)
@@ -153,7 +156,8 @@ struct MainWindowModelArchiveFileTests {
     model.inboxes.setMark(row.id, filedMark)
 
     model.handlePickerEvent(.trashFileRequested(folderFile(at: filed.movedURL)))
-    try await waitUntil { !exists(filed.movedURL) }
+    try await waitUntil { undoManager.canUndo }
+    #expect(!exists(filed.movedURL))
     try await waitUntil {
       if case .trashed? = model.inboxes.row(for: row.id)?.mark { true } else { false }
     }
