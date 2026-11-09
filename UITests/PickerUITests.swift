@@ -129,4 +129,35 @@ final class PickerUITests: XCTestCase {
 
     expectLastEvent(host, "tookFileName 2033-10-04 Rechnung Oktober.pdf")
   }
+
+  /// A click on a file gives the file list keyboard focus. With keyboard navigation on (System Settings ›
+  /// Keyboard), focus used to land on the drawer's chevron instead, so ↓ did nothing and Space collapsed the drawer;
+  /// with it off, this passed either way.
+  @MainActor
+  func testClickingAFileInFolderContentsFocusesTheList() throws {
+    let host = launchHost()
+
+    host.filter.typeText("ilmnet rechnungen")
+    let files = host.app.descendants(matching: .any).matching(identifier: "folder-contents-file")
+    let july = files.matching(NSPredicate(format: "label BEGINSWITH %@", "2033-07-04 ")).firstMatch
+    let credit = files.matching(NSPredicate(format: "label BEGINSWITH %@", "2033-07-19 "))
+      .firstMatch
+    XCTAssertTrue(july.waitForExistence(timeout: 5))
+    july.click()
+    let selected = NSPredicate(format: "value == %@", "selected")
+    XCTAssertEqual(
+      XCTWaiter().wait(for: [expectation(for: selected, evaluatedWith: july)], timeout: 5),
+      .completed, "the click selects the file")
+
+    // Keys go to the focused list: ↓ selects the next file, Space (Quick Look, absent in the test host) leaves the
+    // drawer open.
+    let window = host.app.windows.firstMatch
+    window.typeKey(.downArrow, modifierFlags: [])
+    XCTAssertEqual(
+      XCTWaiter().wait(for: [expectation(for: selected, evaluatedWith: credit)], timeout: 5),
+      .completed, "↓ moves the selection")
+    window.typeKey(" ", modifierFlags: [])
+    XCTAssertEqual(
+      host.app.buttons["folder-contents-toggle"].label, "Hide files", "Space collapsed the drawer")
+  }
 }

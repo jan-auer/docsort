@@ -203,3 +203,12 @@ them on a later main-actor turn than the change that caused them. So after a mov
 before the move's recents arrive. The picker therefore remembers where a reset placed the highlight and places it
 there again on new inputs until the user changes the picker; otherwise it keeps the highlight by row id. Reason: kept
 by id, the highlight stayed on the previous top recent, one row below the folder just used.
+
+## swiftui-focus-binding
+
+Put `.focused(_:equals:)` on the view that is `.focusable()` itself, never on a container around it: SwiftUI then
+focuses the container's first focusable descendant. With keyboard navigation on (System Settings › Keyboard, the
+user's setting), plain buttons are focusable, so Folder contents' focus landed on its header's chevron and the list's
+keys never arrived. Hosted unit tests can't check SwiftUI focus: the test host app is never active, so focus writes
+and key events in its windows do nothing (even in a window that reports itself key); a focus bug needs one targeted UI
+test (`targeted-ui-tests`). Reason: the click-to-focus bug in Folder contents, 2026-11-09.

@@ -17,6 +17,8 @@ enum FilingPanelStyle {
   static let rowPadding: CGFloat = 7
   /// The space between a row's icon and its text.
   static let rowIconSpacing: CGFloat = 7
+  /// The shortest Folder contents' file list gets while expanded.
+  static let contentsMinListHeight: Double = 48
 
   /// The bars' background: the window colour with a faint tint of the label colour, so the bars read a step darker
   /// than the lists in light mode and a step lighter in dark mode (the plain window colour was too close to the
