@@ -89,9 +89,11 @@ struct PreviewView: View {
         // edge effect. It also runs on under the filing panel (the trailing safe area), as Keynote's canvas runs
         // under its inspector, so the edge effect spans the whole toolbar; the PDF view keeps its pages left of the
         // panel. Quick Look stays below the toolbar: it has no inset that would keep a file's top visible.
-        PDFPreview(document: pdfDocument, controller: controller, trailingInset: trailingInset)
-          .ignoresSafeArea(.container, edges: [.top, .trailing])
-          .accessibilityIdentifier("preview-pdf")
+        PanelCoveredPDFPreview(
+          document: pdfDocument, controller: controller, trailingInset: trailingInset
+        )
+        .ignoresSafeArea(.container, edges: [.top, .trailing])
+        .accessibilityIdentifier("preview-pdf")
         PreviewFooter(
           info: info,
           pagePosition: controller.pagePosition
