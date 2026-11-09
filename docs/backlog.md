@@ -2,6 +2,17 @@
 
 Non-blocking findings and deferred work, collected by the hub. Newest group first.
 
+## From the keyboard shortcuts sheet review (2026-11-09)
+
+- The sidebar's and Folder contents' keys come from `onKeyPress` handlers, so nothing forces a new key there into the
+  shortcuts sheet; a key enum per handler with an exhaustive switch (as `PickerKey`) would.
+- The sheet's column balancing puts Name Field in the other column from the picker sections.
+- ⌘/ does nothing while the History or Settings window is key.
+- The menu-command guard is per window sheet (`AttachedSheetTracker`), not per text field: ⌘⌫ in a text field
+  outside a sheet (other than the filter and name field) would still trash. None exists today.
+- The Rename alert in Folder contents is covered only if SwiftUI presents it as a window sheet, as it does for
+  alerts on macOS; not checked with a test.
+
 ## From the Folder contents Quick Look review (2026-11-09)
 
 - `FilingService.rename` and `trash` of archive files don't check the item's identity as `refile` does

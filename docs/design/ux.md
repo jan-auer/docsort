@@ -408,7 +408,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | Keys | Command | Menu |
 | --- | --- | --- |
 | ⌘Return | Move with the chosen destination and name | File › Move |
-| ⌘L | Focus the destination filter | File › Choose Destination… |
+| ⌘L | Focus the destination filter (planned, not built) | File › Choose Destination… |
 | ⌘O | Open selected file in its default app | File › Open |
 | ⌥⌘R | Reveal selected file in Finder | File › Reveal in Finder |
 | ⇧⌘O | Open the chosen (else highlighted) destination folder in Finder | File › Open Destination in Finder |
@@ -419,7 +419,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | ⌘R | Rescan inboxes and archive (normally automatic) | View › Refresh |
 | ⌃⌘S | Show/hide sidebar | View |
 | ⌥⌘I | Show/hide filing panel | View |
-| ⌘1 … ⌘9 | Jump to inbox section 1…9 | Go |
+| ⌘1 … ⌘9 | Jump to inbox section 1…9 (planned, not built) | Go |
 | ⌥⌘↓ / ⌥⌘↑ | Select next / previous file in sidebar order (as ↓/↑ do), from any focus | Go › Next File / Previous File |
 | ⌘+ / ⌘− / ⌘0 | Zoom preview in / out / to fit | View |
 | ⌘, | Settings | docsort |
@@ -434,7 +434,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | type | Start the destination filter with that text |
 | Tab / Return | Go to the destination picker |
 | Space | Quick Look panel |
-| PgUp / PgDn (fn↑ / fn↓) | Scroll the preview without leaving the list |
+| PgUp / PgDn (fn↑ / fn↓) | Scroll the preview without leaving the list (planned, not built) |
 
 ### Destination picker focused
 
@@ -455,7 +455,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | Keys | Command |
 | --- | --- |
 | type | Edit name (extension fixed) |
-| ⌥↑ / ⌥↓ | Take the previous / next name from Folder contents |
+| ⌥↑ / ⌥↓ | Take the previous / next name from Folder contents (planned, not built) |
 | ⇧⌘R | Revert to the original name |
 | ⌘Return | Move |
 | Return | Shows the toast "Press ⌘Return to move"; does not file |
