@@ -302,7 +302,6 @@ final class MainWindowModel {
     sidebarSelection = .item(id)
   }
 
-  /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
   /// Follows a change made outside docsort: when the selected file was removed, selects the next unfiled file (the
   /// panel resets, discarding what was typed) and says so in the bottom bar; when the selected download completed into
   /// a file of its own (or a safe-save replaced it), selects that file, keeping what the filing panel holds.
@@ -325,6 +324,7 @@ final class MainWindowModel {
     }
   }
 
+  /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
   private static func folderPath(of url: URL) -> String {
     let path = url.standardizedFileURL.path(percentEncoded: false)
     return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
