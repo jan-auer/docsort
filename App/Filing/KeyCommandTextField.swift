@@ -177,13 +177,15 @@ final class TrailingInsetTextFieldCell: NSTextFieldCell {
   }
 }
 
-#Preview {
-  @Previewable @State var text = "noten"
-  KeyCommandTextField(
-    text: $text, placeholder: "Search folders", identifier: "preview-field",
-    focusRequestID: nil, onFocusChange: { _ in },
-    onCommand: { _ in false }
-  )
-  .padding()
-  .frame(width: 300)
-}
+#if DEBUG
+  #Preview {
+    @Previewable @State var text = "noten"
+    KeyCommandTextField(
+      text: $text, placeholder: "Search folders", identifier: "preview-field",
+      focusRequestID: nil, onFocusChange: { _ in },
+      onCommand: { _ in false }
+    )
+    .padding()
+    .frame(width: 300)
+  }
+#endif

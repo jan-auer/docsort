@@ -47,23 +47,25 @@ struct SidebarColumn<InboxList: View>: View {
   }
 }
 
-#Preview("Sidebar with invented inboxes") {
-  SidebarColumn {
-    List {
-      Section("Web-Downloads") {
-        Text("Rechnung_NA-33-08812.pdf")
-        Text("2033-10-20 Verlängerung Jahreskarte Konrad.pdf")
+#if DEBUG
+  #Preview("Sidebar with invented inboxes") {
+    SidebarColumn {
+      List {
+        Section("Web-Downloads") {
+          Text("Rechnung_NA-33-08812.pdf")
+          Text("2033-10-20 Verlängerung Jahreskarte Konrad.pdf")
+        }
+        Section("Scanner") {
+          Text("2033-10-11_Optik Klarblick.pdf")
+        }
       }
-      Section("Scanner") {
-        Text("2033-10-11_Optik Klarblick.pdf")
-      }
+      .listStyle(.sidebar)
     }
-    .listStyle(.sidebar)
-  }
-  .frame(width: 260, height: 480)
-}
-
-#Preview("Empty sidebar") {
-  SidebarColumn {}
     .frame(width: 260, height: 480)
-}
+  }
+
+  #Preview("Empty sidebar") {
+    SidebarColumn {}
+      .frame(width: 260, height: 480)
+  }
+#endif

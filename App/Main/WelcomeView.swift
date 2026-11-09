@@ -22,7 +22,9 @@ struct WelcomeView: View {
   }
 }
 
-#Preview {
-  WelcomeView()
-    .frame(width: 620, height: 520)
-}
+#if DEBUG
+  #Preview {
+    WelcomeView()
+      .frame(width: 620, height: 520)
+  }
+#endif

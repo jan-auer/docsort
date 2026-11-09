@@ -26,7 +26,9 @@ struct SearchSettingsPane: View {
   }
 }
 
-#Preview {
-  @Previewable @State var ranking = ScopedRanking.directChildFirst
-  SearchSettingsPane(ranking: $ranking)
-}
+#if DEBUG
+  #Preview {
+    @Previewable @State var ranking = ScopedRanking.directChildFirst
+    SearchSettingsPane(ranking: $ranking)
+  }
+#endif
