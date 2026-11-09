@@ -284,7 +284,7 @@ extension KeyCombination {
   /// The key `pickerKey` stands for.
   ///
   /// The switch covers every ``PickerKey``: a new picker key fails to compile here until it has a combination, and
-  /// `ShortcutCatalogTests` then asks for its row under Destination Picker.
+  /// `ShortcutCatalogTests`, looping over `PickerKey.allCases`, then asks for its row under Destination Picker.
   init(pickerKey: PickerKey) {
     switch pickerKey {
     case .upArrow: self.init(.upArrow)
@@ -302,7 +302,8 @@ extension KeyCombination {
     }
   }
 
-  /// The key `quickLookPanelKey` stands for; like ``init(pickerKey:)``, a new panel key fails to compile here.
+  /// The key `quickLookPanelKey` stands for; like ``init(pickerKey:)``, a new panel key fails to compile here, and the
+  /// tests loop over `QuickLookPanelKey.allCases`.
   init(quickLookPanelKey: QuickLookPanelKey) {
     switch quickLookPanelKey {
     case .upArrow: self.init(.upArrow)
