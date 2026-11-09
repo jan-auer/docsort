@@ -40,6 +40,19 @@ final class QuickLookPanelBridge: NSResponder, QLPreviewPanelDataSource, QLPrevi
     fatalError("init(coder:) is not supported")
   }
 
+  /// Takes the bridge out of `window`'s responder chain again.
+  func uninstall(from window: NSWindow) {
+    var responder: NSResponder = window
+    while let next = responder.nextResponder {
+      if next === self {
+        responder.nextResponder = nextResponder
+        nextResponder = nil
+        return
+      }
+      responder = next
+    }
+  }
+
   /// Places the bridge after `window` in its responder chain, once.
   func install(in window: NSWindow) {
     var responder: NSResponder? = window
@@ -131,6 +144,11 @@ struct QuickLookPanelHost: NSViewRepresentable {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
       fatalError("init(coder:) is not supported")
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+      if let window, newWindow !== window { bridge.uninstall(from: window) }
+      super.viewWillMove(toWindow: newWindow)
     }
 
     override func viewDidMoveToWindow() {

@@ -188,7 +188,8 @@ Finder**, **Copy Name** (with its extension), **Copy Path**, **Rename…** and *
 new name in a dialog, without the extension, which the file keeps (as in the name field); a taken or forbidden name
 is refused with an alert. Rename… and Move to Trash change the archive, so they work like filing: they are
 recorded in the filing history (History lists them as Renamed and Moved to Trash), ⌘Z undoes them, and an inbox
-row whose filed file it is follows it: it shows the new name, or the trashed state with Put Back. Move to Trash has
+row whose filed file it is follows it: it shows the new name, or the trashed state with Put Back, which returns
+the file to its archive folder and files the row there again. Move to Trash has
 no confirmation, because it is undoable; the next file is selected.
 
 It is a drawer under the folder list: its header ("Files in Noten & Bücher", the file count) names the folder only, since
@@ -299,6 +300,10 @@ files and move-backs are recorded as their own entries. Trash is recorded too.
 - Selecting an entry shows a preview of the file at its current place in a pane on the right.
 - Actions on the selected entry: Open (⌘O), Reveal in Finder (⌥⌘R), Move Back to Inbox (⌥⌘Z), and "Show in Main
   Window" when the file is still in this session's list.
+- Renames and trashes of archive files from Folder contents are entries too. An archive file that was never in an
+  inbox gets no inbox return: its rename offers **Revert Name** (its earlier name, in its folder) and its trash **Put
+  Back** (to its folder). A filed file trashed from Folder contents is put back into its archive folder, and its inbox
+  row is filed there again.
 - An entry whose file is no longer at the recorded place shows "Moved or deleted since" and offers only Reveal of the
   folder.
 

@@ -46,8 +46,7 @@ enum FileActions {
       .map { applicationURL in
         OpenWithApplication(
           url: applicationURL,
-          name: FileManager.default.displayName(atPath: applicationURL.path(percentEncoded: false))
-            .replacingOccurrences(of: ".app", with: ""),
+          name: displayName(ofApplicationAt: applicationURL),
           icon: workspace.icon(forFile: applicationURL.path(percentEncoded: false)),
           isDefault: applicationURL == defaultURL)
       }
@@ -55,6 +54,12 @@ enum FileActions {
         if lhs.isDefault != rhs.isDefault { return lhs.isDefault }
         return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
       }
+  }
+
+  /// The app's name as Finder shows it, without a trailing ".app" (shown when the user has extensions turned on).
+  private static func displayName(ofApplicationAt url: URL) -> String {
+    let name = FileManager.default.displayName(atPath: url.path(percentEncoded: false))
+    return name.hasSuffix(".app") ? String(name.dropLast(".app".count)) : name
   }
 
   /// Puts `text` on the general pasteboard, as Copy does.
