@@ -69,6 +69,13 @@ struct MainWindowView: View {
       } action: { width in
         if Self.filingPanelWidths.contains(width) { filingPanelWidth = width }
       }
+      // Declaring an item here gives the inspector a toolbar section of its own (SwiftUI adds a tracking separator
+      // at its edge), so the content's items end where the panel begins. The flexible space keeps the toggle at the
+      // window's trailing edge, where it also stays while the inspector is hidden.
+      .toolbar {
+        ToolbarSpacer(.flexible)
+        filingPanelToggleToolbar
+      }
       .inspectorColumnWidth(
         min: Self.filingPanelWidths.lowerBound,
         ideal: initialFilingPanelWidth ?? filingPanelWidth,
@@ -240,6 +247,23 @@ struct MainWindowView: View {
       .help("Move to Trash (\(MenuCommand.moveToTrash.keys.notation))")
       .disabled(!model.canTrashSelectedFile)
       .accessibilityIdentifier("toolbar-trash")
+    }
+  }
+
+  /// The filing panel toggle, at the window's trailing edge as WWDC25 323 places its inspector toggle. SwiftUI has no
+  /// system toolbar toggle for an inspector, so it is the app's own button. Declared in the inspector's toolbar, it
+  /// sits over the panel while the panel is shown, and the system keeps it in place while the panel is hidden.
+  @ToolbarContentBuilder private var filingPanelToggleToolbar: some ToolbarContent {
+    ToolbarItem {
+      Button {
+        model.isFilingPanelShown.toggle()
+      } label: {
+        Label("Filing Panel", systemImage: "sidebar.trailing")
+      }
+      .help(
+        "\(model.isFilingPanelShown ? "Hide" : "Show") Filing Panel (\(MenuCommand.toggleFilingPanel.keys.notation))"
+      )
+      .accessibilityIdentifier("toolbar-filing-panel")
     }
   }
 }

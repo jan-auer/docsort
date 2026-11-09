@@ -4,10 +4,10 @@ import SwiftUI
 /// The filing panel, the main window's inspector: where the selected file gets its destination and name.
 ///
 /// It is inactive until a file is selected. For an unhandled, complete file it is laid out list first, like the save
-/// panel: the search field in the window's toolbar over the panel, the folder list on the inspector's glass with New Folder under it, Folder contents as a
+/// panel: the search field at the top, the folder list on the inspector's glass with New Folder under it, Folder contents as a
 /// drawer the user resizes by dragging its header, and a bottom bar with the name field (extension and Revert inside
-/// it) and the Move button (⌘Return, also File › Move). The destination line, the full path shown once, sits at the
-/// panel's top, right under the search field. The file's name is in the window's title, not repeated here.
+/// it) and the Move button (⌘Return, also File › Move). The destination line, the full path shown once, sits under the
+/// search field. The file's name is in the window's title, not repeated here.
 ///
 /// A filed file opens with a status banner ("Filed to … · today 09:41", **Move Back**) above the same parts, with
 /// its current folder chosen and its current name in the name field; the button reads **Rename** or **Move** by what
@@ -29,10 +29,6 @@ struct FilingPanel: View {
   }
 
   @FocusState private var focusedField: PanelField?
-  /// The key monitor and filter selection the picker shares with its search field in the toolbar.
-  @State private var filterLink = PickerFilterLink()
-  /// The panel's width, for the search field over it.
-  @State private var panelWidth = 0.0
 
   /// The height of Folder contents' list, kept with the window.
   @SceneStorage("filing-panel.contents-height") private var contentsHeight = 150.0
@@ -59,31 +55,6 @@ struct FilingPanel: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    .onGeometryChange(for: Double.self) { geometry in
-      geometry.size.width
-    } action: { width in
-      panelWidth = width
-    }
-    // The search field sits in the inspector's section of the window toolbar, over the panel, in place of an empty
-    // band; it leaves with the panel (and while no file can be filed). The panel toggle follows it at the trailing end,
-    // and stays there while the panel is hidden.
-    .toolbar {
-      if model.isFilingPanelShown, let file = model.selectedFile,
-        Self.canChooseDestination(for: file)
-      {
-        ToolbarItem {
-          DestinationFilterField(
-            model: model.picker, focus: $focusedField, field: { .picker($0) }, link: filterLink
-          )
-          // In line with the panel's content margin, and 8 pt short of the toggle.
-          .padding(.leading, Self.toolbarFieldLeadingInset)
-          .frame(width: max(panelWidth - Self.toolbarReservedWidth, 120))
-          .disabled(file.isTrashed)
-        }
-        .sharedBackgroundVisibility(.hidden)
-      }
-      FilingPanelToggle(isShown: $model.isFilingPanelShown)
-    }
     // No background of its own: the panel is the window's inspector, and the system's edge-to-edge glass behind it
     // runs from the window's top edge to its bottom, toolbar section included, with no seam between them.
     .accessibilityElement(children: .contain)
@@ -100,7 +71,7 @@ struct FilingPanel: View {
       Divider()
     }
 
-    if !Self.canChooseDestination(for: file) {
+    if file.mark == nil, file.completeness == .downloading {
       ContentUnavailableView(
         "Still Downloading", systemImage: "icloud.and.arrow.down",
         description: Text("This file can be filed once its download has finished."))
@@ -111,17 +82,6 @@ struct FilingPanel: View {
         .disabled(file.isTrashed)
     }
   }
-
-  /// Whether the panel offers a destination for `file`: anything but a never-handled file still downloading.
-  private static func canChooseDestination(for file: SelectedFile) -> Bool {
-    file.mark != nil || file.completeness != .downloading
-  }
-
-  /// The width of the panel the toolbar keeps for itself beside the search field: the section's own 5 pt inset, 8 pt
-  /// before the panel toggle, the toggle and its trailing margin (measured with the layout probe).
-  private static let toolbarReservedWidth = 57.0
-  /// The search field's inset inside its toolbar item, which puts it at the panel's 12 pt content margin.
-  private static let toolbarFieldLeadingInset = FilingPanelStyle.edgeMargin - 5
 
   /// What the status strip shows for `file`; `nil` while it is unhandled.
   private func stripStatus(for file: SelectedFile) -> FilingStatusStrip.Status? {
@@ -156,29 +116,26 @@ struct FilingPanel: View {
   }
 
   private var picker: some View {
-    DestinationPickerView(
-      model: model.picker, focus: $focusedField, filterPlacement: .elsewhere(filterLink),
-      field: { .picker($0) }
-    )
-    .task(id: model.focusRequest) {
-      // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
-      // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
-      // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
-      guard model.focusRequest?.target == .destinationFilter else { return }
-      if focusedField != nil {
-        focusedField = nil
-        await Task.yield()
+    DestinationPickerView(model: model.picker, focus: $focusedField, field: { .picker($0) })
+      .task(id: model.focusRequest) {
+        // A request for the filter (typing in the sidebar, ⇧Tab or Esc in the name field) focuses it here, also
+        // when the picker only just appeared for a newly selected file. If the focus value still says "filter"
+        // although focus went elsewhere outside SwiftUI, assigning it again would change nothing; clear it first.
+        guard model.focusRequest?.target == .destinationFilter else { return }
+        if focusedField != nil {
+          focusedField = nil
+          await Task.yield()
+        }
+        focusedField = .picker(.filter)
       }
-      focusedField = .picker(.filter)
-    }
-    .onChange(of: focusedField, initial: true) { _, field in
-      if case .picker = field {
-        model.focus = .destinationFilter
-        model.panel.isFilterFocusPending = false
-      } else if model.focus == .destinationFilter {
-        model.focus = nil
+      .onChange(of: focusedField, initial: true) { _, field in
+        if case .picker = field {
+          model.focus = .destinationFilter
+          model.panel.isFilterFocusPending = false
+        } else if model.focus == .destinationFilter {
+          model.focus = nil
+        }
       }
-    }
   }
 
   /// The bottom bar: "Name" with the name field, a notice if moving failed, and the Move button at the trailing end.
