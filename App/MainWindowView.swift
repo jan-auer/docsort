@@ -1,8 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it
-/// (340 pt to start, dragged between 300 and 480 pt),
+/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane laid over
+/// the preview's trailing edge (340 pt to start, dragged between 300 and 480 pt),
 /// with the selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
@@ -59,13 +59,14 @@ struct MainWindowView: View {
             .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
             .frame(maxHeight: .infinity)
           }
-          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
-          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
+          // The width the PDF keeps its pages clear of; it follows divider drags at once.
           .onGeometryChange(for: Double.self) { geometry in
             geometry.size.width
           } action: { width in
             previewCoveredWidth = width
           }
+          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
+          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
           .transition(.move(edge: .trailing))
         }
       }
