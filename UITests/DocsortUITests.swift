@@ -180,6 +180,65 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(waitForKeyboardFocus(of: filter))
   }
 
+  /// The highlighted folder row's label, or `nil` while none is highlighted.
+  @MainActor
+  private func highlightedFolder(in app: XCUIApplication) -> String? {
+    let row = app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier == 'picker-row' AND value == 'highlighted'"))
+      .firstMatch
+    return row.exists ? row.label : nil
+  }
+
+  /// Waits until `condition` holds, polling as XCUITest does.
+  @MainActor
+  private func waitUntil(_ condition: @escaping () -> Bool) -> Bool {
+    let expectation = XCTNSPredicateExpectation(
+      predicate: NSPredicate { _, _ in condition() }, object: nil)
+    return XCTWaiter().wait(for: [expectation], timeout: 5) == .completed
+  }
+
+  /// The search field sits in the window's toolbar over the filing panel, outside the picker's view, and still gets
+  /// the picker's keys; it leaves the toolbar with the panel.
+  @MainActor
+  func testSearchFieldInTheToolbarKeepsThePickerKeys() throws {
+    let (app, mainWindow) = startFilingTheInvoice()
+    let filter = app.textFields["picker-filter"]
+    XCTAssertTrue(app.toolbars.textFields["picker-filter"].exists)
+    XCTAssertTrue(waitForKeyboardFocus(of: filter))
+
+    // → steps into the highlighted folder; ← with an empty filter steps out again.
+    mainWindow.typeKey(.rightArrow, modifierFlags: [])
+    let thisFolder = app.descendants(matching: .any)["picker-this-folder"]
+    XCTAssertTrue(thisFolder.waitForExistence(timeout: 5))
+    XCTAssertTrue(waitForValue("", of: filter))
+    mainWindow.typeKey(.leftArrow, modifierFlags: [])
+    XCTAssertTrue(waitForNonExistence(of: thisFolder))
+
+    // ↓ moves the list's highlight while focus stays in the field.
+    XCTAssertTrue(waitUntil { self.highlightedFolder(in: app) != nil })
+    let firstHighlight = highlightedFolder(in: app)
+    mainWindow.typeKey(.downArrow, modifierFlags: [])
+    XCTAssertTrue(waitUntil { self.highlightedFolder(in: app) != firstHighlight })
+    XCTAssertTrue(waitForKeyboardFocus(of: filter))
+
+    // Tab chooses and moves to the name field; ⇧Tab returns to the search field.
+    mainWindow.typeText("noten")
+    XCTAssertTrue(waitForValue("noten", of: filter))
+    mainWindow.typeKey(.tab, modifierFlags: [])
+    let nameField = app.textFields["name-field"]
+    XCTAssertTrue(waitForKeyboardFocus(of: nameField))
+    XCTAssertTrue(
+      app.descendants(matching: .any)["filing-destination"].label.contains("Noten & Bücher"))
+    mainWindow.typeKey(.tab, modifierFlags: .shift)
+    XCTAssertTrue(waitForKeyboardFocus(of: filter))
+
+    // Hiding the panel takes the field out of the toolbar; showing it brings the field back.
+    mainWindow.typeKey("i", modifierFlags: [.option, .command])
+    XCTAssertTrue(waitForNonExistence(of: filter))
+    mainWindow.typeKey("i", modifierFlags: [.option, .command])
+    XCTAssertTrue(filter.waitForExistence(timeout: 5))
+  }
+
   @MainActor
   func testReturnInTheNewFolderRowFocusesTheNameField() throws {
     let (app, mainWindow) = startFilingTheInvoice()

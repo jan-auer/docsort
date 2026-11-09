@@ -1,7 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The destination picker: the search field, the destination line under it (the folder a file would go to, its full
+/// The destination picker: the search field (at its top, or drawn elsewhere by a ``DestinationFilterField`` sharing a
+/// ``PickerFilterLink``, see ``PickerFilterPlacement``), the destination line under it (the folder a file would go to, its full
 /// path shown once), an edge-to-edge folder list and the New Folder button under the list (`docs/design/ux.md`, "Destination picker"); see ``PickerContract`` for how the filing panel embeds it.
 ///
 /// The panel owns focus: it passes its focus binding and maps ``PickerField`` into its own focus values with
@@ -32,38 +33,38 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   /// Maps the picker's fields into the panel's focus values.
   let field: (PickerField) -> FocusValue
 
-  @State private var keyMonitor = PickerKeyMonitor()
-  @State private var filterSelection: TextSelection?
+  /// Where the search field is drawn.
+  let filterPlacement: PickerFilterPlacement
+
+  /// The key monitor and filter selection while the search field is drawn inline.
+  @State private var inlineLink = PickerFilterLink()
 
   init(
     model: DestinationPickerModel, focus: FocusState<FocusValue?>.Binding,
+    filterPlacement: PickerFilterPlacement = .inline,
     field: @escaping (PickerField) -> FocusValue
   ) {
     self.model = model
     self.focus = focus
+    self.filterPlacement = filterPlacement
     self.field = field
+  }
+
+  /// The key monitor and filter selection the picker shares with its search field.
+  private var link: PickerFilterLink {
+    switch filterPlacement {
+    case .inline: inlineLink
+    case .elsewhere(let link): link
+    }
   }
 
   var body: some View {
     VStack(spacing: 0) {
-      PickerFilterField(
-        focusState: focusedField == .filter ? .focused : .unfocused,
-        hasText: !model.filterText.isEmpty,
-        clear: {
-          model.filterText = ""
-          focus.wrappedValue = field(.filter)
-        }
-      ) {
-        TextField(
-          "Destination filter", text: $model.filterText, selection: $filterSelection,
-          prompt: Text(model.filterPlaceholder)
-        )
-        .labelsHidden()
-        .focused(focus, equals: field(.filter))
-        .accessibilityIdentifier("picker-filter")
+      if case .inline = filterPlacement {
+        DestinationFilterField(model: model, focus: focus, field: field, link: link)
+          .padding(.horizontal, FilingPanelStyle.edgeMargin)
+          .padding(.top, 10)
       }
-      .padding(.horizontal, FilingPanelStyle.edgeMargin)
-      .padding(.top, 10)
       DestinationLine(destination: model.destinationPath) { path in
         model.jump(to: path)
         focus.wrappedValue = field(.filter)
@@ -77,14 +78,14 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       FilingPanelStyle.insetDivider
       bottomBar
     }
-    .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
+    .background(PickerKeyMonitorAnchor(monitor: link.keyMonitor))
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("picker")
     .onChange(of: focusedField, initial: true) { previousField, focusedField in
       if focusedField == nil {
-        keyMonitor.stop()
+        link.keyMonitor.stop()
       } else {
-        keyMonitor.start { key in handle(key) }
+        link.keyMonitor.start { key in handle(key) }
       }
       if focusedField == .filter, previousField != .filter {
         placeFilterCaretAtEnd()
@@ -98,7 +99,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       else { return }
       focus.wrappedValue = field(.filter)
     }
-    .onDisappear { keyMonitor.stop() }
+    .onDisappear { link.keyMonitor.stop() }
   }
 
   // MARK: Focus and keys
@@ -117,16 +118,17 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   /// SwiftUI's text field selects all of its text when it gains focus, which happens after this focus change; so the
   /// caret is placed again on the next turn of the main actor, once the field has taken focus.
   private func placeFilterCaretAtEnd() {
-    filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
+    let link = link
+    link.selection = TextSelection(insertionPoint: model.filterText.endIndex)
     Task { @MainActor in
-      filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
+      link.selection = TextSelection(insertionPoint: model.filterText.endIndex)
     }
   }
 
   /// Whether the filter's caret sits at the end of its text (or nothing is known about it, as right after the
   /// picker set the text).
   private var isFilterCaretAtEnd: Bool {
-    guard let filterSelection else { return true }
+    guard let filterSelection = link.selection else { return true }
     switch filterSelection.indices {
     case .selection(let range):
       return range.isEmpty && range.lowerBound == model.filterText.endIndex
