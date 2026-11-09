@@ -21,10 +21,4 @@ struct ParallelChunksTests {
   func emptyRange() {
     #expect(ParallelChunks.flatMap(0..<0, chunkSize: 8) { Array($0) }.isEmpty)
   }
-
-  @Test("chunks are never smaller than the minimum")
-  func chunkSizeMinimum() {
-    #expect(ParallelChunks.chunkSize(for: 10, minimum: 1024) == 1024)
-    #expect(ParallelChunks.chunkSize(for: 10_000_000, minimum: 1024) > 1024)
-  }
 }

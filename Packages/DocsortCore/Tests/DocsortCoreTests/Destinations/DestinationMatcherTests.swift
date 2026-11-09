@@ -477,6 +477,26 @@ struct DestinationMatcherTests {
       ])
   }
 
+  @Test("a sibling whose name starts with the left-out folder's name is not inside it")
+  func outsideComparesWholeSegments() {
+    let matcher = DestinationMatcher(paths: [
+      "Finanzen", "Finanzen/Steuer", "Finanzen/Steuer/2034", "Finanzen/Steuererklärungen",
+      "Finanzen/Steuererklärungen/2034",
+    ])
+
+    #expect(
+      paths(matcher.matches(for: "steuer", outside: "Finanzen/Steuer")) == [
+        "Finanzen/Steuererklärungen", "Finanzen/Steuererklärungen/2034",
+      ])
+  }
+
+  @Test("outside the archive root (\"\") nothing is left to find")
+  func outsideTheRoot() {
+    let matcher = DestinationMatcher(paths: ["Hund", "Hund/Rechnungen", "Rechnungen"])
+
+    #expect(matcher.matches(for: "rech", outside: "").isEmpty)
+  }
+
   // MARK: One folder
 
   @Test(

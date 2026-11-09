@@ -110,7 +110,8 @@ public struct DestinationIndex: Sendable {
   /// ``DestinationMatch`` for the matched ranges used for highlighting.
   ///
   /// With `excludedFolder` (an archive-relative path in any Unicode normalisation), that folder and everything inside it
-  /// are left out, and the other matches keep their scores and order: the picker's "Elsewhere" asks for the archive's
+  /// are left out, whole segments compared (`Steuer` leaves `Steuererklärungen` in); `""`, the root, leaves nothing to
+  /// find. The other matches keep their scores and order: the picker's "Elsewhere" asks for the archive's
   /// matches outside the folder it is in, without ranking and highlighting the folder's own matches only to drop them.
   public func search(
     _ query: String, in scope: String = "", outside excludedFolder: String? = nil,

@@ -98,8 +98,8 @@ struct DestinationMatcher: Sendable {
   /// The descendants of `scope` matching `query`, best first, at most `limit` of them.
   ///
   /// `scope` is an archive-relative folder path in any Unicode normalisation, `""` for the archive root. With
-  /// `excludedFolder`, that folder and everything inside it are left out; the other matches keep their scores and
-  /// order. `ranking` decides whether a folder named exactly like a query word outweighs one level of depth. An empty
+  /// `excludedFolder` (in any normalisation), that folder and everything inside it are left out, whole segments
+  /// compared; the other matches keep their scores and order. `""` stands for the root, so nothing is left to find. `ranking` decides whether a folder named exactly like a query word outweighs one level of depth. An empty
   /// or whitespace-only query matches nothing.
   func matches(
     for query: String, in scope: String = "", outside excludedFolder: String? = nil,
@@ -158,9 +158,11 @@ struct DestinationMatcher: Sendable {
         return chunk.map { rankedIndex -> DestinationMatch? in
           let best = rankedMatches[rankedIndex]
           let candidate = scoped[best.scopedIndex]
-          let matchedRanges = highlighters[best.spellingIndex].ranges(in: candidate.pathInScope)
-          let spelling = searchQuery.spellings[best.spellingIndex]
-          guard !Self.isScattered(matchedRanges, spelling: spelling) else { return nil }
+          guard
+            let matchedRanges = Self.unscatteredRanges(
+              in: candidate.pathInScope, highlighter: highlighters[best.spellingIndex],
+              spelling: searchQuery.spellings[best.spellingIndex])
+          else { return nil }
           return DestinationMatch(
             path: candidates[candidate.candidateIndex].path, pathInScope: candidate.pathInScope,
             score: best.score, matchedRanges: matchedRanges)
@@ -190,8 +192,19 @@ struct DestinationMatcher: Sendable {
         buffer: &buffer)
     else { return false }
     let spelling = searchQuery.spellings[best.spellingIndex]
-    let highlighter = MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher)
-    return !Self.isScattered(highlighter.ranges(in: candidate.path), spelling: spelling)
+    return Self.unscatteredRanges(
+      in: candidate.path,
+      highlighter: MatchHighlighter(spelling: spelling, fuzzyMatcher: fuzzyMatcher),
+      spelling: spelling) != nil
+  }
+
+  /// The ranges of `path` to show bold for `spelling` (the spelling it matched best, highlighted by `highlighter`),
+  /// or `nil` when the match is scattered and so no match at all (see ``isScattered(_:spelling:)``).
+  private static func unscatteredRanges(
+    in path: String, highlighter: MatchHighlighter, spelling: String
+  ) -> [Range<String.Index>]? {
+    let matchedRanges = highlighter.ranges(in: path)
+    return isScattered(matchedRanges, spelling: spelling) ? nil : matchedRanges
   }
 
   /// A query's spellings prepared for scoring.
@@ -254,10 +267,11 @@ struct DestinationMatcher: Sendable {
     -> [ScopedCandidate]
   {
     let scopeSegments = Self.segments(of: scope)
-    let excludedSegments = excludedFolder.map(Self.segments(of:)) ?? []
+    let excludedSegments = excludedFolder.map(Self.segments(of:))
     // String equality is canonical-equivalence aware, so a scope in either normalisation finds NFC and NFD paths.
+    // Every path starts with the root's empty segments, so excluding the root excludes everything.
     func isExcluded(_ candidate: Candidate) -> Bool {
-      !excludedSegments.isEmpty && candidate.segments.starts(with: excludedSegments)
+      excludedSegments.map(candidate.segments.starts(with:)) ?? false
     }
     guard !scopeSegments.isEmpty else {
       return candidates.enumerated().compactMap { index, candidate in
