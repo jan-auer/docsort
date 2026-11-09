@@ -12,6 +12,9 @@ import PDFKit
 /// document, between the margins. PDFView doesn't refit to fit-to-width when only its margins change, so this view
 /// does it after each layout that follows a change of the covered width, the scale or the document. Measured on
 /// macOS 27.
+///
+/// The refit posts a scale change, which asks for one more layout; that pass computes the same margins and stops at
+/// the change guard in `layout()`, so the guard must stay.
 final class TrailingInsetPDFView: PDFView {
   /// The width of the trailing part covered by another pane.
   var trailingInset: CGFloat = 0 {
@@ -26,17 +29,29 @@ final class TrailingInsetPDFView: PDFView {
     didSet { needsLayout = true }
   }
 
+  /// The width of the document's widest page, kept until the document changes; `layout()` runs on every frame of the
+  /// panel's slide and every step of a divider drag.
+  private var cachedWidestPageWidth: CGFloat?
+
   /// Observers of this view's scale and document changes, after which the margin is recomputed.
   private var observers: [any NSObjectProtocol] = []
 
   override init(frame: NSRect) {
     super.init(frame: frame)
-    observers = [Notification.Name.PDFViewScaleChanged, .PDFViewDocumentChanged].map { name in
-      NotificationCenter.default.addObserver(forName: name, object: self, queue: .main) {
+    let center = NotificationCenter.default
+    observers = [
+      center.addObserver(forName: .PDFViewScaleChanged, object: self, queue: .main) {
         [weak self] _ in
         MainActor.assumeIsolated { self?.needsLayout = true }
-      }
-    }
+      },
+      center.addObserver(forName: .PDFViewDocumentChanged, object: self, queue: .main) {
+        [weak self] _ in
+        MainActor.assumeIsolated {
+          self?.cachedWidestPageWidth = nil
+          self?.needsLayout = true
+        }
+      },
+    ]
   }
 
   @available(*, unavailable)
@@ -59,7 +74,8 @@ final class TrailingInsetPDFView: PDFView {
       scrollerInsets.right = trailingInset
       scrollView.scrollerInsets = scrollerInsets
     }
-    guard let widestPage = widestPageWidth(), bounds.width > trailingInset else { return }
+    if cachedWidestPageWidth == nil { cachedWidestPageWidth = widestPageWidth() }
+    guard let widestPage = cachedWidestPageWidth, bounds.width > trailingInset else { return }
     // At fit-to-width the scale is the one that fits the widest page and its own margins into the uncovered width;
     // otherwise it is the reader's zoom.
     let scale =
