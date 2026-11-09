@@ -483,6 +483,40 @@ struct FolderContentsFileRow: View {
     .frame(width: 340, height: 160)
   }
 
+  /// Every row state at once: selected with the list focused and unfocused, the conflict row, and the selected
+  /// conflict row, in one colour scheme.
+  private struct RowStatesPreview: View {
+    let colorScheme: ColorScheme
+
+    var body: some View {
+      let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
+      let files = contents.files
+      VStack(spacing: 0) {
+        ForEach([true, false], id: \.self) { isFocused in
+          FolderContentsListing(
+            contents: contents, selectedURL: files.first?.url,
+            conflictingName: files.last?.name, isListFocused: isFocused,
+            listHeight: .constant(84), isCollapsed: .constant(false), maxListHeight: 84)
+        }
+        FolderContentsListing(
+          contents: contents, selectedURL: files.last?.url, conflictingName: files.last?.name,
+          isListFocused: true, listHeight: .constant(84), isCollapsed: .constant(false),
+          maxListHeight: 84)
+      }
+      .frame(width: 340)
+      .background(FilingPanelStyle.background)
+      .environment(\.colorScheme, colorScheme)
+    }
+  }
+
+  #Preview("Row states, light") {
+    RowStatesPreview(colorScheme: .light)
+  }
+
+  #Preview("Row states, dark") {
+    RowStatesPreview(colorScheme: .dark)
+  }
+
   #Preview("Conflict") {
     FolderContentsListing(
       contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
@@ -532,6 +566,12 @@ struct FolderContentsFileRow: View {
     fileprivate var firstFileURL: URL? {
       if case .files(_, let files) = self { return files.first?.url }
       return nil
+    }
+
+    /// The listed files, for previews.
+    fileprivate var files: [FolderFile] {
+      if case .files(_, let files) = self { return files }
+      return []
     }
   }
 #endif
