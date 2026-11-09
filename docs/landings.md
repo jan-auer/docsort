@@ -2,6 +2,19 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-09 claude/shortcuts-sheet-bf85be: keyboard shortcuts sheet
+- What landed: a read-only sheet over the main window (⌘/, Help › Keyboard Shortcuts), grouped by context with
+  keycaps and search; Esc clears the search, then closes. Menu commands, tooltips and the sheet read one catalog
+  (`App/Shortcuts/`); tests keep the menus, picker keys and Quick Look panel keys in sync with it. While any sheet
+  or alert is attached to the main window, its file commands are off (`AttachedSheetTracker`), so ⌘⌫ in a sheet's
+  text field never trashes the selected file. Prior art and design: `docs/design/keyboard-shortcuts-sheet.md`.
+- Divergence: an extra "New Folder Name" section; a custom capsule search field, a fixed 760 × 640 sheet with Done
+  and a footer; planned but unbuilt keys (⌘L, ⌘1…⌘9, PgUp/PgDn, ⌥↑/⌥↓) are marked as such in `ux.md` and left
+  out. One review round with two blockers fixed; 319 core and 176 app unit tests pass. The look in light and dark
+  mode and the Rename alert's guard are unchecked.
+- Follow-ups: `docs/backlog.md` (sidebar and Folder contents keys not enforced by tests, column balancing, ⌘/ while
+  History or Settings is key).
+
 ## 2026-11-09 claude/folder-quicklook-c8e80a: Quick Look and file actions in Folder contents
 - What landed: Folder contents is Finder-style. A click selects, ↑/↓ move, Space opens the Quick Look panel (it
   follows ↑/↓), and double-click or Return uses the name. A file menu has Use Name, Quick Look, Open, Open With ›,
