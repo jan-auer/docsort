@@ -37,4 +37,39 @@ final class KeyboardShortcutsUITests: XCTestCase {
     sheet.typeKey("/", modifierFlags: .command)
     XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
   }
+
+  /// ⌘⌫ in the sheet's search field deletes text there; it doesn't move the selected file to the Trash.
+  @MainActor
+  func testCommandDeleteInTheSheetLeavesTheSelectedFile() throws {
+    let app = XCUIApplication()
+    app.launchArguments = ["-docsort-ui-test-fixture"]
+    app.launch()
+    let mainWindow = app.descendants(matching: .any)["main-window"]
+    XCTAssertTrue(mainWindow.waitForExistence(timeout: 5))
+    let scan = app.descendants(matching: .any)
+      .matching(
+        NSPredicate(
+          format: "identifier == 'sidebar-row' AND label == %@", "2033-10-11_Optik Klarblick.pdf")
+      )
+      .firstMatch
+    XCTAssertTrue(scan.waitForExistence(timeout: 5))
+    scan.click()
+    XCTAssertEqual(scan.value as? String, "unfiled")
+
+    mainWindow.typeKey("/", modifierFlags: .command)
+    let sheet = app.descendants(matching: .any)["keyboard-shortcuts-sheet"]
+    XCTAssertTrue(sheet.waitForExistence(timeout: 5))
+    sheet.typeText("trash")
+    sheet.typeKey(.delete, modifierFlags: .command)
+
+    let search = sheet.descendants(matching: .any)["keyboard-shortcuts-search"]
+    let cleared = XCTNSPredicateExpectation(
+      predicate: NSPredicate(
+        format: "value == '' OR value == nil OR value == %@", "Search shortcuts"),
+      object: search)
+    XCTAssertEqual(XCTWaiter().wait(for: [cleared], timeout: 3), .completed)
+    sheet.typeKey(.escape, modifierFlags: [])
+    XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+    XCTAssertEqual(scan.value as? String, "unfiled")
+  }
 }
