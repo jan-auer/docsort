@@ -55,8 +55,8 @@ details are second-hand.
   apply it with `keyboardShortcut(for:)`, the catalog lists it, and help texts and key hints (toolbar, filing panel,
   name field, status strip, sidebar History row) show `keys.notation`. Nothing else spells those keys.
 - `ShortcutCatalogTests` reads the real menu bar in the test host (`NSApp.mainMenu`). Every visible key equivalent
-  has to be listed under Anywhere or be in `ShortcutCatalog.standardMacShortcuts` (Quit, Hide, Close, Minimize,
-  Cut, Copy, Paste, Select All, Emoji & Symbols, Help). Every Anywhere key has to be in the menu bar. System items
+  has to be listed under Anywhere or be one of the standard macOS shortcuts the tests allow (Quit, Hide, Close,
+  Minimize, Cut, Copy, Paste, Select All, Emoji & Symbols, Help). Every Anywhere key has to be in the menu bar. System items
   are covered too: on macOS 27, View › Show Sidebar is ⌃⌘S.
 - The picker's keys come from `PickerKey`, the Quick Look panel's from `QuickLookPanelKey`, and the name field's
   from `TextFieldKeyCommand`. Each maps through an exhaustive switch, so a new key fails to compile until it has a

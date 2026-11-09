@@ -55,30 +55,38 @@ Almost everything works from the keyboard. Every command and its shortcut is in 
 Requirements: macOS 27 and Xcode 27. The project has no signing team; builds are signed ad hoc ("Sign to Run
 Locally"). `CLAUDE.md` lists the project's toolchain and conventions.
 
-### Build and run from the terminal
+### Install for everyday use
+
+Build a Release build and install it:
+
+```sh
+scripts/install.sh
+```
+
+The script builds the Release configuration into `.build/xcode`, replaces `/Applications/Docsort.app` and opens it
+(`--no-open` skips opening). It stops if the installed app is running; quit it first.
+
+Because local builds are signed ad hoc, macOS may not recognise an updated copy as the same app: after replacing it,
+you may have to pick the archive and inbox folders in Settings again.
+
+### Build and run for development
 
 ```sh
 xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode build
 open .build/xcode/Build/Products/Debug/Docsort.app
 ```
 
-### Install a Release build
+This is a Debug build. Destination search on a large archive is 40–80× slower in it, so judge speed with a Release
+build.
 
-```sh
-xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -configuration Release -derivedDataPath .build/xcode-release build
-ditto .build/xcode-release/Build/Products/Release/Docsort.app /Applications/Docsort.app
-```
+### Build from Xcode
 
-Because local builds are signed ad hoc, macOS may not recognise an updated copy as the same app: after replacing it,
-you may have to pick the archive and inbox folders in Settings again.
-
-### Build and install from Xcode
-
-1. Open `Docsort.xcodeproj`, choose the scheme **Docsort** and the destination **My Mac**, and press ⌘R to build and
-   run.
-2. To install: **Product › Scheme › Edit Scheme…**, select **Run**, set **Build Configuration** to **Release** and
-   close the sheet. Press ⌘B, then choose **Product › Show Build Folder in Finder**, open `Build/Products/Release`
-   and drag `Docsort.app` to `/Applications`.
+1. To run a Debug build: open `Docsort.xcodeproj`, choose the scheme **Docsort** and the destination **My Mac**, and
+   press ⌘R.
+2. To install a Release build: **Product › Scheme › Edit Scheme…**, select **Run**, set **Build Configuration** to
+   **Release** and close the sheet. Press ⌘B, then choose **Product › Show Build Folder in Finder**, open
+   `Build/Products/Release` and drag `Docsort.app` to `/Applications`. Set the configuration back to **Debug** for
+   development.
 
 ### Tests
 

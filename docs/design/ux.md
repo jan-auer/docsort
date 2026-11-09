@@ -1,9 +1,10 @@
 # docsort-ui: UX design
 
-Status: approved by the user on 2026-11-08. The interactive mockup is `docs/design/mockup.html`, built from `docs/design/mockup-src/`; the destination-picker
-comparison is `docs/design/picker.html`, built from `docs/design/picker-src/`. Both use the fictional sample archive in `docs/design/sample-data/`: an invented household
-written from scratch in the style of a German-language document archive, describing no real archive
-(`no-real-data-in-repo`). All names in this document's examples come from that sample archive.
+Status: the spec, kept current with the app. Approved by the user on 2026-11-08 and changed with every landing since;
+what is not built yet is marked *planned*. Examples use the fictional sample archive in `docs/design/sample-data/`: an
+invented household written from scratch in the style of a German-language document archive, describing no real
+archive (`no-real-data-in-repo`). The approved mockup and the design studies are in git history (`docs/decision-log.md`,
+`filing-panel-redesign`).
 
 docsort-ui files documents from inbox folders (Downloads, Scans) into an existing archive folder tree. It replaces
 the TUI `~/Coding/docsort-cli` and keeps what made the TUI good (every action on the keyboard, fuzzy folder search,
@@ -30,23 +31,24 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
 (`filing-panel-redesign`), because it is the main work surface, not details about the selection.
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ ● ● ●  ◧  Web-Downloads › Rechnung_NA-33-08812.pdf       [Open] [Finder] [Trash]      ◨  │  toolbar
-├────────────────┬───────────────────────────────────────────┬─────────────────────────────┤
-│ WEB-DOWNLOADS 9│                                           │ [🔍 Search, Gesundheit first]│
-│   Gehaltszett… │                                           │ 📁 Archive › Musik › Noten  │
-│ ✓ 2033-10-20 … │                                           ├─────────────────────────────┤
-│                │                                           │ In Gesundheit               │
-│ ▸ Rechnung_NA… │                                           │  folder list, edge to edge  │
-│ ▾ Uni Westerh… │              large preview                │ ⊕ New Folder  ↻   → into · ← │
-│     Rechnung_… │      (PDF pages, image, Quick Look)       ├──────── drag to resize ─────┤
-│ SCANNER      4 │                                           │ › Files in Noten   12 files │
-│   2033-10-11_… │                                           │  folder contents            │
-│   2033-10-16_… │                                           ├─────────────────────────────┤
-│ ────────────── │                                           │ Name: [2033-10-13 No… ↺ .pdf]│
-│ ⏱ History  ⌘Y  │                                           │                             │
-│                │  page 1 of 2 · 94 KB · PDF · 13 Oct 2033  │              ( Move  ⌘↩ )   │
-└────────────────┴───────────────────────────────────────────┴─────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● ● ●  ◧  ‹ ›  Rechnung_NA-33-08812.pdf                         [Open|Finder|Trash]     ◨  │  toolbar
+│                Web-Downloads                                                               │
+├────────────────┬───────────────────────────────────────────┬───────────────────────────────┤
+│ WEB-DOWNLOADS 9│                                           │ [🔍 Search, Gesundheit first] │
+│   Gehaltszett… │                                           │ Archive › Musik › Noten       │
+│ ✓ 2033-10-20 … │                                           ├───────────────────────────────┤
+│                │                                           │ In Gesundheit                 │
+│ ▸ Rechnung_NA… │                                           │  folder list, edge to edge    │
+│ ▾ Uni Westerh… │              large preview                │ ⊕ New Folder  ↻  → into · ←   │
+│     Rechnung_… │      (PDF pages, image, Quick Look)       ├──────── drag to resize ───────┤
+│ SCANNER      4 │                                           │ › Files in Noten     12 files │
+│   2033-10-11_… │                                           │  folder contents              │
+│   2033-10-16_… │                                           ├───────────────────────────────┤
+│ ────────────── │                                           │ Name: [2033-10-13 No… ↺ .pdf] │
+│ ⏱ History  ⌘Y  │                                           │                               │
+│                │  page 1 of 2 · 94 KB · PDF · 13 Oct 2033  │                ( Move  ⌘↩ )   │
+└────────────────┴───────────────────────────────────────────┴───────────────────────────────┘
 ```
 
 - **Sidebar: inbox list** (260 pt, resizable, collapsible with ⌃⌘S). One section per configured inbox, in the order
@@ -66,34 +68,31 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
   - **History row**: at the very bottom, below the inbox sections and separated by a hairline, a fixed **History** row
     (clock icon, "⌘Y" in secondary colour) opens the History window.
 - **Centre: preview** (takes the remaining width, at least 420 pt). PDFs render with PDFKit: continuous scroll,
-  fit-to-width by default with a margin around each page; zooming (⌘− or pinch) also goes below fit-to-width. Images render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A
-  thin footer shows page count, size, kind and dates.
+  fit-to-width by default with a margin around each page; zooming (⌘− or pinch) also goes below fit-to-width. Images
+  render at fit size. Everything else uses an embedded Quick Look preview (`QLPreviewView`). A thin footer shows page
+  count, size, kind and dates.
 - **Right: filing panel** (340 pt, 300–480, resizable against the preview by the divider between them, toggled with
   ⌥⌘I and the trailing toolbar button, `sidebar.trailing`; it slides in and out at the trailing edge as an inspector
   does). SwiftUI offers no system toggle for a trailing pane, the inspector included, so the toggle is the app's own
-  button. Laid out list first, like the save panel (see "Filing panel look"). Top to
-  bottom:
-  1. **Suggestions slot.** Reserved, empty and hidden for now. Later work (PDF text, OCR, download source) puts up to
-     three suggested destinations and a suggested name here as clickable chips, above the picker.
-  2. **Destination picker**: the search field; under it the **destination line**, the one place the full
-     destination path is shown (`Archive › Musik Margit › Noten & Bücher`), so the destination reads where it is
-     chosen; then the folder list edge to edge, with the **New Folder** button under the list (choosing or creating
-     the folder is the earlier step, so New Folder sits with the list, not at the bottom).
-  3. **Folder contents**: a drawer under the list with the files already in the highlighted destination. Dragging its
+  button. Laid out list first, like the save panel (see "Filing panel look"). Top to bottom:
+  1. **Destination picker**: the search field; under it the **destination line**, the one place the full destination
+     path is shown (`Archive › Musik Margit › Noten & Bücher`), so the destination reads where it is chosen; then the
+     folder list edge to edge, with the **New Folder** button under the list (choosing or creating the folder is the
+     earlier step, so New Folder sits with the list, not at the bottom).
+  2. **Folder contents**: a drawer under the list with the files already in the highlighted destination. Dragging its
      header resizes it against the list (only its grab bar shows the resize cursor); its chevron collapses it to the
      header. Size and state are kept with the window.
-  4. **Bottom bar**: **Name:** the name field with the extension and the revert control
-     inside it, and the conflict notice under it; then the **Move button**: the default (accent-filled) button, large
-     and capsule-shaped, with its shortcut shown inside it as a small key-cap badge to the right of the label:
-     `Move  ⌘↩`. For a filed file the label reads Rename or Move.
+  3. **Bottom bar**: **Name:** the name field with the extension and the revert control inside it, and the conflict
+     notice under it; then the **Move button**: the default (accent-filled) button, large and capsule-shaped, with its
+     shortcut shown inside it as a small key-cap badge to the right of the label: `Move  ⌘↩`. For a filed file the label
+     reads Rename or Move.
 
   The panel is always visible but inactive until a file is selected; it never covers the preview's pages (it sits
   beside the preview, though it lies over the PDF view's trailing edge, see "Filing panel look").
 
 ### Filing panel look
 
-From the 2026-11-08 visual study (`docs/design/filing-panel-visual-study.md`): concept A's tidiness and contrast in
-concept C's structure (`filing-panel-redesign`).
+From the 2026-11-08 visual study: concept A's tidiness and contrast in concept C's structure (`filing-panel-redesign`).
 
 - **Two surfaces**: the bars (search, list footer, drawer header, bottom bar) on the window colour; the two lists edge
   to edge on the content colour, with system separators between. In light mode the lists are white on grey, in dark
@@ -121,14 +120,13 @@ concept C's structure (`filing-panel-redesign`).
   (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
   Finder. The system draws it only over the preview (and only with a PDF), even though the PDF runs on under the
   panel; the panel continues it with the same one-pixel separator-colour line at its top edge.
-- **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
-  at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
-  and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
-  selected. At the right, the three
-  actions on that file (Open, Reveal in Finder, Move to Trash) as one group, and the filing panel toggle on its own at the
-  very right. Everything in the toolbar is about the selected file; History,
-  which is about all files, sits at the bottom of the sidebar instead (see "Toolbar and History placement"). All
-  toolbar items have menu equivalents.
+- **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled at
+  the list's start or end), then the standard window title as in Finder: the selected file's name as the title and its
+  inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is selected. At the
+  right, the three actions on that file (Open, Reveal in Finder, Move to Trash) as one group, and the filing panel
+  toggle on its own at the very right. Everything in the toolbar is about the selected file; History, which is about all
+  files, sits at the bottom of the sidebar instead (see "Toolbar and History placement"). All toolbar items have menu
+  equivalents.
 
 Minimum window size 1000 × 640 pt. Below about 1180 pt wide the sidebar collapses first; the preview keeps priority.
 
@@ -139,9 +137,9 @@ Three focus stops: sidebar, destination picker, name field. Focus decides what k
 1. **Pick a file.** Select it in the sidebar with ↑/↓ (or ‹ › in the toolbar, ⌥⌘↑/⌥⌘↓ from anywhere). The preview
    follows the selection at once. At launch, once the inboxes are listed, the first file is selected (unless the
    user already picked one).
-2. **Choose the destination.** Start typing: with a file selected in the sidebar, any printable key goes straight
-   into the destination filter (Return, Tab or ⌘L also move focus there without typing). See "Destination picker"
-   for browsing, filtering, Recent and creating folders.
+2. **Choose the destination.** Start typing: with a file selected in the sidebar, any printable key goes straight into
+   the destination filter (Return or Tab also move focus there without typing; ⌘L is *planned*). See "Destination
+   picker" for browsing, filtering, Recent and creating folders.
    - The **folder contents** list follows the highlighted folder (see below).
    - **Tab** (or Return) chooses the highlighted folder: its row gets a check mark, the destination line names it
      (`Archive › Rechnungen › Elektronik`), the search text and the list stay as they were, and focus moves to the
@@ -152,10 +150,10 @@ Three focus stops: sidebar, destination picker, name field. Focus decides what k
    - **Revert**: a small ↺ button at the trailing end of the field, shown only when the name differs from the
      original, restores the original name (also ⇧⌘R). For a filed file the original is the name it had before
      filing.
-   - **Take a name from the folder**: double-clicking a file in Folder contents (or Return on the selected file, or
-     Use Name in its menu) copies its name (without extension) into the name field, selected, so it can be edited
-     from there. A single click only selects the file, as in Finder. From the keyboard, ⌥↑ in the name field takes the last
-     name in the list, and repeated ⌥↑ / ⌥↓ walk up and down the list.
+   - **Take a name from the folder**: double-clicking a file in Folder contents (or Return on the selected file, or Use
+     Name in its menu) copies its name (without extension) into the name field, selected, so it can be edited from
+     there. A single click only selects the file, as in Finder. *Planned*: ⌥↑ in the name field takes the last name in
+     the list, and repeated ⌥↑ / ⌥↓ walk up and down the list.
    - Characters macOS forbids in names (`:` and `/`) are refused with an inline notice.
 4. **Move.** **⌘Return** from anywhere in the window, or a click on Move, files the file. Return in the name field
    does not file; it shows a brief hint "Press ⌘Return to move" as a small toast that floats just below the name field
@@ -164,8 +162,8 @@ Three focus stops: sidebar, destination picker, name field. Focus decides what k
    - **⌘Return before a destination is chosen**: in the picker, ⌘Return takes the highlighted folder as the
      destination and moves at once with the pre-filled name. Anywhere else (for example in the sidebar right after
      selecting a file), it moves nothing: focus goes to the picker and the toast says "Choose a destination first".
-   - The row stays in place in the sidebar, gets a check mark and shows its new name; a short confirmation appears
-     in the window's bottom bar: `Moved to Musik Margit/Noten & Bücher as 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z`.
+   - The row stays in place in the sidebar, gets a check mark and shows its new name; a short confirmation appears in
+     the window's bottom bar: `Moved to Musik Margit/Noten & Bücher as 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z`.
    - The destination becomes the most recent entry in Recent, and the move is added to the filing history.
    - Selection advances to the next unfiled file below (wrapping to the top of the next inbox section) and **focus
      returns to the sidebar**, so typing starts the next file's search. The next file's picker starts with an empty
@@ -199,8 +197,8 @@ row whose filed file it is follows it: it shows the new name, or the trashed sta
 the file to its archive folder and files the row there again. Move to Trash has
 no confirmation, because it is undoable; the next file is selected.
 
-It is a drawer under the folder list: its header ("Files in Noten & Bücher", the file count) names the folder only, since
-the destination line shows its full path. Dragging the header resizes the drawer against the list (the list keeps
+It is a drawer under the folder list: its header ("Files in Noten & Bücher", the file count) names the folder only,
+since the destination line shows its full path. Dragging the header resizes the drawer against the list (the list keeps
 at least about 200 pt with the search field); the chevron collapses it to the header.
 
 ### New folder
@@ -243,10 +241,11 @@ The panel checks the target path while you type the name:
 ### Undo
 
 - ⌘Z / ⇧⌘Z undo and redo the session's actions in order: move (with its rename), rename of a filed file, new folder,
-  move to Trash, replace, and Rename… or Move to Trash of an archive file in Folder contents. Each undo is named in the Edit menu ("Undo Move of 'Rechnung_NA-33…'"). It uses the window's
-  `UndoManager`, so it behaves like Finder's. Undo lasts for the session.
-- For any filed file, **Move Back** (File › Move Back to Inbox, ⌥⌘Z, also in the row's context menu and in History) returns that one file
-  to its original inbox path and name, including after a restart, through the filing history.
+  move to Trash, replace, and Rename… or Move to Trash of an archive file in Folder contents. Each undo is named in the
+  Edit menu ("Undo Move of 'Rechnung_NA-33…'"). It uses the window's `UndoManager`, so it behaves like Finder's. Undo
+  lasts for the session.
+- For any filed file, **Move Back** (File › Move Back to Inbox, ⌥⌘Z, also in the row's context menu and in History)
+  returns that one file to its original inbox path and name, including after a restart, through the filing history.
 - An undo or move-back that cannot complete (the original path is now taken, or the file was moved again outside the
   app) shows an alert that names the path in the way, offering **Keep Both** or **Cancel**.
 
@@ -261,7 +260,8 @@ The panel checks the target path while you type the name:
   window. Disabled for a pending new folder, which is not on disk yet.
 - **Quick Look**: Space in the sidebar opens the standard Quick Look panel on the selected file for a full-screen
   look. While it is open, ↑ / ↓ move through the sidebar's files and the panel follows; Space or Esc closes it. Space
-  never starts a search. Folder contents shares the same panel (see "Folder contents").
+  never starts a search. Folder contents shares the same panel (see "Folder contents"). Space is the only key
+  that opens it: Finder's ⌘Y is History here, and ⌃Space switches the input source.
 
 ## Files handled this session
 
@@ -277,16 +277,16 @@ file as it is now: the picker holds its current folder as the chosen destination
 name. Changing either and pressing ⌘Return renames it or moves it on (the button reads **Rename** or **Move**
 accordingly). Revert (↺) restores the name it had in the inbox.
 
-For a filed file the panel opens with a status banner across its top, above the picker: a green check,
-"Filed to Mobilität/Jahreskarte Regio Plus · today 09:41", and a small bordered **Move Back** button at its trailing end. The
-status and the action that undoes it sit together, and the bottom of the panel keeps one button: **Rename ⌘↩** or
-**Move ⌘↩**, disabled until the name or folder changes (the disabled state says "nothing to change", so no extra
-label). A separate "Move back or file again" panel was considered earlier and rejected: it looked cleaner but made
-changing a filed file a two-step detour.
+For a filed file the panel opens with a status banner across its top, above the picker: a green check, "Filed to
+Mobilität/Jahreskarte Regio Plus · today 09:41", and a small bordered **Move Back** button at its trailing end. The
+status and the action that undoes it sit together, and the bottom of the panel keeps one button: **Rename ⌘↩** or **Move
+⌘↩**, disabled until the name or folder changes (the disabled state says "nothing to change", so no extra label). A
+separate "Move back or file again" panel was considered earlier and rejected: it looked cleaner but made changing a
+filed file a two-step detour.
 
 A trashed file shows the same banner in the same place and layout: a trash icon, "Moved to Trash · today 09:41", and a
-small bordered **Put Back** button at its trailing end (tooltip "Put back in Web-Downloads (⌥⌘Z)"), which returns the file
-to its inbox under its original name. The picker and name field below stay inactive for a trashed file.
+small bordered **Put Back** button at its trailing end (tooltip "Put back in Web-Downloads (⌥⌘Z)"), which returns the
+file to its inbox under its original name. The picker and name field below stay inactive for a trashed file.
 
 A filed row stays checked off for the session even if its archive copy is later moved, renamed or deleted by someone
 else (History then shows "Moved or deleted since"). An unfiled inbox file that someone else moves away simply
@@ -317,8 +317,8 @@ files and move-backs are recorded as their own entries. Trash is recorded too.
 ## Destination picker
 
 The most important control: a **drill-down list with a search that prefers the current folder** (the drill-down
-list was chosen by the user in round 2 from two clickable candidates in `docs/design/picker.html`; the soft scope in
-the 2026-11-08 destination-search study, concept C, `docs/design/destination-search-study.md`).
+list was chosen by the user in round 2 from two clickable candidates; the soft scope in the 2026-11-08
+destination-search study, concept C; see `filing-panel-redesign` in `docs/decision-log.md`).
 
 ```
  [🔍 physio                      ⊗]
@@ -352,23 +352,24 @@ the 2026-11-08 destination-search study, concept C, `docs/design/destination-sea
   (click or ⇧⌘N) and the **first Elsewhere match is highlighted**, so Tab takes it; when nothing matches anywhere,
   the New Folder row is all there is, and highlighted. When the query names the folder itself, it is offered as its
   "this folder" row. So a folder you stand in can never hide the target.
-- **No scattered matches**: a folder the query's letters reach only one by one, scattered over its path, is not a
-  match (more separate runs than half the query's length): `asdf` doesn't find `Ahnenforschung/Stammbaum/Druckfassung`, while
+- **No scattered matches**: a folder the query's letters reach only one by one, scattered over its path, is not a match
+  (more separate runs than half the query's length): `asdf` doesn't find `Ahnenforschung/Stammbaum/Druckfassung`, while
   `fpfl` still finds `Fußpflege` and `ba37` `Bad 2037`. A nonsense query then offers only New Folder, and the default
-  highlight never lands on a misleading hit that ⌘Return would file into. Rows show the parent part of their path in secondary colour; → on a result
-  steps into it and clears the filter.
+  highlight never lands on a misleading hit that ⌘Return would file into. Rows show the parent part of their path in
+  secondary colour; → on a result steps into it and clears the filter.
 - **Choosing**: Tab or Return chooses the highlighted folder: a check mark on its row (value `chosen`), the destination
   line names it, and the search text and list stay, so ⇧Tab returns to exactly what you chose from. Typing or moving
   the highlight un-chooses it. ⌘Return files into the chosen folder, else the highlighted one.
-- **Matching**: space-separated words match independently in any order (`margit physio` finds `Gesundheit/Margit/Physiotherapie`);
-  case and diacritics are ignored (`einkaufe` finds `Einkäufe & Garantien`). The matching library is `fuzzy-matching-library`'s choice.
+- **Matching**: space-separated words match independently in any order (`margit physio` finds
+  `Gesundheit/Margit/Physiotherapie`); case and diacritics are ignored (`einkaufe` finds `Einkäufe & Garantien`). The
+  matching library is `fuzzy-matching-library`'s choice.
 - **Ranking rule** (for the core to implement, `search-scoped-ranking`), within each section: among results of
-  comparable match quality, **closer folders come first** by default: a folder fewer levels below the current scope wins, even over a deeper
-  folder whose name matches exactly, then shorter paths. The archive root is a scope like any other. So inside
-  Mobilität, `bahn` ranks `Mobilität/Bahntickets` above `Mobilität/Bahntickets/2033`, and from the root `dienstreisen`
-  ranks `Arbeit Margit/Dienstreisen & Exkursionen` above the exactly named
-  `! Abgeschlossen/Dienst Vermessungsamt bis 2032/Dienstreisen`. This is a setting: **Settings › Search › Rank
-  first:** *Closer folders* (default) or *Exact name matches*. Recent destinations get a boost.
+  comparable match quality, **closer folders come first** by default: a folder fewer levels below the current scope
+  wins, even over a deeper folder whose name matches exactly, then shorter paths. The archive root is a scope like any
+  other. So inside Mobilität, `bahn` ranks `Mobilität/Bahntickets` above `Mobilität/Bahntickets/2033`, and from the root
+  `dienstreisen` ranks `Arbeit Margit/Dienstreisen & Exkursionen` above the exactly named `! Abgeschlossen/Dienst
+  Vermessungsamt bis 2032/Dienstreisen`. This is a setting: **Settings › Search › Rank first:** *Closer folders*
+  (default) or *Exact name matches*. Recent destinations get a boost.
 - **Highlighting**: matched characters are bold, and when the typed text matches more than one segment of a path, the
   highlight marks the **first** one (typing `chor` against `Chor Liederkranz/Chorreisen/2033-09 Chorfest Hochalm` bolds
   `Chor Liederkranz`, not a later segment).
@@ -381,8 +382,8 @@ the 2026-11-08 destination-search study, concept C, `docs/design/destination-sea
 **Considered and rejected: columns with filter.** Finder's column view inside the panel, with the filter narrowing the
 columns to matching branches. It shows best where a match sits in the tree, but: the panel had to widen to about 520 pt
 while picking, so panel and preview jumped in width on every focus change, and at the minimum window size the preview
-fell to about 220 pt; ← / → fought the text caret while typing; Recent filled the whole first column; and only one
-match was visible at a time (⌘G to step). The drill-down list keeps the tree visible through the destination line and the
+fell to about 220 pt; ← / → fought the text caret while typing; Recent filled the whole first column; and only one match
+was visible at a time (⌘G to step). The drill-down list keeps the tree visible through the destination line and the
 relative paths in results, at a fixed width.
 
 ## Toolbar and History placement
@@ -399,7 +400,10 @@ files. Two fixes were considered:
 
 ## Keyboard map
 
-Every command is in the menu bar, so it is discoverable and rebindable in System Settings → Keyboard → Shortcuts.
+Every command is in the menu bar, so it is discoverable and rebindable in System Settings → Keyboard → Shortcuts. The
+keys by context are listed once, in the app: `App/Shortcuts/ShortcutCatalog.swift` feeds the menus, the tooltips and the
+keyboard shortcuts sheet (⌘/, Help › Keyboard Shortcuts; design in `keyboard-shortcuts-sheet.md`), and tests keep the
+menus, the picker's keys and the Quick Look panel's keys in sync with it. The sections above say what each key does.
 
 ### The rule
 
@@ -410,101 +414,29 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | **⇧Tab** | Go back one step, keeping what was entered. |
 | **Esc** | In the picker: clear the filter; with an empty filter, back to the sidebar. In the name field: back to the picker. |
 
-### Anywhere in the main window
+Sheets and alerts are standard macOS: Return presses the default button (Keep Both), Esc cancels. The destructive
+Replace is never the default; reach it with Tab and Space.
 
-| Keys | Command | Menu |
+### Planned keys
+
+| Keys | Where | Command |
 | --- | --- | --- |
-| ⌘Return | Move with the chosen destination and name | File › Move |
-| ⌘L | Focus the destination filter (planned, not built) | File › Choose Destination… |
-| ⌘O | Open selected file in its default app | File › Open |
-| ⌥⌘R | Reveal selected file in Finder | File › Reveal in Finder |
-| ⇧⌘O | Open the chosen (else highlighted) destination folder in Finder | File › Open Destination in Finder |
-| ⌘⌫ | Move selected file to Trash (outside text fields) | File › Move to Trash |
-| ⌘Z / ⇧⌘Z | Undo / Redo last action | Edit |
-| ⌥⌘Z | Move selected filed file back to its inbox | File › Move Back to Inbox |
-| ⌘Y | Show History | Window › History |
-| ⌘R | Rescan inboxes and archive (normally automatic) | View › Refresh |
-| ⌃⌘S | Show/hide sidebar | View |
-| ⌥⌘I | Show/hide filing panel | View |
-| ⌘1 … ⌘9 | Jump to inbox section 1…9 (planned, not built) | Go |
-| ⌥⌘↓ / ⌥⌘↑ | Select next / previous file in sidebar order (as ↓/↑ do), from any focus | Go › Next File / Previous File |
-| ⌘+ / ⌘− / ⌘0 | Zoom preview in / out / to fit | View |
-| ⌘, | Settings | docsort |
-| ⌘/ | Show the keyboard shortcuts sheet (`keyboard-shortcuts-sheet.md`) | Help › Keyboard Shortcuts |
-
-### Sidebar focused
-
-| Keys | Command |
-| --- | --- |
-| ↑ / ↓ | Previous / next file (preview follows) |
-| → / ← | Expand / collapse an inbox subfolder group |
-| type | Start the destination filter with that text |
-| Tab / Return | Go to the destination picker |
-| Space | Quick Look panel |
-| PgUp / PgDn (fn↑ / fn↓) | Scroll the preview without leaving the list (planned, not built) |
-
-### Destination picker focused
-
-| Keys | Command |
-| --- | --- |
-| type | Fuzzy filter; empty shows Recent first |
-| ↑ / ↓ | Move highlight |
-| → / ← | Into the highlighted folder / out to its parent (← only with an empty filter) |
-| ⌫ in an empty filter | Out to the parent folder |
-| ⌘↑ | To the archive root |
-| Tab / Return | Choose highlighted folder, go to name |
-| ⇧⌘N | New folder inside highlighted folder |
-| ⌘Return | Move now with pre-filled name |
-| Esc | Clear filter; with an empty filter, back to sidebar |
-
-### Name field focused
-
-| Keys | Command |
-| --- | --- |
-| type | Edit name (extension fixed) |
-| ⌥↑ / ⌥↓ | Take the previous / next name from Folder contents (planned, not built) |
-| ⇧⌘R | Revert to the original name |
-| ⌘Return | Move |
-| Return | Shows the toast "Press ⌘Return to move"; does not file |
-| ⇧Tab / Esc | Back to the picker |
-| Tab | Back to the sidebar without moving (focus wraps, as in any macOS window) |
-
-### Folder contents focused
-
-A click on a file gives the list focus; it is not a Tab stop.
-
-| Keys | Command |
-| --- | --- |
-| ↑ / ↓ | Previous / next file |
-| Space | Quick Look panel on the selected file |
-| Return, double-click | Use the file's name for the name field |
-| right-click | Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename…, Move to Trash |
-
-### Quick Look panel open
-
-From the sidebar or Folder contents; Finder's ⌘Y is History here, and ⌃Space switches the input source.
-
-| Keys | Command |
-| --- | --- |
-| ↑ / ↓ | Previous / next file in the list the panel was opened from; the panel follows |
-| Space / Esc | Close the panel |
-
-### Sheets and alerts
-
-Standard macOS: Return presses the default button (Keep Both), Esc cancels. The destructive Replace is never the
-default; reach it with Tab and Space.
+| ⌘L | Anywhere | Focus the destination filter (File › Choose Destination…) |
+| ⌘1 … ⌘9 | Anywhere | Jump to inbox section 1…9 (Go) |
+| PgUp / PgDn (fn↑ / fn↓) | Sidebar | Scroll the preview without leaving the list |
+| ⌥↑ / ⌥↓ | Name field | Take the previous / next name from Folder contents |
 
 ## Edge states
 
 | State | What the user sees |
 | --- | --- |
 | **First launch, nothing configured** | The window shows a welcome view in place of the preview: "Choose your archive folder and inbox folders to start." with **Open Settings…** (⌘,). Sidebar and panel are empty. |
-| **All inboxes empty** | Preview area: "All filed" with the count filed this session and the inbox names. Sidebar sections read "No files". |
+| **All inboxes empty** | Sidebar sections read "No files"; the preview reads "No file selected". *Planned*: "All filed" with the count filed this session and the inbox names. |
 | **One inbox empty** | Its section shows a single dimmed "No files" row; other sections work normally. |
-| **Inbox folder unreachable** (missing, renamed, drive not mounted, permission denied) | Its section header gets a warning icon; one row explains the cause ("Folder not found: ~/Archiv/_Neu/Scanner") with **Locate…** and **Settings…** buttons. Other inboxes work. The app watches the path and recovers by itself when it reappears. |
-| **Inbox needs its own access grant** (a symlinked folder that points outside the granted archive, see `app-sandbox`) | The section row reads "docsort needs permission to open Gemeinsam" with **Grant Access…**, which opens a folder picker at that path. |
+| **Inbox folder unreachable** (missing, renamed, drive not mounted, permission denied) | One row in its section, with a warning icon, explains the cause ("Folder not found: ~/Archiv/_Neu/Scanner") with a **Settings…** button (**Locate…** is *planned*). Other inboxes work. The app keeps checking the path and recovers by itself when it reappears. |
+| **Inbox needs its own access grant** (*planned*; a symlinked folder that points outside the granted archive, see `app-sandbox`) | The section row reads "docsort needs permission to open Gemeinsam" with **Grant Access…**, which opens a folder picker at that path. |
 | **Archive root unreachable** | The filing panel shows "Archive folder not available: ~/Archiv" with **Locate…**; Move is disabled. Preview, open, reveal and trash still work. |
-| **Archive indexing** | The first scan of an archive with a few thousand folders takes well under a second; until it finishes the filter field shows "Indexing archive…" and Recent is already usable. Later changes arrive via FSEvents without a visible state. |
+| **Archive indexing** | The first scan of an archive with a few thousand folders takes well under a second; until it finishes the filter field shows "Indexing archive…" and Recent is already usable. The archive is rebuilt when the app becomes active and on ⌘R, without a visible state; it is not watched (`archive-refresh`). |
 | **File still downloading or syncing** (`.download`, `.crdownload`, iCloud placeholder) | Row shows a progress or cloud icon; preview shows "Downloading…"; Move is disabled until it is complete. |
 | **No preview for the type** | Large file icon, name, kind, size, dates and **Open with <App>** (⌘O). |
 | **Preview loading** | Spinner in the preview area after 200 ms; the panel works meanwhile. |
@@ -515,8 +447,8 @@ default; reach it with Tab and Space.
 
 ## Live folder watching
 
-The inbox folders are watched (FSEvents), so the sidebar always shows what is in them, without ⌘R. The core builds the
-watcher as its own piece; this is the behaviour the UI expects.
+The inbox folders are watched (FSEvents, `InboxWatcher` in the core), so the sidebar always shows what is in them,
+without ⌘R.
 
 - **Who changed it decides how the row behaves.** Files that docsort moves, renames or trashes stay in their row,
   checked off or marked trashed (see "Files handled this session"). Changes made by anything else (Finder, a browser,
@@ -525,8 +457,8 @@ watcher as its own piece; this is the behaviour the UI expects.
   fresh download or scan lands at the bottom of its section; a file copied in with an older date lands further up.
   A new file in a new inbox subfolder creates the subfolder's group row at the folder's date position. The row shows a
   small accent dot on its icon's corner (like an unread marker) until it is first selected.
-- **The selection never moves because of an arrival.** If the selected row is visible, the visible rows above it stay
-  where they are on screen: insertions above the viewport adjust the scroll position so nothing on screen jumps.
+- **The selection never moves because of an arrival.** *Planned*: if the selected row is visible, the visible rows above
+  it stay where they are on screen: insertions above the viewport adjust the scroll position so nothing on screen jumps.
 - **A file disappears** (moved or deleted by someone else): its row is removed. If it was the selected file, the
   selection moves to the next unfiled file below (as after a move), the preview follows, and the bottom bar says
   "'2033-10-11_Optik Klarblick.pdf' was removed from Scanner outside docsort." Anything typed in the filing panel
@@ -541,17 +473,19 @@ watcher as its own piece; this is the behaviour the UI expects.
   "Edge states").
 - **Filed files changed later** (moved or deleted in the archive by someone else): their row stays checked off for the
   session; History shows "Moved or deleted since".
-- The archive tree is watched too, so new or renamed folders appear in the picker without a rescan.
+- The archive tree is not watched (`archive-refresh`): its index is rebuilt when the app becomes active, on ⌘R and
+  with the picker's ↻ button, so folders made elsewhere appear then.
 
 ## Settings window
 
 A standard Settings scene (⌘,) with two panes. **Folders**:
 
-- **Archive folder**: a path control showing `~/Archiv` with **Choose…**. Below it, the folder count once indexed
-  ("576 folders" in the sample archive).
+- **Archive folder**: its path (`~/Archiv`) with **Choose…** (a path control is *planned*). Below it, the folder count
+  once indexed ("576 folders" in the sample archive).
 - **Inboxes**: a table with columns *Name* (editable, defaults to the folder name), *Folder* (path), *Status* (OK, or a
-  warning such as "Not found" or "Needs access"). **+** opens a folder picker; **−** removes the selected inbox (files
-  are untouched). Drag to reorder; the order is the sidebar order and the ⌘1…⌘9 order.
+  warning such as "Not found"; "Needs access" is *planned*, see "Edge states"). **+** opens a folder picker; **−**
+  removes the selected inbox (files are untouched). Drag to reorder; the order is the sidebar order (and the order of
+  the *planned* ⌘1…⌘9).
 - Footnote: "Inbox folders inside the archive folder are left out of destination search."
 
 **Search**: one option, "Rank first:" with *Closer folders* (default) and *Exact name matches*
@@ -566,9 +500,9 @@ Kept free, not designed here:
 
 - **Document dates.** Inferring the document's own date (from PDF text, OCR or metadata) and shortcuts that insert a
   date into the name or a new folder name (⌘D / ⌥⌘D were drafted and dropped: today's date and the file's creation date
-  are rarely the document's date). They return together with date inference.
-
-- The suggestions slot at the top of the filing panel (destination chips and a name chip).
+  are rarely the document's date). They return together with date inference (`date-shortcuts-deferred`).
+- **Suggestions slot** at the top of the filing panel, above the picker: up to three suggested destinations and a
+  suggested name as clickable chips, from PDF text, OCR or the download source.
 - A Suggested group above Recent in the picker.
 - A ranking hook in fuzzy search for boosting suggested folders.
 - The preview footer can later show the detected source (for example the download URL from Spotlight metadata).
@@ -582,29 +516,21 @@ Kept free, not designed here:
 
 ## Decisions
 
-Settled by the user:
+Settled by the user and not recorded elsewhere (see `docs/decisions.md` for `inbox-and-history-behaviour`,
+`filing-panel-redesign`, `date-shortcuts-deferred` and `search-scoped-ranking`, and the two "considered" sections
+above):
 
-- Three columns with the filing panel always beside the preview (since the toolbar work it lies over the PDF view's
-  trailing edge, with the pages kept clear of it).
-- Each inbox is its own sidebar section; files oldest first.
-- Filed files stay in place, checked off; no Filed section. A persistent filing history with a History view.
-- Filed files can be renamed; revert restores the pre-filing name.
+- Three columns, with the filing panel always beside the preview; each inbox is its own sidebar section.
 - Typing in the sidebar goes straight into the destination filter (no type-to-select in the sidebar).
-- Folder contents selects as Finder does: a click selects, double-click or Return uses the name, Space is Quick Look
-  (with ↑ / ↓ moving through the files), and a context menu acts on the file; sorted alphabetically, scrolled to the
-  bottom.
-- After a move, focus returns to the sidebar with the next unfiled file selected, so typing starts its search at once.
-- The name field starts with the current name, fully selected.
-- Move to Trash has no confirmation, because it is undoable.
-
-- Destination picker: a drill-down list whose search covers the whole archive, the current folder's matches first
-  (soft scope); columns were considered and rejected.
+- After a move, focus returns to the sidebar with the next unfiled file selected; the name field starts with the current
+  name, fully selected.
 - Key scheme: only ⌘Return files; Tab and Return advance; ⇧Tab goes back; Esc clears the filter, then goes back. The
   Return hint is a toast that takes no layout space; the Move button shows ⌘↩ as a key-cap badge.
+- Folder contents selects as Finder does; sorted alphabetically, scrolled to the bottom.
 - New folder: ⇧⌘N or the button creates an editable row inside the highlighted folder; a slash nests folders.
-- History is a separate window (⌘Y).
-- No date shortcuts for now; they come back with document-date inference.
-- Inbox folders are watched live; outside changes may shift the list, docsort's own changes never do.
-- History is a fixed row at the bottom of the sidebar; the toolbar holds only the selected file's actions.
+- Move to Trash has no confirmation, because it is undoable.
+- History is a separate window (⌘Y), opened from a fixed row at the bottom of the sidebar.
 - Filed and trashed files show a status banner at the top of the filing panel with Move Back or Put Back.
+- Inbox folders are watched live; outside changes may shift the list, docsort's own changes never do. The archive
+  is refreshed instead of watched (`archive-refresh`).
 - Sidebar rows share a Finder-style disclosure gutter; the new-file dot sits on the icon's corner.

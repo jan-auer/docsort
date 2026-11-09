@@ -2,8 +2,8 @@
 
 @.claude/workflow.md
 
-Default branch: `master`. Project memory lives in `docs/decisions.md` and `docs/landings.md`; the workflow above says
-how to use them.
+Default branch: `master`. Project memory lives in `docs/decisions.md`, `docs/decision-log.md` and `docs/landings.md`;
+the workflow above says how to use them.
 
 ## Toolchain
 
@@ -29,7 +29,7 @@ how to use them.
 ## Core package
 
 - `Packages/DocsortCore` is organised by concern (`Settings`, `Inbox`, `Destinations`, `FileOperations`, `History`,
-  `Recents`, `Preferences`, `FileSystem`); the module doc in `DocsortCore.swift` lists what each holds.
+  `Recents`, `Preferences`, `FileSystem`, `Watching`); the module doc in `DocsortCore.swift` lists what each holds.
 - Its one dependency is ordo-one/FuzzyMatch, pinned `exact: "1.4.0"` with `Package.resolved` committed (decision
   `fuzzy-matching-library`). Ranking changes must keep `DestinationRankingTests` passing.
 - Test fixtures and examples follow `no-real-data-in-repo`: invented from scratch for a fictional household whose life
@@ -54,18 +54,21 @@ it captures nothing and takes over neither keyboard nor screen.
 Fix formatting with `swift format --in-place --recursive --parallel App AppTests UITests Packages`. Keep `-derivedDataPath`
 inside the worktree so parallel worktrees never share build state.
 
-UI tests are not part of the default checks: they launch the app and take over keyboard and screen. Run them when
-changing UI flows:
+UI tests are not part of the default checks: they launch the app and take over keyboard and screen. Run only a
+single focused test, when it is essential to validate a fix a unit test has already confirmed; no full UI suites
+and no UI tests for diagnosis (`targeted-ui-tests`):
 
 ```
-xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode -quiet test -only-testing:DocsortUITests
+xcodebuild -project Docsort.xcodeproj -scheme Docsort -destination 'platform=macOS' -derivedDataPath .build/xcode -quiet test -only-testing:DocsortUITests/<Class>/<test>
 ```
 
-Every UI test launches the app with `-docsort-ui-test-fixture` (debug builds only, `AppLaunchMode.uiTestFixture`):
-the app then builds an invented archive `Archiv` with the inboxes `_Neu/Web-Downloads` and `_Neu/Scanner` fresh in
-its container's temporary directory (`App/Fixture/UITestFixture.swift`), configures them through real bookmarks in an
-emptied `UserDefaults` suite, keeps its history there and "trashes" into a folder of the fixture. So no UI test
-reads or changes the user's settings, history or Trash. Sidebar rows (`sidebar-row`, labelled with the inbox file
+Every UI test launches the app either with `-docsort-ui-test-fixture` or, for the destination picker alone, with
+`-docsort-picker-test-host` (both debug builds only; `PickerUITests.swift` drives the picker's own test window over a
+small sample archive, in the inert environment). With `-docsort-ui-test-fixture` (`AppLaunchMode.uiTestFixture`) the
+app builds an invented archive `Archiv` with the inboxes `_Neu/Web-Downloads` and `_Neu/Scanner` fresh in its
+container's temporary directory (`App/Fixture/UITestFixture.swift`), configures them through real bookmarks in an
+emptied `UserDefaults` suite, keeps its history there and "trashes" into a folder of the fixture. So no UI test reads
+or changes the user's settings, history or Trash. Sidebar rows (`sidebar-row`, labelled with the inbox file
 name) report `unfiled`, `filed`, `trashed` or `downloading` as their accessibility value.
 
 They need a logged-in GUI session. If a run asks for a password to allow UI automation, the user can run
@@ -91,8 +94,8 @@ What the app exposes, as UI tests see it on macOS 27:
 
 ### Hosted tests (unit and UI): lock, hangs, fallback
 
-- Sessions share one Mac and one `testmanagerd`, and every test host is `org.jauer.Docsort`. Wrap every
-  `xcodebuild … test` in the shared lock:
+- Sessions share one Mac and one `testmanagerd`, and every test host is `org.jauer.Docsort`, so only one
+  `xcodebuild … test` may run at a time (`one-xctest-at-a-time`). Wrap every run in the shared lock:
   `until mkdir /tmp/docsort-xctest.lock 2>/dev/null; do sleep 15; done; xcodebuild … test …; rc=$?; rmdir /tmp/docsort-xctest.lock; exit $rc`
 - A run that hangs before any test starts has one of two causes: another `Docsort.app` is running (check
   `ps -axo pid,command | grep Docsort.app/Contents/MacOS`; a preview host is quit by `XcodeCloseWorkspace`), or the

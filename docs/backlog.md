@@ -2,6 +2,36 @@
 
 Non-blocking findings and deferred work, collected by the hub. Newest group first.
 
+## From the Google Drive investigation (2026-11-10)
+
+- **Google Drive: archive shows no folders on one Mac (open).** On another Mac, with the archive in Google Drive for
+  desktop (default streaming mode), the archive index shows no folders at all.
+  - Ruled out on this Mac: streaming itself. The sandboxed walker lists never-opened, dataless Drive folders in about
+    0.4 s without downloading anything, and a security-scoped bookmark into `~/Library/CloudStorage` works.
+  - Not reproducible here, because Drive won't make an opened folder cloud-only again.
+  - Open candidates: the in-app walk on never-opened folders under a powerbox grant; the archive bookmark not
+    resolving; the root listing as empty; an inbox set to the archive folder itself (that empties the index).
+  - Next step: diagnostics on the affected Mac: the Settings › Folders status line; the app's log for the categories
+    lifecycle, folders and archive-index; Sandbox denials; `stat` and `fileproviderctl evaluate` on the archive root;
+    and `find <archive> -type d | wc -l` as a metadata-only test of whether opening the folders once fixes it.
+- With an empty search, the picker's "All folders" list is empty and shows no message whether the index is still
+  building, failed or holds 0 folders; only Settings › Folders tells them apart.
+
+## From the toolbar glow landing (2026-11-09)
+
+- The cursor over the filing panel while a zoomed PDF page lies under it (the PDF view runs under the panel):
+  unchecked.
+- The PDF's fit with "Show scroll bars: Always" (System Settings › Appearance): unchecked.
+
+## Layering debt
+
+For the cleanup (decision `layering`; steps in `docs/architecture.md`, "The cleanup, in order"):
+
+- Open With asks Launch Services for the apps in the menu's view body (`FolderContentsFileMenu`): move it into a
+  service or compute it only when the submenu opens.
+- The archive rename and trash orchestration lives in `MainWindowModel+ArchiveFiles.swift`.
+- Undo/redo orchestration lives in a view-model extension; it moves into the core.
+
 ## From the keyboard shortcuts sheet review (2026-11-09)
 
 - The sidebar's and Folder contents' keys come from `onKeyPress` handlers, so nothing forces a new key there into the
@@ -19,11 +49,8 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
   (`verifyFiledPlacement`).
 - `remark(filedAs:)` in `MainWindowModel+ArchiveFiles.swift` repeats the loop in `applyMarks(of:for:)`, and
   `FilingService.rename` largely repeats `move`.
-- Open With asks Launch Services for the apps in the menu's view body (`FolderContentsFileMenu`), which `layering`
-  forbids: move it into a service or compute it only when the submenu opens.
 - Quick Look doesn't switch lists when the other list is clicked while the panel is open; it moves to the other list
   only through Quick Look in a file's menu.
-- The archive rename and trash orchestration in `MainWindowModel+ArchiveFiles.swift` is debt for the `layering` move.
 - With Folder contents focused, ⌘O, ⌥⌘R and ⌘⌫ still act on the selected inbox file (the menu sees them first);
   Finder would act on the list's selection.
 
@@ -39,15 +66,13 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - Tests: `FilingService` undo of a move, Replace and its undo, the redo rule, picker integration
   (`handlePickerEvent`, `moveSelectedFile` routing, `rebuild()`).
 - Duplicate sample-archive builders (`PickerSampleArchive` in App, `PickerArchiveFixture` in AppTests).
-- File order of folder contents: the core returns newest first, the spec wants alphabetical; decide in one place.
-- Undo/redo orchestration lives in a view-model extension; move it into the core in the architecture cleanup.
+- Folder contents are sorted in two places (core newest-first in `DestinationIndex.files(in:)`, app alphabetical in
+  `FolderFileListing`); sort in one place.
 - `.docsort-*.partial` leftovers from interrupted cross-volume copies aren't cleaned up.
 
 ## Deferred features
 
-- (Done 2026-11-08: live folder watching in the app.)
-- (Done 2026-11-08: History window, status strips, Move Back / Put Back, revert name.)
-- Date shortcuts in the name field (`deferred-and-wanted-features`).
+- Date shortcuts in the name field, deferred until document-date inference (`date-shortcuts-deferred`).
 - Ideas from the layout research (report on local branch `claude/layout-research-068c21`): a ⌘K command palette,
   open Finder windows and pinned folders as destinations, a focus-preview toggle, suggestion chips with per-source
   defaults.
@@ -91,3 +116,8 @@ Non-blocking findings and deferred work, collected by the hub. Newest group firs
 - `InboxRowView` sets the "New" accessibility hint even when the row is marked.
 - Tests: `.replaced` moving selection; trash/undo/Move Back/Put Back not reported as external; an external arrival
   clearing a filed mark; ⌘R ignoring the superseded stream.
+
+## From older landings (2026-11-08)
+
+- Check the app icon in the Dock and in Finder (its small drawings were checked only as source SVGs).
+- Cross-volume moves are tested only through a seam, never across real volumes.

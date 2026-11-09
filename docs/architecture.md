@@ -2,8 +2,8 @@
 
 The target structure of docsort-ui: layers, core services and their interfaces, the concurrency model, and where new
 code goes. Signatures are the intended shape, not code to copy; names may still change in review. Decision
-`layering` in `docs/decisions.md` sets the rule: build a usable app first, keep new services UI-free so they can
-move, and do the full cleanup once the app works end to end. Each section therefore says what to **set now** (cheap
+`layering` in `docs/decisions.md` sets the rule: keep new services UI-free so they can move into the core; the app
+now works end to end, so the cleanup below is due. Each section therefore says what to **set now** (cheap
 now, costly later) and what to **move later** (during the cleanup).
 
 ## Layers
@@ -29,7 +29,7 @@ Core (Packages/DocsortCore, nonisolated by default)               Building block
   combination is a service's job.
 - Services depend on each other in one direction only: `FilingService` and `FolderAccessService` depend on no
   other service; `InboxService`, `DestinationService` and `FolderContentsService` read them. No cycles.
-- One composition root: `AppEnvironment` (already on the app-ui branch) grows into the place that builds every
+- One composition root: `AppEnvironment` (`App/Library/AppEnvironment.swift`) grows into the place that builds every
   service once per process and hands them to the view models. No service is a global or a singleton.
 
 ## What the app layer holds
@@ -83,7 +83,7 @@ public struct FolderAccessState: Sendable {   // archiveRoot: ResolvedFolder?, i
 }                                             // settingsReadError: PreferenceError?
 ```
 
-- Set now: nothing; `FolderLibrary` on the app-ui branch already keeps this logic UI-free in one file.
+- Set now: nothing; `FolderLibrary` (`App/Library/FolderLibrary.swift`) keeps this logic UI-free in one file.
 - Move later: `FolderLibrary`'s load → resolve → save-renewed → edit logic into this actor; `FolderLibrary` becomes a
   thin view model; alert text moves into the view model, typed errors into the core.
 
@@ -115,6 +115,9 @@ public struct HandledItem: Sendable {     // originalURL, currentURL, handling: 
 }
 ```
 
+- Not yet reconciled: today's `FilingService` (`App/Library/FilingService.swift`) has grown past this sketch
+  (separate `refile`, archive `rename` and `trash`, `putBack`, per-command outcome types, `events()` instead of
+  `updates()`, no `handledItems`). Cleanup step 1 settles the shape.
 - History-save policy: a failed save keeps the change and sets `pendingSaveError` in the outcome and the state;
   every later command retries the save first; at quit the app calls `retrySave()` and shows "Quit Anyway / Cancel" on
   failure. An unreadable history at launch sets `.historyUnreadable` and every command throws until
@@ -133,7 +136,8 @@ public struct HandledItem: Sendable {     // originalURL, currentURL, handling: 
 ### Inbox listing with live updates
 
 Owns one section per configured inbox: the watcher, the scanner, and merging in the rows the app handled. The
-folder-watch branch builds the watcher half (`InboxWatcher`, `ExpectedChanges`); this is where it ends up.
+watcher half is in the core (`Watching/`: `InboxWatcher`, `ExpectedChanges`); the merging is in the app's
+`InboxLibrary` (`App/Library/InboxLibrary.swift`); this is where both end up.
 
 ```swift
 public actor InboxService {
@@ -156,7 +160,6 @@ public struct InboxRow: Sendable, Identifiable {                 // id: stable a
   The rows come from `FilingService.handledItems(in:)`, this session's events, not from a second list in the UI.
 - **Stable row identity**: `InboxItem` carries its `FileIdentity`; a row's ID survives a rename in place and a
   completed download. The sidebar selection, the filing panel and the preview key on the row ID, not the URL.
-- The event source and coalescer are reusable for watching the archive later.
 - Set now: rows and selection keyed on identity; `ExpectedChanges` used only inside `FilingService`.
 - Move later: merging handled rows into the listing (done in the app's `InboxLibrary` until then) into `InboxService`.
 
@@ -180,7 +183,8 @@ public struct DestinationCatalog: Sendable {   // index: DestinationIndex, recen
 ```
 
 - Recents: the service consumes `FilingService` outcomes, records the destination's archive-relative path and
-  saves; it rebuilds the index when a move created folders (or when the archive watcher reports a change).
+  saves; it rebuilds the index when a move created folders, when the app becomes active and on ⌘R (the archive is not
+  watched, decision `archive-refresh`).
 - Suggestions later add a boost input next to recents (`search(_:in:boosting:)`), not a second search path.
 - Now: the picker model (`App/Picker/`) takes `index`, `recents` and `ranking` as separate inputs and reports
   through `onEvent`. Fine until the cleanup, when the three inputs become one `DestinationCatalog`.
@@ -200,7 +204,7 @@ public struct FileFacts: Sendable {   // name, content type, size, dates; read w
 }
 ```
 
-- Folder contents are cached by folder URL and invalidated by `FilingService` outcomes and the archive watcher. Only
+- Folder contents are cached by folder URL and invalidated by `FilingService` outcomes and archive refreshes. Only
   this listing pays for a cache: the picker moves its highlight quickly over the same folders.
 - `DestinationIndex.files(in:)` is a folder listing, not part of the tree index; it moves here.
 - The picker's `FolderFileListing` protocol is this service's seam today; it becomes `FolderContentsService`.
@@ -215,7 +219,7 @@ public struct FileFacts: Sendable {   // name, content type, size, dates; read w
 | --- | --- |
 | A new user action on files or history | A command on `FilingService` |
 | Anything read from disk to show | A core service or building block; called off the main actor |
-| Caching of disk reads | Inside the service that owns the data, invalidated by outcomes and watcher batches |
+| Caching of disk reads | Inside the service that owns the data, invalidated by outcomes, inbox watcher batches and archive refreshes |
 | Suggestions (PDF text, OCR, download source) | `Packages/DocsortCore/Suggestions/`: a `SuggestionService` actor taking a file URL and the `DestinationCatalog`, returning destination and name suggestions; extraction parts as building blocks |
 | Ranking changes | `DestinationMatcher`, behind `DestinationCatalog.search` |
 | A new preference | A `StoredPreference` defined next to its type in the core, owned by the service that uses it |
@@ -223,6 +227,6 @@ public struct FileFacts: Sendable {   // name, content type, size, dates; read w
 
 ## The cleanup, in order
 
-Once the app works end to end: 1. `FilingService` into the core. 2. `FolderAccessService`. 3. `DestinationService`
+Due now (`layering`; not started): 1. `FilingService` into the core. 2. `FolderAccessService`. 3. `DestinationService`
 with recents and ranking. 4. `InboxService` with the watcher. 5. `FolderContentsService`, `FileFacts`,
 `PreviewLoader`. Each is one reviewable step that moves logic without changing behaviour; its tests move with it.

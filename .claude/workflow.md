@@ -18,9 +18,9 @@ Every session in this project loads these rules, so the role comes from how the 
 - **The hub** is the user's standing session. It talks with the user, plans, starts and steers the other sessions,
   and lands their work. It does not write project code itself.
 - **A coordinator** is a session in its own git worktree and branch, owning one feature, fix or experiment. It
-  plans the details, verifies and reports. When the spec is clear and the change is contained, it implements
-  directly, itself or with a single subagent, in one build-and-fix loop. It splits work across subagents only when
-  the pieces are large or independent enough to pay for the extra hand-offs.
+  plans the details, settles implementation choices itself, verifies and reports. When the spec is clear and the
+  change is contained, it implements directly, itself or with a single subagent, in one build-and-fix loop. It splits
+  work across subagents only when the pieces are large or independent enough to pay for the extra hand-offs.
 - **An agent session** is a session running one named agent definition (for example a researcher), for work that
   outlives a single subagent call or needs the user's attention on its own.
 - **Subagents** do bounded jobs inside a session: reconnaissance, one well-defined implementation step, tests for one
@@ -28,24 +28,31 @@ Every session in this project loads these rules, so the role comes from how the 
 
 ## Project memory
 
-Two files in the project carry what sessions learn. Read both before planning; keep them short.
+Three files in the project carry what sessions learn. Read `decisions.md` and the latest landings before planning;
+keep all three short.
 
-- `docs/decisions.md`: lasting decisions, facts and lessons, one `## <slug>` heading each, with the reason. Add an
-  entry when the user settles a design question or a lesson would save the next session time. Edit or remove entries
-  that turn out wrong instead of appending contradictions.
+- `docs/decisions.md`: what every session must follow or know now (conventions, constraints, process, product rules
+  still governing behaviour), one `## <slug>` heading each, as the rule and a short reason. Add an entry when the user
+  settles a design question or a lesson would save the next session time. Edit or remove entries that turn out wrong
+  instead of appending contradictions.
+- `docs/decision-log.md`: how those choices were reached (benchmarks, rejected alternatives, verifications,
+  incidents), under the same slug. Read an entry only when revisiting its area; put such history here, not in
+  `decisions.md`.
 - `docs/landings.md`: one entry per landed piece of work, newest first, written by the `coord-land` skill.
 
 ## How the hub works
 
 1. Read `docs/decisions.md` and the latest entries of `docs/landings.md`.
-2. Turn what the user asks for into work. Answer questions and do quick reads yourself; plan anything with more than
-   one step with the `coord-plan` skill, and get the user's go on the plan.
+2. Turn what the user asks for into work. Answer questions and do quick reads yourself; hand research (stack,
+   libraries, toolchain, prior art) to an agent session or a subagent. Plan anything with more than one step with the
+   `coord-plan` skill, and get the user's go on the plan.
 3. Start the approved work with the `coord-start` skill: a coordinator session for each piece that changes code, an
    agent session for research or other work that ends in a document rather than a branch. The user's go on the plan
-   is the go for starting its sessions. Start pieces one after another unless their files are disjoint.
+   is the go for starting its sessions. Run pieces in parallel when their files are disjoint, one after another
+   otherwise. Give each session one piece: a long-lived session carrying many pieces slows everything down.
 4. Keep track of every session you started (its name, role, branch and state). When one finishes a turn, read its
    report: answer its question, forward it to the user, or, when its work is done and verified, land it with the
-   `coord-land` skill.
+   `coord-land` skill, which merges only on the user's yes.
 5. Bring decisions to the user as one question at a time, with your recommendation. Record settled ones in
    `docs/decisions.md`.
 
@@ -54,8 +61,9 @@ Two files in the project carry what sessions learn. Read both before planning; k
 1. Read `docs/decisions.md` and the latest entries of `docs/landings.md`. On a resumed session, also read landings
    made since it started and check for overlap with your files.
 2. Work on your own branch in your own worktree; never on `master`.
-3. Bring design decisions to the hub (or, without a hub, the user) as questions; do not make architectural
-   assumptions.
+3. Settle implementation details yourself and unblock yourself (`coordinator-autonomy`). Bring only product
+   behaviour, architecture and big trade-offs to the hub (or, without a hub, the user), as questions; do not make
+   architectural assumptions. List every choice you made under Divergence in your report.
 4. Implement directly when the spec is clear and the change is contained (see Roles). When you do delegate, give
    the subagent a brief naming the goal, the files, what is already ruled out and what done looks like. Prefer few,
    larger steps over many small hand-offs.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Writes folders.txt: the folder tree of a fictional household archive for the docsort design mockups.
+"""Writes folders.txt: the folder tree of a fictional household archive for docsort's examples and previews.
 
-All of it is invented for the mockups and describes no real archive or person (see `no-real-data-in-repo` in
+All of it is invented and describes no real archive or person (see `no-real-data-in-repo` in
 docs/decisions.md). The household: Konrad and Margit Weißenbacher, in their sixties, renting a flat at
 Brunnfeldgasse 14/3 in the made-up town of Wettelau. Konrad retired from the town's survey office in 2032 and keeps
 the books of his choir; Margit teaches music part-time at a private school; their son Matthias studies abroad. They

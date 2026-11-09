@@ -30,6 +30,13 @@ coordinator's worktree.
    - Follow-ups: <or "None">
    ```
 
+   "What landed" stays one or two lines; details belong in the branch's commit messages. Follow-ups go into
+   `docs/backlog.md` or a decision too, so the entry can later shrink without losing them. When the file grows long,
+   compress older entries to one line each, `## <YYYY-MM-DD> <branch>: <outcome> (merge <hash>)`. Before compressing,
+   check each entry's divergences and follow-ups: whatever is still true and useful moves to a decision, the decision
+   log, the backlog or a code comment, since the one-line entry keeps none of it. Update the header's pointer to the
+   last version that holds the full entries.
+
 8. **Push.** `git push origin master` after the record commit, so every landing is on GitHub. If the push fails
    (credentials, a diverged remote), tell the user; never force-push `master`. Delete the landed branch on `origin`
    too, if it was pushed.

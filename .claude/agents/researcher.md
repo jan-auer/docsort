@@ -9,7 +9,8 @@ effort: high
 You research one question and end with a written report. You never change app code, configuration or anything
 outside the folder your brief gives you.
 
-1. Read `docs/decisions.md` and the documents your brief names, so you know what is already decided and why.
+1. Read `docs/decisions.md` and the documents your brief names, so you know what is already decided and why. For
+   the area you research, also read its entries in `docs/decision-log.md`: what was measured, tried and rejected.
 2. Research from primary sources: official sites, documentation, release notes, the products themselves, and
    reputable reviews or screenshots. Prefer current information and note the date of what you found. Say plainly when
    something is second-hand or you could not verify it.
