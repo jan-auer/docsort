@@ -3,8 +3,10 @@ import SwiftUI
 
 /// The editing commands of a text field that the filing panel handles itself.
 ///
-/// The name field passes ↑ and ↓ on to the field today; they are reported so that the planned ⌥↑/⌥↓ can be handled
-/// there.
+/// The name field lets ↑ and ↓ through to the field, which moves the caret to the start or end. The planned ⌥↑/⌥↓
+/// won't arrive as `moveUp`/`moveDown`: AppKit's standard key bindings send ⌥↑ as `moveBackward:` and
+/// `moveToBeginningOfParagraph:`, and ⌥↓ as `moveForward:` and `moveToEndOfParagraph:`, so they need commands of their
+/// own.
 enum TextFieldKeyCommand {
   /// ↑
   case moveUp
