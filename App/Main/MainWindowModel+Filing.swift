@@ -39,6 +39,17 @@ extension MainWindowModel {
 
   // MARK: Moving
 
+  /// Runs `operation`, a move, trash, Move Back, Put Back or archive file change, unless another one is under way
+  /// (then it is dropped); `isFilingInProgress` is set while it runs.
+  func startFilingOperation(_ operation: @escaping @MainActor () async -> Void) {
+    Task {
+      guard !isFilingInProgress else { return }
+      isFilingInProgress = true
+      defer { isFilingInProgress = false }
+      await operation()
+    }
+  }
+
   /// Whether the filing panel's picker and name field take input for the selected file: a complete file that is
   /// unhandled or filed (not trashed), with the archive available and the history writable.
   var canChooseDestination: Bool {
@@ -129,12 +140,12 @@ extension MainWindowModel {
     let request = MoveRequest(
       itemID: file.id, source: file.url, folderURL: index.url(for: destination.path),
       archivePath: destination.path, name: name, originalName: file.originalName, kind: kind)
-    Task { await perform(request, resolution: .refuse) }
+    startFilingOperation { await self.perform(request, resolution: .refuse) }
   }
 
   /// Retries the move of `conflict` with `resolution` (Keep Both or Replace).
   func resolve(_ conflict: FilingConflict, with resolution: ConflictResolution) {
-    Task { await perform(conflict.request, resolution: resolution) }
+    startFilingOperation { await self.perform(conflict.request, resolution: resolution) }
   }
 
   /// Cancels the move of a conflict and returns to the name field.
@@ -143,9 +154,6 @@ extension MainWindowModel {
   }
 
   private func perform(_ request: MoveRequest, resolution: ConflictResolution) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     let markBefore = inboxes.row(for: request.itemID)?.mark
     do {
       let outcome = try await moveFile(of: request, resolution: resolution)
@@ -274,13 +282,10 @@ extension MainWindowModel {
   func trash(_ file: SelectedFile) {
     guard canTrash(file) else { return }
     let request = TrashRequest(itemID: file.id, url: file.url, originalName: file.originalName)
-    Task { await perform(request) }
+    startFilingOperation { await self.perform(request) }
   }
 
   private func perform(_ request: TrashRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await trashKeepingRow(request.itemID, url: request.url)
       inboxes.setMark(
@@ -358,11 +363,11 @@ extension MainWindowModel {
       let request = MoveBackRequest(
         itemID: file.id, documentID: documentID, url: file.url, originalName: file.originalName,
         inboxName: file.inboxName)
-      Task { await perform(request, resolution: .refuse) }
+      startFilingOperation { await self.perform(request, resolution: .refuse) }
     case .trashed(let trashedURL, _):
       let request = PutBackRequest(
         itemID: file.id, trashedURL: trashedURL, originalName: file.originalName)
-      Task { await perform(request) }
+      startFilingOperation { await self.perform(request) }
     case nil:
       return
     }
@@ -401,13 +406,10 @@ extension MainWindowModel {
 
   /// Keep Both in the Move Back conflict alert: moves the file back under a numbered name beside the item in the way.
   func resolve(_ conflict: MoveBackConflict) {
-    Task { await perform(conflict.request, resolution: .keepBoth) }
+    startFilingOperation { await self.perform(conflict.request, resolution: .keepBoth) }
   }
 
   private func perform(_ request: MoveBackRequest, resolution: ConflictResolution) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     let markBefore = inboxes.row(for: request.itemID)?.mark
     do {
       let outcome = try await filing.moveBack(
@@ -436,9 +438,6 @@ extension MainWindowModel {
   }
 
   private func perform(_ request: PutBackRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.putBack(request.trashedURL)
       let returnedURL = outcome.restored.url

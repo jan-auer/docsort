@@ -23,7 +23,7 @@ extension MainWindowModel {
       return
     }
     let request = ArchiveRenameRequest(source: file.url, name: name, originalName: file.name)
-    Task { await perform(request) }
+    startFilingOperation { await self.perform(request) }
   }
 
   /// Moves the archive file `file` to the Trash, without confirmation (it can be undone).
@@ -32,13 +32,10 @@ extension MainWindowModel {
     let request = ArchiveTrashRequest(
       url: file.url, originalName: file.name,
       selectionAfter: picker.contentsFile(replacing: file)?.url)
-    Task { await perform(request) }
+    startFilingOperation { await self.perform(request) }
   }
 
   private func perform(_ request: ArchiveRenameRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.rename(request.source, to: request.name)
       let filedRows = applyRename(outcome)
@@ -58,9 +55,6 @@ extension MainWindowModel {
   }
 
   private func perform(_ request: ArchiveTrashRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.trash(request.url)
       let filedRows = applyTrash(outcome, selectingAfterwards: request.selectionAfter)

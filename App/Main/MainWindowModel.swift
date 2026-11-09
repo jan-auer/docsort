@@ -127,7 +127,7 @@ final class MainWindowModel {
   var moveBackConflict: MoveBackConflict?
   /// A failed action to tell the user about.
   var alert: FilingAlert?
-  /// Whether a move, trash, Move Back or Put Back is under way; further ones wait for it.
+  /// Whether a move, trash, Move Back, Put Back or archive file change is under way; others are dropped meanwhile.
   var isFilingInProgress = false
 
   /// The app's configured folders.
