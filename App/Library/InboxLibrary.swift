@@ -256,12 +256,6 @@ final class InboxLibrary {
     orderedRows.filter { $0.mark?.filedDocumentID == documentID }.map(\.id)
   }
 
-  /// The row listing the inbox file at `url`, or `nil` when no section lists one there.
-  func row(listing url: URL) -> InboxRow? {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    return orderedRows.first { $0.item.url.standardizedFileURL.path(percentEncoded: false) == path }
-  }
-
   /// The label of the section listing the file `id`.
   func sectionLabel(of id: InboxItemID) -> String? {
     rowsByID[id]?.sectionLabel
@@ -296,12 +290,6 @@ final class InboxLibrary {
   func markSeen(_ id: InboxItemID) {
     guard newArrivals.remove(id) != nil else { return }
     rebuildSections()
-  }
-
-  /// The first row of the section at `index` (0-based), or `nil` when there is no such section or it has no rows.
-  func firstRow(inSection index: Int) -> InboxRow? {
-    guard sections.indices.contains(index) else { return nil }
-    return sections[index].rows.first
   }
 
   // MARK: Building the sections

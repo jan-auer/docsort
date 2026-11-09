@@ -136,7 +136,6 @@ struct InboxLibraryTests {
         date: october2033(21)))
     #expect(library.nextUnhandledRow(after: rows[0].id)?.id == rows[2].id)
     #expect(library.nextUnhandledRow(after: rows[2].id)?.id == rows[0].id)
-    #expect(library.firstRow(inSection: 1)?.item.name == "2033-10-11_Optik Klarblick.pdf")
     #expect(library.sections.map(\.label) == ["Web-Downloads", "Scanner"])
   }
 

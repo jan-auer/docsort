@@ -296,3 +296,11 @@ struct MainWindowModelReturnTests {
     #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")
   }
 }
+
+extension InboxLibrary {
+  /// The row listing the inbox file at `url`, or `nil` when no section lists one there.
+  fileprivate func row(listing url: URL) -> InboxRow? {
+    let path = url.standardizedFileURL.path(percentEncoded: false)
+    return orderedRows.first { $0.item.url.standardizedFileURL.path(percentEncoded: false) == path }
+  }
+}
