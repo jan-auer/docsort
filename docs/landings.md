@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-10 claude/search-lag-0bed3b: destination search 3–10× faster on large archives
+- What landed: parallel scoring and highlighting over UTF-8 paths, and an index search outside a folder for the
+  picker's Elsewhere; ~25,000 invented folders went from 16–60 ms per keystroke (worst 237 ms) to 4–9 ms (worst 24 ms)
+  in Release, results identical. Opt-in benchmark `DestinationSearchBenchmark`.
+- Divergence: "This folder" is offered whenever the folder matches (a weak match no longer drops out in large
+  archives). Search stays synchronous (user's choice). Pushed before its privacy review, which was clean. Typing not
+  watched in the running app; Debug builds stay slow (300–500 ms per keystroke at 25k folders).
+- Follow-ups: decision `search-performance` lands with the docs cleanup.
+
 ## 2026-11-09 claude/toolbar-glass-under-panel: toolbar blur spans preview and filing panel
 - What landed: the PDF view runs under the filing panel, so the toolbar's blur over a scrolled PDF runs across the
   whole toolbar; `PartlyCoveredPDFView` keeps pages fitted and centred left of the panel through page margins
