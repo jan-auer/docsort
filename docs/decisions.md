@@ -229,16 +229,3 @@ to the navigation layer (toolbar, sidebars, inspectors) floating over content; t
 background, so glass there adds nothing and reads as an imitation. A glass search field was built and tried on screen
 (branch `claude/glass-search-37b52d`); the user found the plain field cleaner (2026-11-09). A full-height glass
 inspector, where glass would fit, is parked on `claude/inspector-glass-6c32d3`.
-
-## search-performance
-
-Destination search must stay fast on large archives; measure with the opt-in benchmark over the generated
-~25,000-folder archive (`LargeArchiveCorpus.swift`):
-`DOCSORT_SEARCH_BENCHMARK=1 swift test -c release -Xswiftc -enable-testing --filter DestinationSearchBenchmark`
-(Release only: a Debug build runs FuzzyMatch unoptimised, 40–80× slower). On an M2 it was 16–60 ms per keystroke,
-worst 237 ms, before the fix in `claude/search-lag-0bed3b`, and 4–9 ms, worst 24 ms, after, with identical results.
-Lessons: score through FuzzyMatch's `score(utf8:)` on contiguous strings (the index's paths are Foundation-bridged);
-spread scoring and highlighting over cores with `ParallelChunks`, preparing the query per chunk, because shared prepared
-queries make every core update the same reference counts and halve the gain; ask the index for exactly the rows shown
-(`search(_:outside:)`) instead of over-fetching and filtering, since highlighting a match costs far more than scoring
-it. Search stays synchronous on the main actor.
