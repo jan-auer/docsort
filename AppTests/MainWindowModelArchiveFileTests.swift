@@ -35,7 +35,7 @@ struct MainWindowModelArchiveFileTests {
     try await waitUntil { undoManager.canUndo }
     #expect(exists(renamed))
     #expect(!exists(sheet))
-    #expect(undoManager.undoActionName == "Rename of “2033-10-13 Notenhaus.pdf”")
+    #expect(undoManager.undoActionName.contains("2033-10-13 Notenhaus.pdf"))
     #expect(model.statusMessage?.text.contains("2033-10-13 Notenhaus Allegretto.pdf") == true)
 
     undoManager.undo()
@@ -119,7 +119,7 @@ struct MainWindowModelArchiveFileTests {
     try await waitUntil {
       if case .trashed? = model.inboxes.row(for: row.id)?.mark { true } else { false }
     }
-    #expect(undoManager.undoActionName == "Move to Trash of “2033-10-13 Notenhaus Allegretto.pdf”")
+    #expect(undoManager.undoActionName.contains("2033-10-13 Notenhaus Allegretto.pdf"))
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == filedMark }

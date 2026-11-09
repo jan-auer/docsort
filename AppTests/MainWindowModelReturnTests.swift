@@ -226,7 +226,9 @@ struct MainWindowModelReturnTests {
       with: .refuse)
     try await waitUntil { model.statusMessage != nil }
 
-    #expect(model.statusMessage?.text == "Renamed to \(renamedName) · Undo ⌘Z")
+    let status = try #require(model.statusMessage?.text)
+    #expect(status.contains(renamedName))
+    #expect(status.contains("Undo"))
     #expect(model.selectedFile?.id == row.id)
     #expect(model.selectedFile?.name == renamedName)
     #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")

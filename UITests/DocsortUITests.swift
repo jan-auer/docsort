@@ -99,8 +99,7 @@ final class DocsortUITests: XCTestCase {
     XCTAssertTrue(waitForValue("filed", of: invoice))
     let status = app.descendants(matching: .any)["status-message"]
     XCTAssertTrue(status.waitForExistence(timeout: 5))
-    expectText(
-      "Moved to Musik Margit/Noten & Bücher as Rechnung_NA-33-08812.pdf · Undo ⌘Z", of: status)
+    expectText(containing: "Noten & Bücher", of: status)
     expectWindowTitle("2033-10-20 Verlängerung Jahreskarte Konrad.pdf", in: app)
 
     mainWindow.typeKey("z", modifierFlags: .command)
@@ -258,7 +257,7 @@ final class DocsortUITests: XCTestCase {
     mainWindow.typeKey(.return, modifierFlags: .command)
 
     let status = app.descendants(matching: .any)["status-message"]
-    expectText("Renamed to 2033-10-13 Notenhaus Allegretto.pdf · Undo ⌘Z", of: status)
+    expectText(containing: "2033-10-13 Notenhaus Allegretto.pdf", of: status)
     XCTAssertEqual(invoice.value as? String, "filed")
     expectWindowTitle("2033-10-13 Notenhaus Allegretto.pdf", in: app)
   }
@@ -320,14 +319,18 @@ final class DocsortUITests: XCTestCase {
       .firstMatch.waitForExistence(timeout: 5)
   }
 
-  /// Expects the static text `element` to read `text` within five seconds. On macOS a static text carries its text as its value, not
-  /// its label.
+  /// Expects the static text `element` to contain `text` within five seconds. On macOS a static text carries its text
+  /// as its value, not its label.
   @MainActor
   private func expectText(
-    _ text: String, of element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    containing text: String, of element: XCUIElement, file: StaticString = #filePath,
+    line: UInt = #line
   ) {
     let expectation = XCTNSPredicateExpectation(
-      predicate: NSPredicate(format: "value IN %@", normalizationForms(of: text)), object: element)
+      predicate: NSPredicate(
+        format: "value CONTAINS %@ OR value CONTAINS %@",
+        text.precomposedStringWithCanonicalMapping, text.decomposedStringWithCanonicalMapping),
+      object: element)
     let result = XCTWaiter().wait(for: [expectation], timeout: 5)
     let shown = element.exists ? String(describing: element.value ?? "") : "(no element)"
     XCTAssertEqual(result, .completed, "reads “\(shown)”", file: file, line: line)

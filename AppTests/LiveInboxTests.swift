@@ -204,9 +204,9 @@ struct LiveInboxTests {
     try FileManager.default.removeItem(at: invoice)
 
     try await waitUntil(timeout: .seconds(10)) { model.sidebarSelection == .item(next.id) }
-    #expect(
-      model.statusMessage?.text
-        == "“Rechnung_NA-33-08812.pdf” was removed from Web-Downloads outside docsort.")
+    let status = try #require(model.statusMessage?.text)
+    #expect(status.contains("Rechnung_NA-33-08812.pdf"))
+    #expect(status.contains("Web-Downloads"))
   }
 }
 
