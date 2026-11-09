@@ -10,9 +10,9 @@ import FuzzyMatch
 ///   the later `Segelclub Seeschwalbe Archiv`, in `2. Segelclub Seeschwalbe/Chronik/Segelclub Seeschwalbe Archiv`, wherever FuzzyMatch's own alignment fell.
 /// - Otherwise its ranges are FuzzyMatch's highlight for that word alone (scattered letters such as `rchng`).
 /// - The ranges of all words are sorted and coalesced, and index into the path as given, NFC or NFD.
-struct MatchHighlighter {
+struct MatchHighlighter: Sendable {
   /// A query word, folded for comparison and prepared for FuzzyMatch.
-  private struct Word {
+  private struct Word: Sendable {
     let folded: String
     let fuzzyQuery: FuzzyQuery
   }
@@ -60,12 +60,23 @@ struct MatchHighlighter {
       let character = path[index]
       let startsWord = previous.map { !$0.isLetter && !$0.isNumber } ?? true
       characters.append(
-        FoldedCharacter(
-          index: index, folded: Array(String(character).foldedForSearch().unicodeScalars),
-          startsWord: startsWord))
+        FoldedCharacter(index: index, folded: folded(character), startsWord: startsWord))
       previous = character
     }
     return characters
+  }
+
+  /// `character` case- and diacritic-folded, as scalars. Folds a single ASCII scalar itself, which is what Foundation's
+  /// folding does to it (lowercasing), and only hands other characters to Foundation, which is slow per character.
+  static func folded(_ character: Character) -> [Unicode.Scalar] {
+    let scalars = character.unicodeScalars
+    if scalars.count == 1, let scalar = scalars.first, scalar.isASCII {
+      let byte = UInt8(scalar.value)
+      return [
+        Unicode.Scalar((UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte) ? byte + 32 : byte)
+      ]
+    }
+    return Array(String(character).foldedForSearch().unicodeScalars)
   }
 
   /// The range of the first occurrence of `word` (folded) that begins at a word start, or `nil`.

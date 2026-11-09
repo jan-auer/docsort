@@ -114,15 +114,12 @@ struct PickerListing {
       query, in: scope, ranking: ranking, recents: recents, limit: Self.searchLimit
     ).map { searchRow(section: "in", match: $0, displayPath: $0.pathInScope, index: index) }
     // The scope itself is not among its descendants; offered as "this folder" when the query names it.
-    let elsewhereMatches = archiveMatches(in: index)
-    if elsewhereMatches.contains(where: { $0.path == scope }) {
+    if index.folder(scope, matches: query, ranking: ranking) {
       inScopeRows.append(PickerRow(id: "in:current:\(scope)", kind: .currentFolder(path: scope)))
     }
-    let elsewhereRows =
-      elsewhereMatches
-      .filter { $0.path != scope && ArchivePath.relative($0.path, to: scope) == nil }
-      .prefix(Self.searchLimit)
-      .map { searchRow(section: "elsewhere", match: $0, displayPath: $0.pathInScope, index: index) }
+    let elsewhereRows = index.search(
+      query, outside: scope, ranking: ranking, recents: recents, limit: Self.searchLimit
+    ).map { searchRow(section: "elsewhere", match: $0, displayPath: $0.pathInScope, index: index) }
 
     if inScopeRows.isEmpty, elsewhereRows.isEmpty {
       return [PickerSection(id: "search", title: nil, rows: createRows())]
@@ -131,16 +128,8 @@ struct PickerListing {
     let inScope = inScopeRows.isEmpty ? createRows() : inScopeRows
     return [
       PickerSection(id: "in", title: "In \(ArchivePath.title(of: scope))", rows: inScope),
-      PickerSection(id: "elsewhere", title: "Elsewhere", rows: Array(elsewhereRows)),
+      PickerSection(id: "elsewhere", title: "Elsewhere", rows: elsewhereRows),
     ]
-  }
-
-  /// The whole archive's matches for the filter, enough of them that ``searchLimit`` remain once the scope's subtree
-  /// is left out.
-  private func archiveMatches(in index: DestinationIndex) -> [DestinationMatch] {
-    let subtreeSize = index.folders.count { ArchivePath.relative($0, to: scope) != nil }
-    return index.search(
-      query, in: "", ranking: ranking, recents: recents, limit: Self.searchLimit + subtreeSize + 1)
   }
 
   /// A search result as a folder row of `section`, showing `displayPath`.
