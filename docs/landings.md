@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-09 claude/folder-focus-fix-6fe6ad: Folder contents keeps focus after a click
+- What landed: the focus binding moved from the Folder contents drawer to its file list, so a click focuses the
+  list (↓ and Space work) instead of the header's chevron when keyboard navigation is on. One targeted UI test;
+  decision `swiftui-focus-binding`.
+- Divergence: a UI test rather than a unit test (hosted unit tests can't check SwiftUI focus). Reviewed by the hub
+  (small diff), without the reviewer subagent. Not tried in the user's running app; Space opening Quick Look is
+  not covered by the test.
+- Follow-ups: None.
+
 ## 2026-11-09 claude/shortcuts-sheet-bf85be: keyboard shortcuts sheet
 - What landed: a read-only sheet over the main window (⌘/, Help › Keyboard Shortcuts), grouped by context with
   keycaps and search; Esc clears the search, then closes. Menu commands, tooltips and the sheet read one catalog
