@@ -10,11 +10,15 @@ struct PaneDivider: View {
   /// The widths the pane can take.
   let range: ClosedRange<Double>
 
+  /// The width the divider takes in the layout: the hairline. Its grab area overlaps the panes beside it.
+  static let width = 1.0
+
   /// The width when the drag started.
   @State private var dragStartWidth: Double?
 
   var body: some View {
     Divider()
+      .frame(width: Self.width)
       .frame(maxHeight: .infinity)
       .overlay {
         Color.clear

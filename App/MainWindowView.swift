@@ -1,8 +1,8 @@
 import DocsortCore
 import SwiftUI
 
-/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane beside it
-/// (340 pt to start, dragged between 300 and 480 pt),
+/// The content of the main window: the inbox sidebar, the preview and the filing panel as a trailing pane laid over
+/// the preview's trailing edge (340 pt to start, dragged between 300 and 480 pt),
 /// with the selected file's name as the window title, its inbox as the subtitle, and its actions in the toolbar.
 ///
 /// The detail column shows the welcome view until folders are configured, then the selected file's preview, or a
@@ -35,13 +35,17 @@ struct MainWindowView: View {
     } detail: {
       // The filing panel is the main work surface, not details about the selection, so it is a pane of the detail
       // column (HIG: inspectors are for details), resizable against the preview by dragging the divider between them.
-      HStack(spacing: 0) {
-        VStack(spacing: 0) {
-          detailColumn
-            .frame(maxHeight: .infinity)
-          WindowBottomBar(model: model)
-        }
-        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      VStack(spacing: 0) {
+        detailColumn
+          .frame(maxHeight: .infinity)
+        WindowBottomBar(model: model)
+      }
+      .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      // The panel is a trailing safe-area inset of the preview rather than a sibling beside it, as an inspector is to
+      // the detail column in Keynote: the PDF's scroll view runs on under the panel (`PreviewView`), so the pages'
+      // glow under the translucent toolbar spans the whole toolbar, panel included. The panel still starts below the
+      // toolbar and covers the PDF view there; the PDF keeps its pages in the part left of the panel.
+      .safeAreaInset(edge: .trailing, spacing: 0) {
         if model.isFilingPanelShown {
           HStack(spacing: 0) {
             PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
@@ -150,11 +154,21 @@ struct MainWindowView: View {
     if !model.areFoldersConfigured {
       WelcomeView()
     } else if let selectedFile = model.selectedFile {
-      PreviewView(document: selectedFile.previewDocument, controller: model.previewController)
+      PreviewView(
+        document: selectedFile.previewDocument, controller: model.previewController,
+        coveredWidth: previewCoveredWidth)
     } else {
       ContentUnavailableView("No file selected", systemImage: "doc")
         .accessibilityIdentifier("no-selection")
     }
+  }
+
+  /// The width the filing panel and its divider cover at the preview's trailing edge: the PDF keeps its pages clear of
+  /// it. Derived from the panel's width rather than measured, so the pages fit it from the first layout and follow a
+  /// divider drag in the same frame; it changes with the panel toggle's animation, so they also follow the slide.
+  private var previewCoveredWidth: Double {
+    model.isFilingPanelShown
+      ? filingPanelWidth.clamped(to: Self.filingPanelWidths) + PaneDivider.width : 0
   }
 
   /// The window title: the selected file's name, or the app name while nothing is selected.

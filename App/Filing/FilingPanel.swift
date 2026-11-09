@@ -62,9 +62,9 @@ struct FilingPanel: View {
     // area: the window's toolbar spans the preview and the panel, and a background reaching under it made the panel
     // look like a full-height column of its own beside the toolbar.
     .background(FilingPanelStyle.background, ignoresSafeAreaEdges: [])
-    // The system draws its toolbar line (`titlebarSeparatorStyle = .line`) only where content scrolls under the
-    // toolbar, which is the PDF preview. The panel starts below the toolbar and must not show through it, so it draws
-    // the same one-pixel separator-colour line at its top edge, continuing the system's line.
+    // The system draws its toolbar line (`titlebarSeparatorStyle = .line`) only over the preview, even where the PDF
+    // view runs on under the panel, and not at all without a PDF. So the panel draws the same one-pixel
+    // separator-colour line at its top edge, continuing the system's line.
     .overlay(alignment: .top) {
       Rectangle()
         .fill(Color(nsColor: .separatorColor))

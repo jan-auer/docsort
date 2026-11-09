@@ -33,6 +33,9 @@ struct PreviewView: View {
   let document: PreviewDocument
   /// The controller the window's zoom and scroll commands go through.
   let controller: PreviewController
+  /// The width of the trailing part covered by the filing panel, which a PDF runs on under; none outside the main
+  /// window.
+  var coveredWidth: CGFloat = 0
 
   /// What the preview shows for a complete file, after loading.
   private enum Content {
@@ -81,12 +84,16 @@ struct PreviewView: View {
     switch content {
     case .pdf(let pdfDocument, let info):
       VStack(spacing: 0) {
-        PDFPreview(document: pdfDocument, controller: controller)
-          // The pages scroll under the window's translucent toolbar, as in Preview. The PDF view's scroll view insets
-          // its content below the toolbar by itself (AppKit's automatic content insets) and AppKit draws the scroll
-          // edge effect. Quick Look stays below the toolbar: it has no inset that would keep a file's top visible.
-          .ignoresSafeArea(.container, edges: .top)
-          .accessibilityIdentifier("preview-pdf")
+        // The pages scroll under the window's translucent toolbar, as in Preview. The PDF view's scroll view insets
+        // its content below the toolbar by itself (AppKit's automatic content insets) and AppKit draws the scroll
+        // edge effect. It also runs on under the filing panel (the trailing safe area), as Keynote's canvas runs
+        // under its inspector, so the edge effect spans the whole toolbar; the PDF view keeps its pages left of the
+        // panel. Quick Look stays below the toolbar: it has no inset that would keep a file's top visible.
+        PartlyCoveredPDFPreview(
+          document: pdfDocument, controller: controller, coveredWidth: coveredWidth
+        )
+        .ignoresSafeArea(.container, edges: [.top, .trailing])
+        .accessibilityIdentifier("preview-pdf")
         PreviewFooter(
           info: info,
           pagePosition: controller.pagePosition

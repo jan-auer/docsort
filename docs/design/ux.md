@@ -87,7 +87,8 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
      and capsule-shaped, with its shortcut shown inside it as a small key-cap badge to the right of the label:
      `Move  ⌘↩`. For a filed file the label reads Rename or Move.
 
-  The panel is always visible but inactive until a file is selected; it never covers the preview.
+  The panel is always visible but inactive until a file is selected; it never covers the preview's pages (it sits
+  beside the preview, though it lies over the PDF view's trailing edge, see "Filing panel look").
 
 ### Filing panel look
 
@@ -107,13 +108,19 @@ concept C's structure (`filing-panel-redesign`).
 - **Banners**: the filed/trashed status (green tint or the content colour) and the failures (orange tint, orange
   warning symbol) run across the top of the panel, so information and failure never look alike.
 - **Empty states** use `ContentUnavailableView`, like the preview.
-- **The window's toolbar spans the preview and the filing panel**; the panel starts below it, and the file's actions
-  and the panel toggle sit in the toolbar's trailing area above the panel. The panel's backgrounds stop at the
-  toolbar instead of running under it. PDF pages scroll under the translucent toolbar (AppKit insets them and draws
-  the scroll edge effect); Quick Look content stays below it. The window's titlebar separator (`NSWindow.titlebarSeparatorStyle =
-  .line`), the system hairline, separates the toolbar from the content, as in Finder. The system draws
-  it only where content scrolls under the toolbar (the PDF preview); the panel, which starts below the toolbar so
-  nothing shows through it there, continues it with the same one-pixel separator-colour line at its top edge.
+- **The window's toolbar spans the preview and the filing panel** as one glass surface, as Keynote's toolbar spans
+  its canvas and inspector. The panel starts below the toolbar; the file's actions and the panel toggle sit in the
+  toolbar's trailing area above it. The panel's backgrounds stop at the toolbar instead of running under it, so it
+  never reads as a full-height column. The panel lies over the preview's trailing edge rather than beside it, and a
+  PDF runs on under it: its pages scroll under the translucent toolbar, and the system's scroll edge effect (blur
+  and darkening) covers the whole toolbar, panel included, with no edge at the divider. Above the panel it shows
+  the PDF's background, and page colour only where a zoomed page reaches there. The PDF keeps its pages in the part
+  left of the panel: fit-to-width fits that width, pages centre in it (narrower pages of a mixed-width PDF too), a
+  page scrolled fully right stops one margin short of the panel, and the pages refit along with the panel's slide
+  (how: `PartlyCoveredPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
+  (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
+  Finder. The system draws it only over the preview (and only with a PDF), even though the PDF runs on under the
+  panel; the panel continues it with the same one-pixel separator-colour line at its top edge.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
@@ -577,7 +584,8 @@ Kept free, not designed here:
 
 Settled by the user:
 
-- Three columns with the filing panel always beside the preview.
+- Three columns with the filing panel always beside the preview (since the toolbar work it lies over the PDF view's
+  trailing edge, with the pages kept clear of it).
 - Each inbox is its own sidebar section; files oldest first.
 - Filed files stay in place, checked off; no Filed section. A persistent filing history with a History view.
 - Filed files can be renamed; revert restores the pre-filing name.
