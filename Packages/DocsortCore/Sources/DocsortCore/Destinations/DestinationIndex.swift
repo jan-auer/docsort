@@ -108,11 +108,29 @@ public struct DestinationIndex: Sendable {
   /// only reach one by one, scattered over its path, does not match (`asdf` finds nothing in
   /// `Ahnenforschung/Stammbaum/Druckfassung`). See
   /// ``DestinationMatch`` for the matched ranges used for highlighting.
+  ///
+  /// With `excludedFolder` (an archive-relative path in any Unicode normalisation), that folder and everything inside it
+  /// are left out, whole segments compared (`Steuer` leaves `Steuererklärungen` in); `""`, the root, leaves nothing to
+  /// find. The other matches keep their scores and order: the picker's "Elsewhere" asks for the archive's
+  /// matches outside the folder it is in, without ranking and highlighting the folder's own matches only to drop them.
   public func search(
-    _ query: String, in scope: String = "", ranking: ScopedRanking = .directChildFirst,
-    recents: RecentDestinations = .init(), limit: Int = 50
+    _ query: String, in scope: String = "", outside excludedFolder: String? = nil,
+    ranking: ScopedRanking = .directChildFirst, recents: RecentDestinations = .init(),
+    limit: Int = 50
   ) -> [DestinationMatch] {
-    matcher.matches(for: query, in: scope, ranking: ranking, recents: recents, limit: limit)
+    matcher.matches(
+      for: query, in: scope, outside: excludedFolder, ranking: ranking, recents: recents,
+      limit: limit)
+  }
+
+  /// Whether the indexed folder at `path` matches `query` searched from the archive root: a search from the root
+  /// without a limit would list it. `false` for the root (`""`) and for a path that is not indexed.
+  public func folder(
+    _ path: String, matches query: String, ranking: ScopedRanking = .directChildFirst
+  )
+    -> Bool
+  {
+    matcher.matches(query, folder: path, ranking: ranking)
   }
 
   /// The visible files and packages directly in the folder at `path` (`""` for the root), newest first by
