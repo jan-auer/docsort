@@ -13,6 +13,10 @@ enum ShortcutContext: Hashable, Sendable {
   case newFolderName
   /// While the filing panel's name field has focus.
   case nameField
+  /// While the filing panel's Folder contents list has focus.
+  case folderContents
+  /// While the Quick Look panel is open, from the sidebar or Folder contents.
+  case quickLookPanel
   /// In the History window.
   case history
 
@@ -24,6 +28,8 @@ enum ShortcutContext: Hashable, Sendable {
     case .destinationPicker: "Destination Picker"
     case .newFolderName: "New Folder Name"
     case .nameField: "Name Field"
+    case .folderContents: "Folder Contents"
+    case .quickLookPanel: "Quick Look Panel"
     case .history: "History Window"
     }
   }
@@ -85,8 +91,9 @@ struct ShortcutSection: Hashable, Identifiable, Sendable {
 ///
 /// The Anywhere section lists the menu bar: `MainCommands` takes its shortcuts from ``MenuCommand``, and a hosted test
 /// compares the real menu bar with this section. The other sections list keys that views handle themselves; their
-/// combinations come from the picker's ``PickerKey`` and the name field's ``TextFieldKeyCommand`` where those exist,
-/// and the tests check that every such key is listed.
+/// combinations come from the picker's ``PickerKey``, the Quick Look panel's ``QuickLookPanelKey`` and the name
+/// field's ``TextFieldKeyCommand`` where those exist, and the tests check that every such key is listed. The sidebar's
+/// and Folder contents' keys come from `onKeyPress` handlers and are written out by hand.
 struct ShortcutCatalog: Sendable {
   let sections: [ShortcutSection]
 
@@ -155,6 +162,7 @@ extension ShortcutCatalog {
           "Expand / Collapse Group", .pair(KeyCombination(.rightArrow), KeyCombination(.leftArrow))),
         ShortcutEntry(
           "Go to Destination Picker", .keys([KeyCombination(.tab), KeyCombination(.return)])),
+        ShortcutEntry("Quick Look", .keys([KeyCombination(.space)])),
         ShortcutEntry(
           "Search Destinations", note: "Starts the folder filter with what you type", .typing),
       ]),
@@ -206,6 +214,30 @@ extension ShortcutCatalog {
             KeyCombination(textFieldCommand: .backTab), KeyCombination(textFieldCommand: .cancel),
           ])),
         ShortcutEntry("Back to Sidebar", .keys([KeyCombination(textFieldCommand: .tab)])),
+      ]),
+    ShortcutSection(
+      context: .folderContents,
+      entries: [
+        ShortcutEntry(
+          "Previous / Next File", .pair(KeyCombination(.upArrow), KeyCombination(.downArrow))),
+        ShortcutEntry("Quick Look", .keys([KeyCombination(.space)])),
+        ShortcutEntry(
+          "Use Name", note: "Or double-click",
+          .keys([KeyCombination(.return)])),
+      ]),
+    ShortcutSection(
+      context: .quickLookPanel,
+      entries: [
+        ShortcutEntry(
+          "Previous / Next File", note: "In the list it was opened from",
+          .pair(
+            KeyCombination(quickLookPanelKey: .upArrow),
+            KeyCombination(quickLookPanelKey: .downArrow))),
+        ShortcutEntry(
+          "Close Quick Look",
+          .keys([
+            KeyCombination(quickLookPanelKey: .space), KeyCombination(quickLookPanelKey: .escape),
+          ])),
       ]),
     ShortcutSection(
       context: .history,
@@ -267,6 +299,16 @@ extension KeyCombination {
     case .escape: self.init(.escape)
     case .shiftCommandN: self.init("n", modifiers: [.shift, .command])
     case .commandReturn: self.init(.return, modifiers: .command)
+    }
+  }
+
+  /// The key `quickLookPanelKey` stands for; like ``init(pickerKey:)``, a new panel key fails to compile here.
+  init(quickLookPanelKey: QuickLookPanelKey) {
+    switch quickLookPanelKey {
+    case .upArrow: self.init(.upArrow)
+    case .downArrow: self.init(.downArrow)
+    case .space: self.init(.space)
+    case .escape: self.init(.escape)
     }
   }
 

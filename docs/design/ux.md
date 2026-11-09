@@ -423,7 +423,7 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | ⌥⌘↓ / ⌥⌘↑ | Select next / previous file in sidebar order (as ↓/↑ do), from any focus | Go › Next File / Previous File |
 | ⌘+ / ⌘− / ⌘0 | Zoom preview in / out / to fit | View |
 | ⌘, | Settings | docsort |
-| ⌘/ | Show keyboard shortcuts overlay | Help |
+| ⌘/ | Show the keyboard shortcuts sheet (`keyboard-shortcuts-sheet.md`) | Help › Keyboard Shortcuts |
 
 ### Sidebar focused
 

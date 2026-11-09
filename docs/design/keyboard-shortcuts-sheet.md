@@ -32,7 +32,8 @@ details are second-hand.
   also in the menu bar.") with Done. Esc, ⌘/ and Done close it. System materials and colours only, so light and dark
   mode need nothing of their own.
 - **Grouped by where a key works:** Anywhere (the menu bar), Sidebar, Destination Picker, New Folder Name (the
-  picker's new-folder row handles Return, Esc and ⌘Return its own way), Name Field, History Window. Small secondary
+  picker's new-folder row handles Return, Esc and ⌘Return its own way), Name Field, Folder Contents, Quick Look Panel,
+  History Window. Small secondary
   headings, no boxes. The sections fill two columns of about equal height and keep their order.
 - **Rows.** The title is in menu-title style and makes sense on its own ("Out to Parent Folder"). An optional
   caption says when the key applies ("With an empty filter"). The keys are right-aligned, one keycap per
@@ -51,15 +52,15 @@ details are second-hand.
   has to be listed under Anywhere or be in `ShortcutCatalog.standardMacShortcuts` (Quit, Hide, Close, Minimize,
   Cut, Copy, Paste, Select All, Emoji & Symbols, Help). Every Anywhere key has to be in the menu bar. System items
   are covered too: on macOS 27, View › Show Sidebar is ⌃⌘S.
-- The picker's keys come from `PickerKey`, and the name field's from `TextFieldKeyCommand`. Each maps through an
-  exhaustive switch, so a new key fails to compile until it has a combination. The tests check that every handled
-  key is listed and that each picker combination round-trips through `PickerKey(NSEvent)`. The sidebar's
-  `onKeyPress` keys have no such type, and their rows are written by hand.
+- The picker's keys come from `PickerKey`, the Quick Look panel's from `QuickLookPanelKey`, and the name field's
+  from `TextFieldKeyCommand`. Each maps through an exhaustive switch, so a new key fails to compile until it has a
+  combination. The tests check that every handled key is listed and that each picker combination round-trips
+  through `PickerKey(NSEvent)`. The sidebar's and Folder contents' `onKeyPress` keys have no such type, and their
+  rows are written by hand; a test checks that their keys (including Space for Quick Look) are listed.
 
 ## Left out, and differences from `ux.md`
 
-- Quick Look keys (Space, ↑/↓ in Folder contents, Return to use a name) are left out for now. A parallel branch
-  adds them.
+- Folder contents' right-click menu has no shortcuts, so it is not listed.
 - `ux.md` plans keys the app doesn't handle yet. The sheet lists only the keys that work: ⌘L (Choose Destination),
   ⌘1…⌘9 (inbox sections), PgUp/PgDn in the sidebar, and ⌥↑/⌥↓ in the name field.
 - ⌘/ is Hide Status Bar in the HIG's list of standard shortcuts. docsort has no status bar, so the user's choice
