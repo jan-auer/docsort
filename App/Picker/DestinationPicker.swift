@@ -48,9 +48,14 @@ import DocsortCore
 /// - ``PickerEvent/moveRequested(_:)``: ⌘Return in the picker (or in its new-folder row). The destination is already
 ///   chosen; move the file now with the pre-filled name.
 /// - ``PickerEvent/steppedBack``: ⇧Tab, or Esc with nothing left to clear. Move focus back to the sidebar.
-/// - ``PickerEvent/tookFileName(_:)``: the user clicked a file in Folder contents. The payload is the file's full
-///   name as on disk (`2033-10-04 Rechnung Oktober.pdf`); put its name without extension into the name field,
-///   selected, and focus it.
+/// - ``PickerEvent/tookFileName(_:)``: the user used a file's name in Folder contents (a double-click, Return on the
+///   selected file, or Use Name in its menu). The payload is the file's full name as on disk
+///   (`2033-10-04 Rechnung Oktober.pdf`); put its name without extension into the name field, selected, and focus it.
+/// - ``PickerEvent/renameFileRequested(_:to:)``: Rename… in a Folder contents file's menu. The name is as entered,
+///   without the extension the file keeps; rename the archive file, then call
+///   ``DestinationPickerModel/reloadContents(selecting:)``.
+/// - ``PickerEvent/trashFileRequested(_:)``: Move to Trash in a Folder contents file's menu; trash the archive file,
+///   then reload the contents.
 /// - ``PickerEvent/refreshRequested``: the user clicked the footer's refresh button. Rebuild the archive index and
 ///   set the new one when it is ready.
 ///
@@ -111,8 +116,12 @@ enum PickerEvent: Hashable, Sendable {
   case moveRequested(PickerDestination)
   /// The user stepped back out of the picker (⇧Tab, or Esc with an empty filter); focus belongs in the sidebar.
   case steppedBack
-  /// The user clicked a file in Folder contents; the payload is its full file name.
+  /// The user used a file's name in Folder contents (double-click, Return, Use Name); the payload is its full name.
   case tookFileName(String)
+  /// The user asked to rename the archive file `file` to `name` (entered without its extension).
+  case renameFileRequested(FolderFile, to: String)
+  /// The user asked to move the archive file `file` to the Trash.
+  case trashFileRequested(FolderFile)
   /// The user clicked the refresh button: rebuild the archive index, for folders created outside docsort.
   case refreshRequested
 }

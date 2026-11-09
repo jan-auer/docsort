@@ -2,6 +2,20 @@
 
 Non-blocking findings and deferred work, collected by the hub. Newest group first.
 
+## From the Folder contents Quick Look review (2026-11-09)
+
+- `FilingService.rename` and `trash` of archive files don't check the item's identity as `refile` does
+  (`verifyFiledPlacement`).
+- `remark(filedAs:)` in `MainWindowModel+ArchiveFiles.swift` repeats the loop in `applyMarks(of:for:)`, and
+  `FilingService.rename` largely repeats `move`.
+- Open With asks Launch Services for the apps in the menu's view body (`FolderContentsFileMenu`), which `layering`
+  forbids: move it into a service or compute it only when the submenu opens.
+- Quick Look doesn't switch lists when the other list is clicked while the panel is open; it moves to the other list
+  only through Quick Look in a file's menu.
+- The archive rename and trash orchestration in `MainWindowModel+ArchiveFiles.swift` is debt for the `layering` move.
+- With Folder contents focused, ⌘O, ⌥⌘R and ⌘⌫ still act on the selected inbox file (the menu sees them first);
+  Finder would act on the list's selection.
+
 ## From the e2e and picker reviews (2026-11-08)
 
 - Redo doesn't check the item's identity; a failed redo clears the whole filing undo stack; undoing an unfinished redo

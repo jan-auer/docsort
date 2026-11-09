@@ -159,7 +159,7 @@ public struct DestinationIndex: Sendable {
 
   /// The NFC archive-relative path of `url`, or `nil` when it does not lie inside `root`. Symbolic links are
   /// resolved first, so `/var/…` and `/private/var/…` spellings agree.
-  private static func archiveRelativePath(of url: URL, under root: URL) -> String? {
+  public static func archiveRelativePath(of url: URL, under root: URL) -> String? {
     let components = url.standardizedFileURL.resolvingSymlinksInPath().pathComponents
     let rootComponents = root.standardizedFileURL.resolvingSymlinksInPath().pathComponents
     guard components.starts(with: rootComponents) else { return nil }
@@ -176,4 +176,11 @@ public struct FolderFile: Hashable, Sendable {
   public let name: String
   /// The item's content modification date; `Date.distantPast` when the file system reports none.
   public let modificationDate: Date
+
+  /// The item at `url`, named `name`, last modified at `modificationDate`.
+  public init(url: URL, name: String, modificationDate: Date) {
+    self.url = url
+    self.name = name
+    self.modificationDate = modificationDate
+  }
 }

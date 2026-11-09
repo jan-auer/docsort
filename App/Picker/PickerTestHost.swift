@@ -54,6 +54,7 @@
     enum HostFocus: Hashable {
       case sidebar
       case picker(PickerField)
+      case folderContents
       case name
     }
 
@@ -77,8 +78,9 @@
           DestinationPickerView(model: model, focus: $focus) { .picker($0) }
             .frame(height: 300)
           FolderContentsView(
-            model: model, conflictingName: name.isEmpty ? nil : "\(name).pdf",
-            listHeight: .constant(110), isCollapsed: .constant(false), maxListHeight: 110)
+            model: model, conflictingName: name.isEmpty ? nil : "\(name).pdf", focus: $focus,
+            field: .folderContents, listHeight: .constant(110), isCollapsed: .constant(false),
+            maxListHeight: 110)
           TextField("Name", text: $name)
             .focused($focus, equals: .name)
             .accessibilityIdentifier("picker-test-name")
@@ -142,7 +144,7 @@
       switch event {
       case .chose:
         focus = .name
-      case .moveRequested:
+      case .moveRequested, .renameFileRequested, .trashFileRequested:
         break
       case .steppedBack:
         focus = .sidebar
@@ -162,6 +164,8 @@
       case .steppedBack: "steppedBack"
       case .tookFileName(let fileName): "tookFileName \(fileName)"
       case .refreshRequested: "refreshRequested"
+      case .renameFileRequested(let file, let name): "renameFileRequested \(file.name) to \(name)"
+      case .trashFileRequested(let file): "trashFileRequested \(file.name)"
       }
     }
 

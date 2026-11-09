@@ -2,6 +2,20 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-09 claude/folder-quicklook-c8e80a: Quick Look and file actions in Folder contents
+- What landed: Folder contents is Finder-style. A click selects, ↑/↓ move, Space opens the Quick Look panel (it
+  follows ↑/↓), and double-click or Return uses the name. A file menu has Use Name, Quick Look, Open, Open With ›,
+  Reveal, Copy Name/Path, Rename… and Move to Trash. Space opens Quick Look in the inbox sidebar too, through one
+  shared panel controller. Archive rename and trash go through `FilingService`: recorded in the history, undoable,
+  and the filed row follows them.
+- Divergence: Put Back of an archive-trashed file returns it to its archive folder (the row stays filed, dated by
+  the Put Back). History offers Revert Name / Put Back, never an inbox return, for archive-origin entries. No Quick
+  Look menu item. ⌘O, ⌥⌘R and ⌘⌫ still act on the inbox file while Folder contents has focus. ↑/↓ in the panel onto
+  a trashed row closes it. Two review rounds; 319 core and 155 app unit tests pass. The Quick Look panel, the menus
+  and the row-state previews are untried on screen.
+- Follow-ups: the shortcuts sheet lists the new keys; `docs/backlog.md` (identity check on archive rename and
+  trash, Open With work out of the view, menu commands following the focused list).
+
 ## 2026-11-08 claude/picker-after-filing-62da19 + claude/sidebar-numeric-dates: picker highlight after filing
 - What landed: after filing, the next file's picker highlights the folder just used at the top of Recent, whichever
   order the panel reset and the recents update arrive in (`picker-inputs-arrive-late`). A test pins the sidebar date

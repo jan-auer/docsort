@@ -20,10 +20,12 @@ struct FilingPanel: View {
   /// Lets the user find the unreachable archive folder again.
   let locateArchive: () -> Void
 
-  /// The panel's SwiftUI-focusable fields: the picker's two text fields. (The name field and the sidebar take focus
-  /// through `MainWindowModel.requestFocus`; this bridges the picker into the same scheme.)
+  /// The panel's SwiftUI-focusable views: the picker's two text fields and Folder contents' file list. (The name
+  /// field and the sidebar take focus through `MainWindowModel.requestFocus`; this bridges the picker into the same
+  /// scheme. Folder contents takes focus only by a click, and is not a focus stop of the window model.)
   enum PanelField: Hashable {
     case picker(PickerField)
+    case folderContents
   }
 
   @FocusState private var focusedField: PanelField?
@@ -112,7 +114,8 @@ struct FilingPanel: View {
           .frame(maxHeight: .infinity)
         FolderContentsView(
           model: model.picker, conflictingName: model.nameToCheckForConflicts,
-          listHeight: $contentsHeight, isCollapsed: $isContentsCollapsed,
+          canChangeFiles: model.canChangeArchiveFiles, focus: $focusedField,
+          field: .folderContents, listHeight: $contentsHeight, isCollapsed: $isContentsCollapsed,
           maxListHeight: max(
             listsHeight - Self.pickerMinHeight, FolderContentsListing.minListHeight))
       }
@@ -140,7 +143,7 @@ struct FilingPanel: View {
         focusedField = .picker(.filter)
       }
       .onChange(of: focusedField, initial: true) { _, field in
-        if field != nil {
+        if case .picker = field {
           model.focus = .destinationFilter
           model.panel.isFilterFocusPending = false
         } else if model.focus == .destinationFilter {

@@ -5,13 +5,13 @@ import Foundation
 nonisolated enum HistoryEntryKind: Hashable, Sendable {
   /// Filed an inbox file into the archive.
   case filed
-  /// Renamed a file in its folder.
+  /// Renamed a file in its folder: a filed file, or an archive file from Folder contents.
   case renamed
   /// Moved a filed file on to another folder.
   case movedOn
   /// Moved a filed file back to its inbox.
   case movedBack
-  /// Moved an inbox file to the Trash.
+  /// Moved a file to the Trash: an inbox file, or an archive file from Folder contents.
   case trashed
   /// Moved the item a Replace replaced to the Trash; it comes back only by undoing that move.
   case replaced
@@ -39,8 +39,8 @@ nonisolated struct HistoryEntry: Identifiable, Hashable, Sendable {
   let kind: HistoryEntryKind
   /// The file's name before the entry.
   let originalName: String
-  /// The display name of the inbox the file came from; `nil` when it did not come from an inbox (an archive item a
-  /// Replace sent to the Trash).
+  /// The display name of the inbox the file came from; `nil` when it did not come from an inbox: an archive item a
+  /// Replace sent to the Trash, or an archive file renamed or trashed in Folder contents.
   let inboxName: String?
   /// The file's name after the entry; `nil` for a move to the Trash.
   let newName: String?

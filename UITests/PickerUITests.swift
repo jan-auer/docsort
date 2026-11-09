@@ -117,7 +117,7 @@ final class PickerUITests: XCTestCase {
   }
 
   @MainActor
-  func testClickingAFileInFolderContentsTakesItsName() throws {
+  func testDoubleClickingAFileInFolderContentsTakesItsName() throws {
     let host = launchHost()
 
     host.filter.typeText("ilmnet rechnungen")
@@ -125,7 +125,7 @@ final class PickerUITests: XCTestCase {
       .matching(NSPredicate(format: "label CONTAINS %@", "2033-10-04 Rechnung Oktober.pdf"))
       .firstMatch
     XCTAssertTrue(file.waitForExistence(timeout: 5))
-    file.click()
+    file.doubleClick()
 
     expectLastEvent(host, "tookFileName 2033-10-04 Rechnung Oktober.pdf")
   }

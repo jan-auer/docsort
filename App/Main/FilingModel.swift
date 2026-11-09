@@ -67,6 +67,18 @@ final class FilingModel {
     }
   }
 
+  /// Renames the archive file at `url` to `name` in its folder; see `FilingService.rename`.
+  func rename(_ url: URL, to name: String) async throws(FilingError) -> MoveOutcome {
+    do {
+      let outcome = try await service.rename(url, to: name)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
+  }
+
   /// Moves `url` to the Trash; see `FilingService.trash`.
   func trash(_ url: URL) async throws(FilingError) -> TrashOutcome {
     do {
