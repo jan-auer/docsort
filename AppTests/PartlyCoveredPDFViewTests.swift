@@ -42,6 +42,8 @@ struct PartlyCoveredPDFViewTests {
     let window = NSWindow(
       contentRect: NSRect(x: 0, y: 0, width: viewWidth, height: 700), styleMask: [.titled],
       backing: .buffered, defer: false)
+    // ARC owns the window; released on close as well, it would be released twice and crash the test host.
+    window.isReleasedWhenClosed = false
     let view = PartlyCoveredPDFView(frame: NSRect(x: 0, y: 0, width: viewWidth, height: 700))
     view.displayMode = .singlePageContinuous
     view.displaysPageBreaks = true
