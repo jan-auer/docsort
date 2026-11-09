@@ -27,7 +27,7 @@ protocol QuickLookPanelPresenting: AnyObject {
 }
 
 /// A key pressed while the Quick Look panel is the key window.
-enum QuickLookPanelKey: Hashable, Sendable {
+enum QuickLookPanelKey: Hashable, Sendable, CaseIterable {
   case upArrow
   case downArrow
   case space

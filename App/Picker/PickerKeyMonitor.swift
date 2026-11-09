@@ -4,7 +4,7 @@ import SwiftUI
 /// A key the destination picker handles itself while one of its text fields has focus (`docs/design/ux.md`,
 /// "Keyboard map › Destination picker focused"). Named for the key, not for what it does: the picker view maps each
 /// to an intent of ``DestinationPickerModel`` depending on which field is focused.
-enum PickerKey: Hashable {
+enum PickerKey: Hashable, CaseIterable {
   /// ↑ without modifiers.
   case upArrow
   /// ↓ without modifiers.

@@ -12,14 +12,14 @@ struct HistoryEntryActions: View {
       if model.canOpen(entry) {
         Button("Open") { FileActions.open(entry.url) }
           .buttonStyle(.borderedProminent)
-          .keyboardShortcut("o")
+          .keyboardShortcut(for: .open)
           .accessibilityIdentifier("history-open")
       }
       if let returnTitle = model.returnTitle(for: entry) {
         Button(returnTitle) {
           Task { await model.returnToInbox(entry) }
         }
-        .keyboardShortcut("z", modifiers: [.option, .command])
+        .keyboardShortcut(for: .returnToInbox)
         .disabled(!model.canReturnToInbox(entry))
         .accessibilityIdentifier("history-return")
       }
@@ -43,8 +43,8 @@ struct HistoryRevealButton: View {
       Image(systemName: "folder")
     }
     .buttonStyle(.borderless)
-    .keyboardShortcut("r", modifiers: [.option, .command])
-    .help("\(title) (⌥⌘R)")
+    .keyboardShortcut(for: .revealInFinder)
+    .help("\(title) (\(MenuCommand.revealInFinder.keys.notation))")
     .accessibilityLabel(title)
     .accessibilityIdentifier(revealsFile ? "history-reveal" : "history-reveal-folder")
   }

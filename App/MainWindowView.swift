@@ -105,7 +105,9 @@ struct MainWindowView: View {
     }
     // The system's line between the toolbar and the content scrolling under it, as Finder shows it.
     .background(TitlebarSeparatorLine())
+    .background(AttachedSheetObserver(model: model))
     .focusedSceneValue(\.mainWindowModel, model)
+    .keyboardShortcutsSheet()
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("main-window")
   }
@@ -174,7 +176,7 @@ struct MainWindowView: View {
       } label: {
         Label("Previous File", systemImage: "chevron.left")
       }
-      .help("Previous File (⌥⌘↑)")
+      .help("Previous File (\(MenuCommand.previousFile.keys.notation))")
       .disabled(model.file(.previous) == nil)
       .accessibilityIdentifier("toolbar-previous-file")
 
@@ -183,7 +185,7 @@ struct MainWindowView: View {
       } label: {
         Label("Next File", systemImage: "chevron.right")
       }
-      .help("Next File (⌥⌘↓)")
+      .help("Next File (\(MenuCommand.nextFile.keys.notation))")
       .disabled(model.file(.next) == nil)
       .accessibilityIdentifier("toolbar-next-file")
     }
@@ -196,7 +198,7 @@ struct MainWindowView: View {
       } label: {
         Label("Open", systemImage: "arrow.up.forward.app")
       }
-      .help("Open in its default app (⌘O)")
+      .help("Open in its default app (\(MenuCommand.open.keys.notation))")
       .disabled(model.selectedFile == nil)
       .accessibilityIdentifier("toolbar-open")
 
@@ -205,7 +207,7 @@ struct MainWindowView: View {
       } label: {
         Label("Reveal in Finder", systemImage: "folder")
       }
-      .help("Reveal in Finder (⌥⌘R)")
+      .help("Reveal in Finder (\(MenuCommand.revealInFinder.keys.notation))")
       .disabled(model.selectedFile == nil)
       .accessibilityIdentifier("toolbar-reveal")
 
@@ -214,7 +216,7 @@ struct MainWindowView: View {
       } label: {
         Label("Move to Trash", systemImage: "trash")
       }
-      .help("Move to Trash (⌘⌫)")
+      .help("Move to Trash (\(MenuCommand.moveToTrash.keys.notation))")
       .disabled(!model.canTrashSelectedFile)
       .accessibilityIdentifier("toolbar-trash")
     }
@@ -227,7 +229,9 @@ struct MainWindowView: View {
       } label: {
         Label("Filing Panel", systemImage: "sidebar.trailing")
       }
-      .help(model.isFilingPanelShown ? "Hide Filing Panel (⌥⌘I)" : "Show Filing Panel (⌥⌘I)")
+      .help(
+        "\(model.isFilingPanelShown ? "Hide" : "Show") Filing Panel (\(MenuCommand.toggleFilingPanel.keys.notation))"
+      )
       .accessibilityIdentifier("toolbar-filing-panel")
     }
   }

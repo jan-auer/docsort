@@ -188,7 +188,7 @@ struct FilingPanel: View {
     } label: {
       HStack(spacing: 8) {
         Text(moveButtonTitle)
-        Text("⌘↩")
+        Text(MenuCommand.move.keys.notation)
           .font(.callout)
           .padding(.horizontal, 6)
           .padding(.vertical, 1)
@@ -202,7 +202,7 @@ struct FilingPanel: View {
     .buttonBorderShape(.capsule)
     .controlSize(.large)
     .disabled(!model.canMoveSelectedFile)
-    .help("\(moveButtonTitle) (⌘Return)")
+    .help("\(moveButtonTitle) (\(MenuCommand.move.keys.notation))")
     .accessibilityLabel(moveButtonTitle)
     .accessibilityIdentifier("move-button")
   }

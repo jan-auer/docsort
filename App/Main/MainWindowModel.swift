@@ -114,6 +114,9 @@ final class MainWindowModel {
   var columnVisibility: NavigationSplitViewVisibility = .all
   /// Where keyboard focus is, as the views report it.
   var focus: MainWindowFocus?
+  /// Whether a sheet or alert is attached to the main window (see `AttachedSheetTracker`). The window's menu commands
+  /// are off meanwhile, so keys typed into the sheet stay there.
+  var isSheetAttached = false
   /// The latest request to move focus, which the views carry out.
   private(set) var focusRequest: FocusRequest?
   /// The confirmation shown in the bottom bar.

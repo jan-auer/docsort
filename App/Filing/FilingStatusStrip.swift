@@ -132,8 +132,8 @@ struct FilingStatusStrip: View {
 
   private var buttonHelp: String {
     switch status {
-    case .filed: "Move back to \(inboxName) (⌥⌘Z)"
-    case .trashed: "Put back in \(inboxName) (⌥⌘Z)"
+    case .filed: "Move back to \(inboxName) (\(MenuCommand.returnToInbox.keys.notation))"
+    case .trashed: "Put back in \(inboxName) (\(MenuCommand.returnToInbox.keys.notation))"
     }
   }
 
