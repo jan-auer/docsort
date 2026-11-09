@@ -16,12 +16,13 @@ struct ShortcutCatalogTests {
   }
 
   @Test(
-    "The sections follow the contexts in order: Anywhere, Sidebar, Destination picker, New folder name, Name field, History"
+    "The sections follow the contexts in order: Anywhere, Sidebar, Destination picker, New folder name, Name field, Folder contents, Quick Look panel, History"
   )
   func sectionOrder() {
     #expect(
       catalog.sections.map(\.context) == [
-        .anywhere, .sidebar, .destinationPicker, .newFolderName, .nameField, .history,
+        .anywhere, .sidebar, .destinationPicker, .newFolderName, .nameField, .folderContents,
+        .quickLookPanel, .history,
       ])
     #expect(catalog.sections.allSatisfy { !$0.entries.isEmpty })
   }
@@ -82,6 +83,24 @@ struct ShortcutCatalogTests {
     }
   }
 
+  @Test("Every key the Quick Look panel handles is listed under Quick Look panel")
+  func quickLookPanelKeysAreListed() {
+    let listed = Set(combinations(in: .quickLookPanel))
+    let panelKeys: [QuickLookPanelKey] = [.upArrow, .downArrow, .space, .escape]
+    for key in panelKeys {
+      #expect(listed.contains(KeyCombination(quickLookPanelKey: key)), "\(key) is not listed")
+    }
+  }
+
+  @Test("Folder contents lists ↑, ↓, Space and Return; the sidebar lists Space for Quick Look")
+  func quickLookListKeysAreListed() {
+    let folderContents = Set(combinations(in: .folderContents))
+    for keys in [KeyEquivalent.upArrow, .downArrow, .space, .return].map({ KeyCombination($0) }) {
+      #expect(folderContents.contains(keys), "\(keys.notation) is not listed")
+    }
+    #expect(combinations(in: .sidebar).contains(KeyCombination(.space)))
+  }
+
   @Test("Every key the name field handles is listed under Name field")
   func nameFieldKeysAreListed() {
     let listed = Set(combinations(in: .nameField))
@@ -122,6 +141,7 @@ struct ShortcutCatalogTests {
     #expect(titles(matching: "cmd y") == ["History"])
     #expect(titles(matching: "⌘Y") == ["History"])
     #expect(titles(matching: "esc").isEmpty == false)
+    #expect(titles(matching: "space").contains("Quick Look"))
   }
 
   @Test("An empty or blank query lists everything; a query matching nothing lists nothing")
