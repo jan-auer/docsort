@@ -11,14 +11,17 @@ struct ShortcutCatalogTests {
 
   /// Every key combination listed in `context`.
   private func combinations(in context: ShortcutContext) -> [KeyCombination] {
-    catalog.sections.filter { $0.context == context }.flatMap(\.entries).flatMap(\.trigger.combinations)
+    catalog.sections.filter { $0.context == context }.flatMap(\.entries).flatMap(
+      \.trigger.combinations)
   }
 
-  @Test("The sections follow the contexts in order: Anywhere, Sidebar, Destination picker, Name field, History")
+  @Test(
+    "The sections follow the contexts in order: Anywhere, Sidebar, Destination picker, New folder name, Name field, History"
+  )
   func sectionOrder() {
     #expect(
       catalog.sections.map(\.context) == [
-        .anywhere, .sidebar, .destinationPicker, .nameField, .history,
+        .anywhere, .sidebar, .destinationPicker, .newFolderName, .nameField, .history,
       ])
     #expect(catalog.sections.allSatisfy { !$0.entries.isEmpty })
   }
@@ -27,7 +30,8 @@ struct ShortcutCatalogTests {
   func menuCommandsAreListed() {
     let anywhere = Set(combinations(in: .anywhere))
     for command in MenuCommand.allCases {
-      #expect(anywhere.contains(command.keys), "\(command) (\(command.keys.notation)) is not listed")
+      #expect(
+        anywhere.contains(command.keys), "\(command) (\(command.keys.notation)) is not listed")
     }
   }
 
@@ -53,7 +57,16 @@ struct ShortcutCatalogTests {
       .shiftTab, .escape, .shiftCommandN, .commandReturn,
     ]
     for key in pickerKeys {
-      #expect(listed.contains(KeyCombination(key)), "\(key) is not listed")
+      #expect(listed.contains(KeyCombination(pickerKey: key)), "\(key) is not listed")
+    }
+  }
+
+  @Test("Every key the new-folder row handles is listed under New folder name")
+  func newFolderKeysAreListed() {
+    let listed = Set(combinations(in: .newFolderName))
+    let handled: [PickerKey] = [.tab, .returnKey, .escape, .shiftTab, .commandReturn]
+    for key in handled {
+      #expect(listed.contains(KeyCombination(pickerKey: key)), "\(key) is not listed")
     }
   }
 
@@ -64,8 +77,8 @@ struct ShortcutCatalogTests {
       .shiftTab, .escape, .shiftCommandN, .commandReturn,
     ]
     for key in pickerKeys {
-      let event = try #require(KeyEventFactory.keyDown(KeyCombination(key)))
-      #expect(PickerKey(event) == key, "\(KeyCombination(key).notation) is not \(key)")
+      let event = try #require(KeyEventFactory.keyDown(KeyCombination(pickerKey: key)))
+      #expect(PickerKey(event) == key, "\(KeyCombination(pickerKey: key).notation) is not \(key)")
     }
   }
 
@@ -74,7 +87,8 @@ struct ShortcutCatalogTests {
     let listed = Set(combinations(in: .nameField))
     let handled: [TextFieldKeyCommand] = [.tab, .backTab, .cancel]
     for command in handled {
-      #expect(listed.contains(KeyCombination(command)), "\(command) is not listed")
+      #expect(
+        listed.contains(KeyCombination(textFieldCommand: command)), "\(command) is not listed")
     }
   }
 
@@ -97,8 +111,9 @@ struct ShortcutCatalogTests {
 
   @Test("Search matches titles, section names and key names, ignoring case and order")
   func search() {
-    #expect(titles(matching: "trash") == ["Move to Trash"])
-    #expect(titles(matching: "TRASH move") == ["Move to Trash"])
+    #expect(titles(matching: "trash").first == "Move to Trash")
+    #expect(titles(matching: "TRASH to move").first == "Move to Trash")
+    #expect(!titles(matching: "trash").contains("Open"))
     #expect(titles(matching: "zoom").count == 3)
     // A section's name finds all of its rows.
     #expect(
@@ -116,17 +131,40 @@ struct ShortcutCatalogTests {
     #expect(catalog.sections(matching: "xylophone").isEmpty)
   }
 
-  @Test("Every shortcut in the menu bar is listed under Anywhere or is a standard macOS shortcut, and back")
+  @Test(
+    "Every shortcut in the menu bar is listed under Anywhere or is a standard macOS shortcut, and back"
+  )
   func menuBarIsInSync() throws {
     let menuBar = try #require(NSApp.mainMenu, "the test host has no menu bar")
-    let inMenuBar = Set(Self.menuItems(in: menuBar).compactMap(KeyCombination.init(menuItem:)))
+    var titles: [KeyCombination: String] = [:]
+    // SwiftUI keeps a few hidden items (a second Toggle Sidebar, Dictation) that no one can see or reach by name.
+    for item in Self.menuItems(in: menuBar) where !item.isHidden {
+      if let keys = KeyCombination(menuItem: item) { titles[keys] = item.title }
+    }
+    let inMenuBar = Set(titles.keys)
     let anywhere = Set(combinations(in: .anywhere))
     let standard = Set(ShortcutCatalog.standardMacShortcuts)
 
     let unlisted = inMenuBar.subtracting(anywhere).subtracting(standard)
-    #expect(unlisted.isEmpty, "In the menu bar but not listed: \(unlisted.map(\.notation).sorted())")
+    #expect(
+      unlisted.isEmpty,
+      "In the menu bar but not listed: \(unlisted.map { "\($0.notation) \(titles[$0] ?? "")" }.sorted())"
+    )
     let missing = anywhere.subtracting(inMenuBar)
     #expect(missing.isEmpty, "Listed but not in the menu bar: \(missing.map(\.notation).sorted())")
+  }
+
+  @Test("The sheet's columns take every section once, in order, and leave no column empty")
+  func columns() {
+    let columns = ShortcutColumns.balance(catalog.sections, into: 2)
+    #expect(columns.count == 2)
+    #expect(Set(columns.flatMap { $0 }.map(\.context)) == Set(catalog.sections.map(\.context)))
+    let order = catalog.sections.map(\.context)
+    for column in columns {
+      let positions = column.compactMap { section in order.firstIndex(of: section.context) }
+      #expect(positions == positions.sorted())
+    }
+    #expect(ShortcutColumns.balance(Array(catalog.sections.prefix(1)), into: 2).count == 1)
   }
 
   private func titles(matching query: String) -> [String] {

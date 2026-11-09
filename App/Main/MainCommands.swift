@@ -2,13 +2,16 @@ import SwiftUI
 
 /// The main window's menu-bar commands: Open, Reveal in Finder, Open Destination in Finder, Move, Revert Name, Move
 /// to Trash and Move Back to Inbox (Put Back for a trashed file) (File), Refresh, the filing panel toggle and the
-/// preview zoom (View), the sidebar toggle, Previous File and Next File (Go), and History (Window). Undo and Redo
-/// (Edit) come from the window's undo manager.
+/// preview zoom (View), the sidebar toggle, Previous File and Next File (Go), History (Window) and Keyboard Shortcuts
+/// (Help). Undo and Redo (Edit) come from the window's undo manager. Every shortcut comes from `MenuCommand`, which
+/// the keyboard shortcuts sheet lists.
 ///
 /// The file and view commands act on the key main window through the `mainWindowModel` focused value and are
-/// disabled when it is not key or when they do not apply. History is always available.
+/// disabled when it is not key or when they do not apply. History is always available; Keyboard Shortcuts toggles
+/// the sheet over the key main window.
 struct MainCommands: Commands {
   @FocusedValue(\.mainWindowModel) private var mainWindowModel
+  @FocusedValue(\.keyboardShortcutsSheet) private var keyboardShortcutsSheet
   @Environment(\.openWindow) private var openWindow
 
   var body: some Commands {
@@ -18,20 +21,20 @@ struct MainCommands: Commands {
       Button("Open") {
         if let selectedFile { FileActions.open(selectedFile.url) }
       }
-      .keyboardShortcut("o")
+      .keyboardShortcut(for: .open)
       .disabled(selectedFile == nil)
 
       Button("Reveal in Finder") {
         if let selectedFile { FileActions.revealInFinder(selectedFile.url) }
       }
-      .keyboardShortcut("r", modifiers: [.option, .command])
+      .keyboardShortcut(for: .revealInFinder)
       .disabled(selectedFile == nil)
 
-      // The filing panel's chosen or highlighted folder; ⇧ marks the folder variant, as in ⇧⌘N (New Folder).
+      // The filing panel's chosen or highlighted folder.
       Button("Open Destination in Finder") {
         if let destinationFolder { FileActions.open(destinationFolder) }
       }
-      .keyboardShortcut("o", modifiers: [.shift, .command])
+      .keyboardShortcut(for: .openDestinationInFinder)
       .disabled(destinationFolder == nil)
 
       Divider()
@@ -39,20 +42,20 @@ struct MainCommands: Commands {
       Button("Move") {
         mainWindowModel?.moveSelectedFile()
       }
-      .keyboardShortcut(.return, modifiers: .command)
+      .keyboardShortcut(for: .move)
       .disabled(!(mainWindowModel?.canMoveSelectedFile ?? false))
 
       Button("Revert Name") {
         mainWindowModel?.revertName()
       }
-      .keyboardShortcut("r", modifiers: [.shift, .command])
+      .keyboardShortcut(for: .revertName)
       .disabled(!(mainWindowModel?.canRevertName ?? false))
 
       // Disabled while a text field has focus, so ⌘⌫ deletes text there instead of trashing the file.
       Button("Move to Trash") {
         mainWindowModel?.trashSelectedFile()
       }
-      .keyboardShortcut(.delete, modifiers: .command)
+      .keyboardShortcut(for: .moveToTrash)
       .disabled(
         !(mainWindowModel?.canTrashSelectedFile ?? false)
           || (mainWindowModel?.isTextFieldFocused ?? false))
@@ -60,7 +63,7 @@ struct MainCommands: Commands {
       Button(returnToInboxTitle) {
         mainWindowModel?.returnSelectedFileToInbox()
       }
-      .keyboardShortcut("z", modifiers: [.option, .command])
+      .keyboardShortcut(for: .returnToInbox)
       .disabled(!(mainWindowModel?.canReturnSelectedFileToInbox ?? false))
     }
 
@@ -69,13 +72,13 @@ struct MainCommands: Commands {
       Button("Refresh") {
         mainWindowModel?.refresh()
       }
-      .keyboardShortcut("r")
+      .keyboardShortcut(for: .refresh)
       .disabled(mainWindowModel == nil)
 
       Button(filingPanelToggleTitle) {
         mainWindowModel?.isFilingPanelShown.toggle()
       }
-      .keyboardShortcut("i", modifiers: [.option, .command])
+      .keyboardShortcut(for: .toggleFilingPanel)
       .disabled(mainWindowModel == nil)
 
       Divider()
@@ -83,19 +86,19 @@ struct MainCommands: Commands {
       Button("Zoom In") {
         previewController?.zoomIn()
       }
-      .keyboardShortcut("+")
+      .keyboardShortcut(for: .zoomIn)
       .disabled(!(previewController?.canZoomIn ?? false))
 
       Button("Zoom Out") {
         previewController?.zoomOut()
       }
-      .keyboardShortcut("-")
+      .keyboardShortcut(for: .zoomOut)
       .disabled(!(previewController?.canZoomOut ?? false))
 
       Button("Zoom to Fit") {
         previewController?.zoomToFit()
       }
-      .keyboardShortcut("0")
+      .keyboardShortcut(for: .zoomToFit)
       .disabled(!(previewController?.canZoomToFit ?? false))
     }
 
@@ -103,13 +106,13 @@ struct MainCommands: Commands {
       Button("Previous File") {
         mainWindowModel?.selectFile(.previous)
       }
-      .keyboardShortcut(.upArrow, modifiers: [.option, .command])
+      .keyboardShortcut(for: .previousFile)
       .disabled(mainWindowModel?.file(.previous) == nil)
 
       Button("Next File") {
         mainWindowModel?.selectFile(.next)
       }
-      .keyboardShortcut(.downArrow, modifiers: [.option, .command])
+      .keyboardShortcut(for: .nextFile)
       .disabled(mainWindowModel?.file(.next) == nil)
     }
 
@@ -117,7 +120,15 @@ struct MainCommands: Commands {
       Button("History") {
         openWindow(id: SceneID.history)
       }
-      .keyboardShortcut("y")
+      .keyboardShortcut(for: .history)
+    }
+
+    CommandGroup(after: .help) {
+      Button("Keyboard Shortcuts") {
+        keyboardShortcutsSheet?.wrappedValue.toggle()
+      }
+      .keyboardShortcut(for: .keyboardShortcuts)
+      .disabled(keyboardShortcutsSheet == nil)
     }
   }
 
