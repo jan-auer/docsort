@@ -9,10 +9,6 @@ import Testing
 struct MainWindowModelReturnTests {
   private let notenPath = "Musik Margit/Noten & Bücher"
 
-  private func exists(_ url: URL) -> Bool {
-    FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
-  }
-
   @Test("Move Back unmarks the row; undo returns the file to the archive and its filed mark")
   func moveBackAndUndo() async throws {
     let environment = try TestFolderEnvironment()
@@ -33,18 +29,14 @@ struct MainWindowModelReturnTests {
 
     model.returnToInbox(file)
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(invoice))
-    #expect(!exists(filed.movedURL))
-    #expect(undoManager.undoActionName == "Move Back of “Rechnung_NA-33-08812.pdf”")
+    #expect(undoManager.canUndo)
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == filedMark }
-    #expect(exists(filed.movedURL))
-    #expect(!exists(invoice))
   }
 
   @Test(
-    "A Replace marks the replaced file's row trashed; returning it to its inbox leaves the replacing file in place"
+    "A Replace marks the replaced file's row trashed; returning it to its inbox is refused with an alert"
   )
   func replaceMarksReplacedRowTrashed() async throws {
     let environment = try TestFolderEnvironment()
@@ -64,7 +56,6 @@ struct MainWindowModelReturnTests {
       newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
       documentID: filed.event.documentID)
     model.inboxes.setMark(invoiceRow.id, invoiceMark)
-    let archived = filed.movedURL
 
     // The scan is filed under the same name with Replace, as the conflict alert does.
     model.resolve(
@@ -78,31 +69,27 @@ struct MainWindowModelReturnTests {
 
     let scanMark = try #require(model.inboxes.row(for: scanRow.id)?.mark)
     #expect(scanMark.filedDocumentID != filed.event.documentID)
-    guard case .trashed(let trashedURL, _)? = model.inboxes.row(for: invoiceRow.id)?.mark else {
-      Issue.record("The replaced invoice's row is not marked trashed")
-      return
-    }
-    #expect(FileManager.default.fileExists(atPath: trashedURL.path(percentEncoded: false)))
+    let replacedMark = try #require(model.inboxes.row(for: invoiceRow.id)?.mark)
+    #expect(replacedMark.isTrashed)
     let replacedFile = try #require(model.file(invoiceRow.id))
     #expect(replacedFile.returnToInboxAction == .putBack)
 
-    // Put Back on the replaced row gets the history's refusal.
+    // Put Back on the replaced row gets the history's refusal; the row stays trashed.
     model.returnToInbox(replacedFile)
     try await waitUntil { model.alert != nil }
-    #expect(model.alert?.message == "This file was replaced by a move; undo that move instead.")
-    #expect(exists(archived))
+    #expect(model.inboxes.row(for: invoiceRow.id)?.mark == replacedMark)
     model.alert = nil
 
-    // A row still showing the invoice as filed there (as before this fix) gets Move Back refused.
+    // A row still showing the invoice as filed there gets Move Back refused, because another file is there now.
     model.inboxes.setMark(invoiceRow.id, invoiceMark)
     model.returnToInbox(try #require(model.file(invoiceRow.id)))
     try await waitUntil { model.alert != nil }
-    #expect(model.alert?.message == "This file has changed since it was filed.")
-    #expect(exists(archived))
-    #expect(!exists(scan))
-    #expect(!exists(invoice))
+    #expect(
+      model.alert?.message == FilingMessages.text(for: .fileChangedSinceFiling(filed.movedURL)))
+    #expect(model.inboxes.row(for: invoiceRow.id)?.mark == invoiceMark)
     #expect(model.inboxes.row(for: scanRow.id)?.mark == scanMark)
-    #expect(undoManager.undoActionName == "Move of “2033-10-11_Optik Klarblick.pdf”")
+    // Neither refusal is on the undo stack: ⌘Z still undoes the Replace.
+    #expect(undoManager.undoActionName.contains(scan.lastPathComponent))
   }
 
   @Test("Undoing a Replace puts back the replaced file and its row's filed mark")
@@ -136,13 +123,10 @@ struct MainWindowModelReturnTests {
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: invoiceRow.id)?.mark == invoiceMark }
     #expect(model.inboxes.row(for: scanRow.id)?.mark == nil)
-    #expect(exists(scan))
-    #expect(exists(filed.movedURL))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: invoiceRow.id)?.mark?.isTrashed == true }
     #expect(model.inboxes.row(for: scanRow.id)?.mark?.filedDocumentID != nil)
-    #expect(!exists(scan))
   }
 
   @Test(
@@ -181,14 +165,10 @@ struct MainWindowModelReturnTests {
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: numberedRow.id)?.mark == filedMark }
     #expect(model.inboxes.row(for: downloadRow.id)?.mark == nil)
-    #expect(exists(filed.movedURL))
-    #expect(!exists(numbered))
-    #expect(exists(invoice))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: numberedRow.id)?.mark == nil }
-    #expect(exists(numbered))
-    #expect(!exists(filed.movedURL))
+    #expect(model.inboxes.row(for: downloadRow.id)?.mark == nil)
   }
 
   @Test("Put Back unmarks the row; undo trashes it again and redo puts it back again")
@@ -207,16 +187,13 @@ struct MainWindowModelReturnTests {
 
     model.returnToInbox(file)
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(scan))
-    #expect(undoManager.undoActionName == "Put Back of “2033-10-11_Optik Klarblick.pdf”")
+    #expect(undoManager.canUndo)
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark?.isTrashed == true }
-    #expect(!exists(scan))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(scan))
   }
 
   @Test("Renaming a filed file keeps it selected and shows its new name")

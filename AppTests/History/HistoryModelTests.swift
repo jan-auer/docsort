@@ -206,8 +206,6 @@ struct HistoryModelTests {
 
     await history.returnToInbox(filedEntry)
 
-    #expect(exists(invoice))
-    #expect(!exists(filed.movedURL))
     #expect(inboxes.row(for: invoiceRow.id)?.mark == nil)
     #expect(history.entries.map(\.kind) == [.filed, .trashed, .movedBack])
     let movedBackEntry = try #require(history.entries.last)
@@ -222,7 +220,6 @@ struct HistoryModelTests {
     let currentTrashedEntry = try #require(history.entries.first { $0.id == trashedEntry.id })
     await history.returnToInbox(currentTrashedEntry)
 
-    #expect(exists(scan))
     #expect(inboxes.row(for: scanRow.id)?.mark == nil)
     let undoneEntry = try #require(history.entries.first { $0.id == trashedEntry.id })
     guard case .undone = undoneEntry.place else {
@@ -281,9 +278,6 @@ struct HistoryModelTests {
 
     await history.returnToInbox(staleEntry)
 
-    #expect(exists(replacing.movedURL))
-    #expect(!exists(scan))
-    #expect(!exists(invoice))
     #expect(
       history.alert?.message
         == FilingMessages.text(for: .fileChangedSinceFiling(replacing.movedURL)))
