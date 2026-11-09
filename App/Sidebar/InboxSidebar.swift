@@ -6,14 +6,16 @@ import SwiftUI
 ///
 /// Selecting a row selects the file in the window, and the preview and filing panel follow. With a file selected,
 /// typing a printable character starts the destination filter with it; Tab and Return move focus to the filter;
-/// → / ← expand and collapse a selected group. An empty inbox shows "No files", an unreachable one a row saying why,
-/// with a button to Settings.
+/// → / ← expand and collapse a selected group; Space opens the Quick Look panel on the selected file (↑ ↓ then move
+/// through the files with the panel following; Space or Esc closes it). An empty inbox shows "No files", an
+/// unreachable one a row saying why, with a button to Settings.
 struct InboxSidebar: View {
   /// The window's state.
   @Bindable var model: MainWindowModel
 
   @FocusState private var isFocused: Bool
   @Environment(\.openSettings) private var openSettings
+  @Environment(\.quickLookPanel) private var quickLookPanel
 
   var body: some View {
     List(selection: $model.sidebarSelection) {
@@ -153,6 +155,13 @@ struct InboxSidebar: View {
     case .return, .tab:
       guard let file = model.selectedFile, !file.isTrashed else { return .ignored }
       model.requestFocus(.destinationFilter)
+      return .handled
+    case .space:
+      guard press.modifiers.isDisjoint(with: [.command, .control, .option]), let quickLookPanel
+      else {
+        return .ignored
+      }
+      quickLookPanel.toggle(for: model)
       return .handled
     case .rightArrow, .leftArrow:
       guard case .group(let url) = model.sidebarSelection else { return .ignored }

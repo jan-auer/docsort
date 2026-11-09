@@ -62,14 +62,23 @@ final class QuickLookPanelController {
   func toggle(for source: any QuickLookSource) {
     if panel.isVisible {
       close()
-      return
+    } else {
+      show(for: source)
     }
+  }
+
+  /// Quick Look in a file's menu: shows `source`'s selected file, opening the panel or moving it to that list.
+  func show(for source: any QuickLookSource) {
     guard let url = source.quickLookURL else { return }
     self.source = source
     sourceNumber += 1
     shownURL = url
     observe(source, number: sourceNumber)
-    panel.open()
+    if panel.isVisible {
+      panel.reload()
+    } else {
+      panel.open()
+    }
   }
 
   /// A key pressed in the panel; returns whether it was handled (the panel handles the others itself).
