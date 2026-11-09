@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The two main actions under the History inspector's details, side by side at equal width: Open (prominent, only
-/// while the file is at the entry's place) and Move Back to Inbox, or Put Back for a trashed entry.
+/// while the file is at the entry's place) and its return action: Move Back to Inbox, Revert Name for an archive file's
+/// rename, or Put Back for a trashed entry (`HistoryModel.returnTitle(for:)`).
 struct HistoryEntryActions: View {
   let model: HistoryModel
   let entry: HistoryEntry
@@ -14,8 +15,8 @@ struct HistoryEntryActions: View {
           .keyboardShortcut("o")
           .accessibilityIdentifier("history-open")
       }
-      if let returnAction = model.returnAction(for: entry) {
-        Button(returnAction.title) {
+      if let returnTitle = model.returnTitle(for: entry) {
+        Button(returnTitle) {
           Task { await model.returnToInbox(entry) }
         }
         .keyboardShortcut("z", modifiers: [.option, .command])
@@ -49,8 +50,8 @@ struct HistoryRevealButton: View {
   }
 }
 
-/// The context menu of a History row: Open, Reveal in Finder (or Reveal Folder in Finder), Move Back to Inbox or Put
-/// Back, and Show in Main Window while the file is in this session's list.
+/// The context menu of a History row: Open, Reveal in Finder (or Reveal Folder in Finder), the return action (Move
+/// Back to Inbox, Revert Name or Put Back), and Show in Main Window while the file is in this session's list.
 struct HistoryEntryMenu: View {
   let model: HistoryModel
   let entry: HistoryEntry
@@ -66,8 +67,8 @@ struct HistoryEntryMenu: View {
         FileActions.revealInFinder(entry.url.deletingLastPathComponent())
       }
     }
-    if let returnAction = model.returnAction(for: entry) {
-      Button(returnAction.title) {
+    if let returnTitle = model.returnTitle(for: entry) {
+      Button(returnTitle) {
         Task { await model.returnToInbox(entry) }
       }
       .disabled(!model.canReturnToInbox(entry))
@@ -80,13 +81,6 @@ struct HistoryEntryMenu: View {
         openWindow(id: SceneID.main)
       }
     }
-  }
-}
-
-extension ReturnToInboxAction {
-  /// The action's button and menu title.
-  fileprivate var title: String {
-    self == .putBack ? "Put Back" : "Move Back to Inbox"
   }
 }
 

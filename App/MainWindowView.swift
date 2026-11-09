@@ -15,6 +15,9 @@ struct MainWindowView: View {
 
   @Environment(\.undoManager) private var undoManager
 
+  /// The window's Quick Look panel, shared by the sidebar and Folder contents.
+  @State private var quickLookPanel = QuickLookPanelController(panel: SystemQuickLookPanel())
+
   /// The filing panel's width, kept with the window.
   @SceneStorage("filing-panel.width") private var filingPanelWidth = 340.0
 
@@ -60,6 +63,8 @@ struct MainWindowView: View {
       .navigationSubtitle(windowSubtitle)
     }
     .frame(minWidth: 1000, minHeight: 640)
+    .background(QuickLookPanelHost(controller: quickLookPanel))
+    .environment(\.quickLookPanel, quickLookPanel)
     .onGeometryChange(for: MainWindowWidthClass.self) { geometry in
       geometry.size.width < MainWindowModel.sidebarCollapseWidth ? .narrow : .regular
     } action: { widthClass in

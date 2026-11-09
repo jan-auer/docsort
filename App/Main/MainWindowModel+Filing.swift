@@ -74,12 +74,8 @@ nonisolated struct PutBackRequest: Hashable, Sendable {
   let itemID: InboxItemID
   /// Where the file lies in the Trash.
   let trashedURL: URL
-  /// Where the file goes back to, in its inbox; undoing the Put Back trashes it from there again.
-  let url: URL
   /// The file's inbox name, for the Undo menu item.
   let originalName: String
-  /// The display name of the file's inbox.
-  let inboxName: String
 }
 
 /// A name conflict waiting for the user's choice between Keep Both, Replace and Cancel.
@@ -129,8 +125,9 @@ extension SelectedFile {
   }
 }
 
-/// A row whose filed file a Replace sent to the Trash, with the mark it had before, which undoing the Replace restores.
-nonisolated private struct ReplacedRow: Sendable {
+/// A row with the mark it had before an action that changed it (a Replace sent its filed file to the Trash, or its
+/// filed file was renamed or trashed in Folder contents), which undoing the action restores.
+nonisolated struct MarkedRow: Sendable {
   /// The row's identity.
   let id: InboxItemID
   /// The row's mark before the Replace.
@@ -142,26 +139,33 @@ nonisolated private struct ReplacedRow: Sendable {
 /// Undo puts the row back to the mark it had before the action and redo performs the action again. Where the action
 /// is exactly reversible (moves and Move Back put the file back under the refused-on-conflict rule, so at its old
 /// place) the earlier mark is stored; marks naming a new place in the Trash or a new date come from the outcome.
-nonisolated private enum UndoableFiling: Sendable {
+nonisolated enum UndoableFiling: Sendable {
   /// A move, redone with `resolution` (Replace again, or refuse a conflict); undo restores `markBefore` (none for a
   /// filing, the earlier filed mark for a rename or move of a filed file), and the marks of `replacedRows`, the rows
   /// whose files a Replace sent to the Trash.
   case move(
     MoveRequest, resolution: ConflictResolution, markBefore: InboxItemMark?,
-    replacedRows: [ReplacedRow])
+    replacedRows: [MarkedRow])
   /// A Move Back, redone with `resolution`; undo returns the file to the archive and restores `markBefore`.
   case moveBack(MoveBackRequest, resolution: ConflictResolution, markBefore: InboxItemMark?)
   /// A move to the Trash.
   case trash(TrashRequest)
-  /// A Put Back; undo moves the file to the Trash again.
-  case putBack(PutBackRequest)
+  /// A Put Back, which returned the file to `returnedTo` (its inbox, or the archive folder it was trashed from) and
+  /// gave the row `markAfter`; undo moves the file to the Trash again.
+  case putBack(PutBackRequest, returnedTo: URL, markAfter: InboxItemMark?)
+  /// A rename of an archive file from Folder contents; undo restores the marks of `filedRows`, the rows that filed it.
+  case archiveRename(ArchiveRenameRequest, filedRows: [MarkedRow])
+  /// A move to the Trash of an archive file from Folder contents; undo restores the marks of `filedRows`.
+  case archiveTrash(ArchiveTrashRequest, filedRows: [MarkedRow])
 
-  var itemID: InboxItemID {
+  /// The inbox row the action is about, which undo and redo select; `nil` for an archive file.
+  var itemID: InboxItemID? {
     switch self {
     case .move(let request, _, _, _): request.itemID
     case .moveBack(let request, _, _): request.itemID
     case .trash(let request): request.itemID
-    case .putBack(let request): request.itemID
+    case .putBack(let request, _, _): request.itemID
+    case .archiveRename, .archiveTrash: nil
     }
   }
 
@@ -173,14 +177,16 @@ nonisolated private enum UndoableFiling: Sendable {
         ? "Rename of “\(request.originalName)”" : "Move of “\(request.originalName)”"
     case .moveBack(let request, _, _): "Move Back of “\(request.originalName)”"
     case .trash(let request): "Move to Trash of “\(request.originalName)”"
-    case .putBack(let request): "Put Back of “\(request.originalName)”"
+    case .putBack(let request, _, _): "Put Back of “\(request.originalName)”"
+    case .archiveRename(let request, _): "Rename of “\(request.originalName)”"
+    case .archiveTrash(let request, _): "Move to Trash of “\(request.originalName)”"
     }
   }
 }
 
 /// The history event the next undo or redo step acts on; filled in by the step before it once it completes, after
 /// the next step was registered.
-private final class FilingEventTicket {
+final class FilingEventTicket {
   var eventID: FilingEvent.ID?
 
   init(eventID: FilingEvent.ID? = nil) {
@@ -214,6 +220,10 @@ extension MainWindowModel {
     case .tookFileName(let fileName):
       panel.nameText = FileNameParts(fileName).stem
       requestFocus(.nameField)
+    case .renameFileRequested(let file, let name):
+      renameArchiveFile(file, to: name)
+    case .trashFileRequested(let file):
+      trashArchiveFile(file)
     case .refreshRequested:
       refresh()
     }
@@ -389,13 +399,13 @@ extension MainWindowModel {
   /// After a move: marks the moved row as filed, and the rows whose filed files a Replace sent to the Trash as
   /// trashed, so their status strips say so (and Put Back gets the history's refusal instead of acting on the file
   /// that took their place). Returns those rows with their earlier marks, for undo.
-  private func applyMarks(of outcome: MoveOutcome, for request: MoveRequest) -> [ReplacedRow] {
-    var replacedRows: [ReplacedRow] = []
+  private func applyMarks(of outcome: MoveOutcome, for request: MoveRequest) -> [MarkedRow] {
+    var replacedRows: [MarkedRow] = []
     if let replacedEvent = outcome.replacedEvent, case .trashed(let record) = replacedEvent.action {
       for id in inboxes.rowIDs(filedAs: replacedEvent.documentID) {
         guard let markBefore = inboxes.row(for: id)?.mark else { continue }
         inboxes.setMark(id, .trashed(trashedURL: record.trashedURL, date: replacedEvent.date))
-        replacedRows.append(ReplacedRow(id: id, markBefore: markBefore))
+        replacedRows.append(MarkedRow(id: id, markBefore: markBefore))
       }
     }
     inboxes.setMark(
@@ -543,12 +553,42 @@ extension MainWindowModel {
       Task { await perform(request, resolution: .refuse) }
     case .trashed(let trashedURL, _):
       let request = PutBackRequest(
-        itemID: file.id, trashedURL: trashedURL, url: file.url, originalName: file.originalName,
-        inboxName: file.inboxName)
+        itemID: file.id, trashedURL: trashedURL, originalName: file.originalName)
       Task { await perform(request) }
     case nil:
       return
     }
+  }
+
+  /// The mark a row gets once Put Back returned its file, the history's document `documentID`, to `url`: none in an
+  /// inbox; filed in the archive folder it was trashed from (from Folder contents), so it can be moved back from there.
+  func mark(afterPutBackTo url: URL, documentID: UUID) -> InboxItemMark? {
+    guard inboxLabel(ofFolderHolding: url) == nil, let root = folders.archiveRoot?.url,
+      let destinationPath = DestinationIndex.archiveRelativePath(
+        of: url.deletingLastPathComponent(), under: root)
+    else { return nil }
+    return .filed(
+      newURL: url, destinationPath: destinationPath, date: Date(), documentID: documentID)
+  }
+
+  /// Where `url` lies, for messages: its inbox's label, else its archive folder's name ("Noten & Bücher"), else the
+  /// name of the folder holding it.
+  func placeName(ofFolderHolding url: URL) -> String {
+    if let label = inboxLabel(ofFolderHolding: url) { return label }
+    let folder = url.deletingLastPathComponent()
+    if let root = folders.archiveRoot?.url,
+      let path = DestinationIndex.archiveRelativePath(of: folder, under: root)
+    {
+      return ArchivePath.title(of: path)
+    }
+    return folder.lastPathComponent
+  }
+
+  /// The label of the configured inbox holding `url`, if one does.
+  private func inboxLabel(ofFolderHolding url: URL) -> String? {
+    InboxLocation.label(
+      ofInboxHolding: url,
+      among: folders.inboxes.compactMap { inbox in inbox.url.map { (inbox.displayLabel, $0) } })
   }
 
   /// Keep Both in the Move Back conflict alert: moves the file back under a numbered name beside the item in the way.
@@ -592,12 +632,20 @@ extension MainWindowModel {
     isFilingInProgress = true
     defer { isFilingInProgress = false }
     do {
-      _ = try await filing.putBack(request.trashedURL)
-      inboxes.setMark(request.itemID, nil)
-      registerUndo(of: .putBack(request), ticket: FilingEventTicket())
+      let outcome = try await filing.putBack(request.trashedURL)
+      let returnedURL = outcome.restored.url
+      let markAfter = mark(afterPutBackTo: returnedURL, documentID: outcome.documentID)
+      inboxes.setMark(request.itemID, markAfter)
+      registerUndo(
+        of: .putBack(request, returnedTo: returnedURL, markAfter: markAfter),
+        ticket: FilingEventTicket())
       statusMessage = WindowStatusMessage(
-        text: "Put “\(request.originalName)” back in \(request.inboxName) · Undo ⌘Z")
+        text:
+          "Put “\(returnedURL.lastPathComponent)” back in \(placeName(ofFolderHolding: returnedURL)) · Undo ⌘Z"
+      )
       showReturned(request.itemID)
+      // Resetting the panel to the same folder lists nothing new, so Folder contents is listed again.
+      picker.reloadContents(selecting: returnedURL)
     } catch {
       Logger.filing.error(
         "Putting \(request.originalName, privacy: .private) back failed: \(String(describing: error), privacy: .private)"
@@ -615,7 +663,7 @@ extension MainWindowModel {
   /// Undo and redo run asynchronously, but the undo manager needs the opposite action registered while it is
   /// undoing or redoing; so each handler registers its counterpart at once and the counterpart reads the event it
   /// acts on from a ticket that the asynchronous work fills in.
-  private func registerUndo(of action: UndoableFiling, ticket: FilingEventTicket) {
+  func registerUndo(of action: UndoableFiling, ticket: FilingEventTicket) {
     guard let undoManager else {
       Logger.filing.error(
         "No undo manager: \(action.actionName, privacy: .private) can't be undone")
@@ -682,14 +730,26 @@ extension MainWindowModel {
         guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
         _ = try await filing.undo(eventID: eventID)
         inboxes.setMark(request.itemID, nil)
-      case .putBack(let request):
-        let outcome = try await trashKeepingRow(request.itemID, url: request.url)
+      case .putBack(let request, let returnedURL, _):
+        let outcome = try await trashKeepingRow(request.itemID, url: returnedURL)
         redoTicket.eventID = outcome.event.id
         inboxes.setMark(
           request.itemID,
           .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
+      case .archiveRename(let request, let filedRows):
+        guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        restoreMarks(of: filedRows)
+        picker.reloadContents(selecting: request.source)
+      case .archiveTrash(let request, let filedRows):
+        guard let eventID = event(in: ticket, for: action, step: "undone") else { return }
+        _ = try await filing.undo(eventID: eventID)
+        restoreMarks(of: filedRows)
+        picker.reloadContents(selecting: request.url)
       }
-      showReturned(returnedRowID)
+      if let returnedRowID { showReturned(returnedRowID) }
+      // The file left the folder Folder contents may show, which the panel reset doesn't list again.
+      if case .putBack = action { picker.reloadContents(selecting: nil) }
       statusMessage = nil
     } catch {
       Logger.filing.error(
@@ -728,11 +788,20 @@ extension MainWindowModel {
           request.itemID,
           .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date))
         finishHandling(request.itemID)
-      case .putBack(let request):
+      case .putBack(let request, let returnedURL, let markAfter):
         guard let eventID = event(in: ticket, for: action, step: "redone") else { return }
         _ = try await filing.undo(eventID: eventID)
-        inboxes.setMark(request.itemID, nil)
+        inboxes.setMark(request.itemID, markAfter)
         showReturned(request.itemID)
+        picker.reloadContents(selecting: returnedURL)
+      case .archiveRename(let request, _):
+        let outcome = try await filing.rename(request.source, to: request.name)
+        undoTicket.eventID = outcome.event.id
+        applyRename(outcome)
+      case .archiveTrash(let request, _):
+        let outcome = try await filing.trash(request.url)
+        undoTicket.eventID = outcome.event.id
+        applyTrash(outcome, selectingAfterwards: request.selectionAfter)
       }
     } catch {
       Logger.filing.error(

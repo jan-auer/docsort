@@ -145,8 +145,9 @@ Three focus stops: sidebar, destination picker, name field. Focus decides what k
    - **Revert**: a small ↺ button at the trailing end of the field, shown only when the name differs from the
      original, restores the original name (also ⇧⌘R). For a filed file the original is the name it had before
      filing.
-   - **Take a name from the folder**: clicking a file in Folder contents copies its name (without extension) into the
-     name field, selected, so it can be edited from there. From the keyboard, ⌥↑ in the name field takes the last
+   - **Take a name from the folder**: double-clicking a file in Folder contents (or Return on the selected file, or
+     Use Name in its menu) copies its name (without extension) into the name field, selected, so it can be edited
+     from there. A single click only selects the file, as in Finder. From the keyboard, ⌥↑ in the name field takes the last
      name in the list, and repeated ⌥↑ / ⌥↓ walk up and down the list.
    - Characters macOS forbids in names (`:` and `/`) are refused with an inline notice.
 4. **Move.** **⌘Return** from anywhere in the window, or a click on Move, files the file. Return in the name field
@@ -173,6 +174,23 @@ The files already in the highlighted destination folder, sorted **alphabetically
 the highlight changes. With the archive's `YYYY-MM-DD Beschreibung` names, the bottom shows the newest files, and
 the list reads in date order upwards. Subfolders are not listed here (the picker shows them). A file whose name
 conflicts with the current name field is highlighted in the warning colour and scrolled into view.
+
+Files are selected as in Finder. A click selects a file and gives the list keyboard focus; the selection is drawn in
+the accent colour while the list has focus and grey otherwise, and another folder clears it.
+
+- **↑ / ↓** move the selection (with nothing selected, ↓ starts at the first file and ↑ at the last, the newest).
+- **Space** opens the system Quick Look panel on the selected file. While it is open, ↑ / ↓ move through the
+  folder's files and the panel follows, as in Finder; Space or Esc closes it.
+- **Double-click** or **Return** uses the file's name for the name field (see "Name the file").
+
+A file's context menu: **Use Name**, **Quick Look**, **Open**, **Open With ›** (the default app first), **Reveal in
+Finder**, **Copy Name** (with its extension), **Copy Path**, **Rename…** and **Move to Trash**. Rename… asks for the
+new name in a dialog, without the extension, which the file keeps (as in the name field); a taken or forbidden name
+is refused with an alert. Rename… and Move to Trash change the archive, so they work like filing: they are
+recorded in the filing history (History lists them as Renamed and Moved to Trash), ⌘Z undoes them, and an inbox
+row whose filed file it is follows it: it shows the new name, or the trashed state with Put Back, which returns
+the file to its archive folder and files the row there again. Move to Trash has
+no confirmation, because it is undoable; the next file is selected.
 
 It is a drawer under the folder list: its header ("Files in Noten & Bücher", the file count) names the folder only, since
 the destination line shows its full path. Dragging the header resizes the drawer against the list (the list keeps
@@ -218,7 +236,7 @@ The panel checks the target path while you type the name:
 ### Undo
 
 - ⌘Z / ⇧⌘Z undo and redo the session's actions in order: move (with its rename), rename of a filed file, new folder,
-  move to Trash, replace. Each undo is named in the Edit menu ("Undo Move of 'Rechnung_NA-33…'"). It uses the window's
+  move to Trash, replace, and Rename… or Move to Trash of an archive file in Folder contents. Each undo is named in the Edit menu ("Undo Move of 'Rechnung_NA-33…'"). It uses the window's
   `UndoManager`, so it behaves like Finder's. Undo lasts for the session.
 - For any filed file, **Move Back** (File › Move Back to Inbox, ⌥⌘Z, also in the row's context menu and in History) returns that one file
   to its original inbox path and name, including after a restart, through the filing history.
@@ -234,8 +252,9 @@ The panel checks the target path while you type the name:
 - **Reveal in Finder**: ⌥⌘R. Same rule.
 - **Open Destination in Finder**: ⇧⌘O opens the filing panel's chosen folder (else the highlighted one) in a Finder
   window. Disabled for a pending new folder, which is not on disk yet.
-- **Quick Look**: Space in the sidebar opens the standard Quick Look panel for a full-screen look (Space or Esc
-  closes it). Space never starts a search.
+- **Quick Look**: Space in the sidebar opens the standard Quick Look panel on the selected file for a full-screen
+  look. While it is open, ↑ / ↓ move through the sidebar's files and the panel follows; Space or Esc closes it. Space
+  never starts a search. Folder contents shares the same panel (see "Folder contents").
 
 ## Files handled this session
 
@@ -281,6 +300,10 @@ files and move-backs are recorded as their own entries. Trash is recorded too.
 - Selecting an entry shows a preview of the file at its current place in a pane on the right.
 - Actions on the selected entry: Open (⌘O), Reveal in Finder (⌥⌘R), Move Back to Inbox (⌥⌘Z), and "Show in Main
   Window" when the file is still in this session's list.
+- Renames and trashes of archive files from Folder contents are entries too. An archive file that was never in an
+  inbox gets no inbox return: its rename offers **Revert Name** (its earlier name, in its folder) and its trash **Put
+  Back** (to its folder). A filed file trashed from Folder contents is put back into its archive folder, and its inbox
+  row is filed there again.
 - An entry whose file is no longer at the recorded place shows "Moved or deleted since" and offers only Reveal of the
   folder.
 
@@ -439,6 +462,26 @@ Every command is in the menu bar, so it is discoverable and rebindable in System
 | ⇧Tab / Esc | Back to the picker |
 | Tab | Back to the sidebar without moving (focus wraps, as in any macOS window) |
 
+### Folder contents focused
+
+A click on a file gives the list focus; it is not a Tab stop.
+
+| Keys | Command |
+| --- | --- |
+| ↑ / ↓ | Previous / next file |
+| Space | Quick Look panel on the selected file |
+| Return, double-click | Use the file's name for the name field |
+| right-click | Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename…, Move to Trash |
+
+### Quick Look panel open
+
+From the sidebar or Folder contents; Finder's ⌘Y is History here, and ⌃Space switches the input source.
+
+| Keys | Command |
+| --- | --- |
+| ↑ / ↓ | Previous / next file in the list the panel was opened from; the panel follows |
+| Space / Esc | Close the panel |
+
 ### Sheets and alerts
 
 Standard macOS: Return presses the default button (Keep Both), Esc cancels. The destructive Replace is never the
@@ -539,7 +582,9 @@ Settled by the user:
 - Filed files stay in place, checked off; no Filed section. A persistent filing history with a History view.
 - Filed files can be renamed; revert restores the pre-filing name.
 - Typing in the sidebar goes straight into the destination filter (no type-to-select in the sidebar).
-- Clicking a file in Folder contents copies its name; Folder contents sorted alphabetically, scrolled to the bottom.
+- Folder contents selects as Finder does: a click selects, double-click or Return uses the name, Space is Quick Look
+  (with ↑ / ↓ moving through the files), and a context menu acts on the file; sorted alphabetically, scrolled to the
+  bottom.
 - After a move, focus returns to the sidebar with the next unfiled file selected, so typing starts its search at once.
 - The name field starts with the current name, fully selected.
 - Move to Trash has no confirmation, because it is undoable.

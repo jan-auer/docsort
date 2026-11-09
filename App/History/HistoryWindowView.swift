@@ -36,9 +36,7 @@ struct HistoryWindowView: View {
         .keyboardShortcut(.defaultAction)
       Button("Cancel", role: .cancel) {}
     } message: { conflict in
-      Text(
-        "Something else is now at \(DisplayPath.abbreviating(conflict.blockingURL.path(percentEncoded: false))). Keep Both moves the file back under a numbered name."
-      )
+      Text(model.conflictMessage(for: conflict))
     }
     .alert(
       model.alert?.title ?? "", isPresented: isAlertPresented, presenting: model.alert
@@ -161,9 +159,7 @@ struct HistoryWindowView: View {
   }
 
   private var moveBackConflictTitle: String {
-    guard let conflict = model.moveBackConflict else { return "" }
-    let inbox = conflict.entry.inboxName ?? "its inbox"
-    return "“\(conflict.entry.currentName)” can’t be moved back to \(inbox)"
+    model.moveBackConflict.map { model.moveBackFailureTitle(for: $0.entry) } ?? ""
   }
 
   private var isMoveBackConflictPresented: Binding<Bool> {

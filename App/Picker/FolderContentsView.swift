@@ -5,19 +5,30 @@ import UniformTypeIdentifiers
 
 /// Folder contents (`docs/design/ux.md`, "Folder contents"): the files already in the chosen or highlighted folder,
 /// alphabetically, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder changes.
-/// Clicking a file takes its name for the name field (``PickerEvent/tookFileName(_:)``).
+///
+/// Files are selected as in Finder: a click selects a file and focuses the list, ↑ ↓ move the selection, Space opens
+/// the Quick Look panel on it (↑ ↓ then move through the files with the panel following; Space or Esc closes it),
+/// and a double-click or Return uses its name for the name field (``PickerEvent/tookFileName(_:)``). A file's context
+/// menu offers Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename… and Move to
+/// Trash (``FolderContentsFileMenu``).
 ///
 /// It is a drawer under the folder list: its header ("Files in Rechnungen", the file count) can be dragged up and down
 /// to resize the list under it, and its chevron collapses the drawer to the header.
 ///
 /// Accessibility: the view is `folder-contents`; the header is `folder-contents-header`, its chevron
-/// `folder-contents-toggle`; each file is a button `folder-contents-file` labelled with its name, with the value
-/// `conflict` when it is the conflicting file.
-struct FolderContentsView: View {
+/// `folder-contents-toggle`; the file list is `folder-contents-list`; each file is a button `folder-contents-file`
+/// labelled with its name, with the value `selected` when it is selected, `conflict` when it is the conflicting file
+/// (`selected, conflict` when both).
+struct FolderContentsView<FocusValue: Hashable>: View {
   let model: DestinationPickerModel
   /// The name the name field would give the file; a file with this name (ignoring case) is highlighted in the
   /// warning colour and scrolled into view.
   var conflictingName: String? = nil
+  /// Whether Rename… and Move to Trash are available (the history is writable and nothing is being filed).
+  var canChangeFiles = true
+  /// The panel's focus, and the value that stands for the file list.
+  let focus: FocusState<FocusValue?>.Binding
+  let field: FocusValue
   /// The height of the file list under the header.
   @Binding var listHeight: Double
   /// Whether the drawer shows only its header.
@@ -25,28 +36,80 @@ struct FolderContentsView: View {
   /// The tallest the list may get, so the folder list above keeps its room.
   let maxListHeight: Double
 
+  @Environment(\.quickLookPanel) private var quickLookPanel
+
   var body: some View {
     FolderContentsListing(
-      contents: model.contents, conflictingName: conflictingName, listHeight: $listHeight,
-      isCollapsed: $isCollapsed, maxListHeight: maxListHeight
-    ) { file in
-      model.takeFileName(file)
-    }
+      contents: model.contents, selectedURL: model.selectedContentsFile?.url,
+      conflictingName: conflictingName, isListFocused: focus.wrappedValue == field,
+      listHeight: $listHeight, isCollapsed: $isCollapsed, maxListHeight: maxListHeight,
+      actions: actions
+    )
+    .focused(focus, equals: field)
   }
+
+  /// What the listing's clicks, keys and menu items do.
+  private var actions: FolderContentsActions {
+    FolderContentsActions(
+      canChangeFiles: canChangeFiles,
+      select: { file in
+        model.selectContentsFile(file)
+        focus.wrappedValue = field
+      },
+      useName: { file in model.takeFileName(file) },
+      useSelectedName: { model.useSelectedContentsFileName() },
+      moveSelection: { offset in model.moveContentsSelection(by: offset) },
+      toggleQuickLook: { quickLookPanel?.toggle(for: model) },
+      quickLook: { file in
+        model.selectContentsFile(file)
+        quickLookPanel?.show(for: model)
+      },
+      rename: { file, name in model.requestRename(of: file, to: name) },
+      trash: { file in model.requestTrash(of: file) })
+  }
+}
+
+/// What Folder contents' clicks, keys and menu items do; ``FolderContentsView`` wires them to the picker model.
+struct FolderContentsActions {
+  /// Whether Rename… and Move to Trash are enabled.
+  var canChangeFiles = true
+  /// A click: select the file (and focus the list).
+  var select: (FolderFile) -> Void = { _ in }
+  /// A double-click or Use Name: use the file's name.
+  var useName: (FolderFile) -> Void = { _ in }
+  /// Return: use the selected file's name.
+  var useSelectedName: () -> Void = {}
+  /// ↑ (`-1`) or ↓ (`1`).
+  var moveSelection: (Int) -> Void = { _ in }
+  /// Space: open or close the Quick Look panel on the selection.
+  var toggleQuickLook: () -> Void = {}
+  /// Quick Look in the file's menu: select it and show it in the panel.
+  var quickLook: (FolderFile) -> Void = { _ in }
+  /// Rename… confirmed with the name entered (without the extension).
+  var rename: (FolderFile, String) -> Void = { _, _ in }
+  /// Move to Trash.
+  var trash: (FolderFile) -> Void = { _ in }
 }
 
 /// Folder contents for one ``FolderContents`` value; ``FolderContentsView`` feeds it from the picker model.
 struct FolderContentsListing: View {
   let contents: FolderContents
+  /// The selected file, if any.
+  var selectedURL: URL? = nil
   let conflictingName: String?
+  /// Whether the file list has keyboard focus: the selection shows in the accent colour then, grey otherwise.
+  var isListFocused = false
   @Binding var listHeight: Double
   @Binding var isCollapsed: Bool
   let maxListHeight: Double
-  /// A click on a file.
-  let takeFileName: (FolderFile) -> Void
+  var actions = FolderContentsActions()
 
   /// The list height when a drag started.
   @State private var dragStartHeight: Double?
+  /// The file Rename… is asking a new name for.
+  @State private var fileToRename: FolderFile?
+  /// The name typed in the Rename dialog, without the extension.
+  @State private var newName = ""
 
   /// The shortest the list gets while expanded.
   static let minListHeight: Double = 48
@@ -213,8 +276,15 @@ struct FolderContentsListing: View {
       ScrollView {
         LazyVStack(spacing: 0) {
           ForEach(files, id: \.url) { file in
-            FolderContentsFileRow(file: file, isConflict: file.url == conflict?.url) {
-              takeFileName(file)
+            FolderContentsFileRow(
+              file: file, highlight: highlight(of: file), isConflict: file.url == conflict?.url,
+              select: { actions.select(file) }, useName: { actions.useName(file) }
+            )
+            .contextMenu {
+              FolderContentsFileMenu(
+                file: file, canChangeFiles: actions.canChangeFiles,
+                useName: { actions.useName(file) }, quickLook: { actions.quickLook(file) },
+                rename: { beginRename(of: file) }, trash: { actions.trash(file) })
             }
             .id(file.url)
           }
@@ -223,10 +293,16 @@ struct FolderContentsListing: View {
         .padding(.vertical, 4)
       }
       .defaultScrollAnchor(.bottom)
+      .focusable()
+      .focusEffectDisabled()
+      .onKeyPress(phases: .down, action: handle)
+      .accessibilityIdentifier("folder-contents-list")
       .onChange(of: files.map(\.url), initial: true) { _, urls in
-        // A new folder (or new files in it): show the conflict if there is one, else the newest files.
+        // A new folder (or new files in it): show the conflict if there is one, else the selection or the newest.
         if let conflict {
           proxy.scrollTo(conflict.url, anchor: .center)
+        } else if let selectedURL, urls.contains(selectedURL) {
+          proxy.scrollTo(selectedURL)
         } else if let last = urls.last {
           proxy.scrollTo(last, anchor: .bottom)
         }
@@ -235,7 +311,69 @@ struct FolderContentsListing: View {
         guard let url else { return }
         proxy.scrollTo(url, anchor: .center)
       }
+      .onChange(of: selectedURL) { _, url in
+        guard let url else { return }
+        proxy.scrollTo(url)
+      }
     }
+    .alert(
+      renameTitle, isPresented: isRenaming, presenting: fileToRename
+    ) { file in
+      TextField("Name", text: $newName)
+      Button("Rename") { actions.rename(file, newName) }
+      Button("Cancel", role: .cancel) {}
+    } message: { file in
+      Text(Self.renameMessage(for: file))
+    }
+  }
+
+  /// The selection's look for `file`: accent while the list has focus, grey while it does not.
+  private func highlight(of file: FolderFile) -> RowHighlight {
+    guard file.url == selectedURL else { return .none }
+    return isListFocused ? .focused : .unfocused
+  }
+
+  /// The keys of the focused list: ↑ ↓ move the selection, Space opens or closes Quick Look, Return uses the name.
+  private func handle(_ press: KeyPress) -> KeyPress.Result {
+    guard press.modifiers.isDisjoint(with: [.command, .control, .option, .shift]) else {
+      return .ignored
+    }
+    switch press.key {
+    case .upArrow: actions.moveSelection(-1)
+    case .downArrow: actions.moveSelection(1)
+    case .space: actions.toggleQuickLook()
+    case .return: actions.useSelectedName()
+    default: return .ignored
+    }
+    return .handled
+  }
+
+  // MARK: Rename
+
+  /// Opens the Rename dialog for `file`, with its name without extension filled in.
+  private func beginRename(of file: FolderFile) {
+    newName = FileNameParts(file.name).stem
+    fileToRename = file
+  }
+
+  private var isRenaming: Binding<Bool> {
+    Binding {
+      fileToRename != nil
+    } set: { isPresented in
+      if !isPresented { fileToRename = nil }
+    }
+  }
+
+  private var renameTitle: String {
+    fileToRename.map { "Rename “\($0.name)”" } ?? "Rename"
+  }
+
+  /// The Rename dialog's message: what the extension does.
+  static func renameMessage(for file: FolderFile) -> String {
+    guard let fileExtension = FileNameParts(file.name).fileExtension else {
+      return "Enter a new name."
+    }
+    return "Enter a new name. The file keeps its extension “.\(fileExtension)”."
   }
 
   /// The file named ``conflictingName``, ignoring case and Unicode normalisation.
@@ -248,22 +386,16 @@ struct FolderContentsListing: View {
   }
 }
 
-extension FolderContents {
-  /// The archive-relative folder the contents are about, if a folder on disk.
-  fileprivate var folder: String? {
-    switch self {
-    case .none, .notOnDisk: nil
-    case .loading(let folder), .files(let folder, _), .failed(let folder, _): folder
-    }
-  }
-}
-
-/// One file in Folder contents: its icon and name, in the same row style as the folder list; a click takes the name.
+/// One file in Folder contents: its icon and name, in the same row style as the folder list. A click selects it, a
+/// double-click uses its name.
 struct FolderContentsFileRow: View {
   let file: FolderFile
+  /// How the row shows the selection.
+  let highlight: RowHighlight
   /// Whether the file's name conflicts with the name field's (highlighted in the warning colour).
   let isConflict: Bool
-  let take: () -> Void
+  let select: () -> Void
+  let useName: () -> Void
 
   var body: some View {
     HStack(spacing: FilingPanelStyle.rowIconSpacing) {
@@ -273,26 +405,43 @@ struct FolderContentsFileRow: View {
         .accessibilityHidden(true)
       Text(file.name)
         .fontWeight(isConflict ? .semibold : .regular)
+        .foregroundStyle(highlight.textTone.primary)
         .lineLimit(1)
         .truncationMode(.middle)
       Spacer(minLength: 0)
     }
     .padding(.horizontal, FilingPanelStyle.rowPadding)
     .frame(height: FilingPanelStyle.rowHeight)
-    .background(
-      isConflict ? Color(nsColor: .systemOrange).opacity(0.3) : .clear,
-      in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius)
-    )
+    .background(background, in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius))
     .contentShape(Rectangle())
-    .onTapGesture(perform: take)
-    .help("Click to use this name")
+    .onTapGesture {
+      // One gesture for both, so a single click selects at once instead of waiting out the double-click interval;
+      // the second click of a double click carries a click count of 2.
+      if (NSApp.currentEvent?.clickCount ?? 1) >= 2 {
+        useName()
+      } else {
+        select()
+      }
+    }
+    .help("Double-click to use this name")
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(file.name)
-    .accessibilityValue(isConflict ? "conflict" : "")
+    .accessibilityValue(accessibilityValue)
     .accessibilityHint("Uses this name for the file")
-    .accessibilityAddTraits(.isButton)
-    .accessibilityAction(.default, take)
+    .accessibilityAddTraits(highlight.isHighlighted ? [.isButton, .isSelected] : .isButton)
+    .accessibilityAction(.default, useName)
     .accessibilityIdentifier("folder-contents-file")
+  }
+
+  /// The selection's background, else the warning colour for the conflicting file.
+  private var background: Color {
+    if highlight.isHighlighted { return highlight.background }
+    return isConflict ? Color(nsColor: .systemOrange).opacity(0.3) : .clear
+  }
+
+  private var accessibilityValue: String {
+    [highlight.isHighlighted ? "selected" : nil, isConflict ? "conflict" : nil]
+      .compactMap { $0 }.joined(separator: ", ")
   }
 
   /// The Finder icon for files named like `name`, from its extension alone (the file itself is not read).
@@ -320,8 +469,52 @@ struct FolderContentsFileRow: View {
       contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
       conflictingName: nil,
       listHeight: .constant(120), isCollapsed: .constant(false), maxListHeight: 400
-    ) { _ in }
+    )
     .frame(width: 340, height: 160)
+  }
+
+  #Preview("Selected") {
+    let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
+    FolderContentsListing(
+      contents: contents, selectedURL: contents.firstFileURL, conflictingName: nil,
+      isListFocused: true, listHeight: .constant(120), isCollapsed: .constant(false),
+      maxListHeight: 400
+    )
+    .frame(width: 340, height: 160)
+  }
+
+  /// Every row state at once: selected with the list focused and unfocused, the conflict row, and the selected
+  /// conflict row, in one colour scheme.
+  private struct RowStatesPreview: View {
+    let colorScheme: ColorScheme
+
+    var body: some View {
+      let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
+      let files = contents.files
+      VStack(spacing: 0) {
+        ForEach([true, false], id: \.self) { isFocused in
+          FolderContentsListing(
+            contents: contents, selectedURL: files.first?.url,
+            conflictingName: files.last?.name, isListFocused: isFocused,
+            listHeight: .constant(84), isCollapsed: .constant(false), maxListHeight: 84)
+        }
+        FolderContentsListing(
+          contents: contents, selectedURL: files.last?.url, conflictingName: files.last?.name,
+          isListFocused: true, listHeight: .constant(84), isCollapsed: .constant(false),
+          maxListHeight: 84)
+      }
+      .frame(width: 340)
+      .background(FilingPanelStyle.background)
+      .environment(\.colorScheme, colorScheme)
+    }
+  }
+
+  #Preview("Row states, light") {
+    RowStatesPreview(colorScheme: .light)
+  }
+
+  #Preview("Row states, dark") {
+    RowStatesPreview(colorScheme: .dark)
   }
 
   #Preview("Conflict") {
@@ -329,7 +522,7 @@ struct FolderContentsFileRow: View {
       contents: sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen"),
       conflictingName: "2033-07-19 gutschrift störung.pdf", listHeight: .constant(60),
       isCollapsed: .constant(false), maxListHeight: 400
-    ) { _ in }
+    )
     .frame(width: 340, height: 100)
   }
 
@@ -337,7 +530,7 @@ struct FolderContentsFileRow: View {
     FolderContentsListing(
       contents: .notOnDisk, conflictingName: nil, listHeight: .constant(60),
       isCollapsed: .constant(false), maxListHeight: 400
-    ) { _ in }
+    )
     .frame(width: 340, height: 100)
   }
 
@@ -347,15 +540,38 @@ struct FolderContentsFileRow: View {
         folder: "Reisen/Reiseplanung Ideen", message: "The folder no longer exists."),
       conflictingName: nil, listHeight: .constant(60), isCollapsed: .constant(false),
       maxListHeight: 400
-    ) { _ in }
+    )
     .frame(width: 340, height: 100)
   }
 
+  /// Folder contents fed by a sample picker, with focus of its own.
+  private struct PickerFolderContentsPreview: View {
+    @State private var model = DestinationPickerModel.sample { $0.filterText = "rechnungen" }
+    @FocusState private var isFocused: Bool?
+
+    var body: some View {
+      FolderContentsView(
+        model: model, focus: $isFocused, field: true, listHeight: .constant(120),
+        isCollapsed: .constant(false), maxListHeight: 400)
+    }
+  }
+
   #Preview("From the picker") {
-    FolderContentsView(
-      model: .sample { $0.filterText = "rechnungen" }, listHeight: .constant(120),
-      isCollapsed: .constant(false), maxListHeight: 400
-    )
-    .frame(width: 340, height: 160)
+    PickerFolderContentsPreview()
+      .frame(width: 340, height: 160)
+  }
+
+  extension FolderContents {
+    /// The first listed file, for previews.
+    fileprivate var firstFileURL: URL? {
+      if case .files(_, let files) = self { return files.first?.url }
+      return nil
+    }
+
+    /// The listed files, for previews.
+    fileprivate var files: [FolderFile] {
+      if case .files(_, let files) = self { return files }
+      return []
+    }
   }
 #endif

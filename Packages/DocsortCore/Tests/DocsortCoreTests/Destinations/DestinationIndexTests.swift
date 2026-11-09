@@ -5,6 +5,27 @@ import Testing
 
 @Suite("DestinationIndex")
 struct DestinationIndexTests {
+  @Test(
+    "gives the NFC path of a URL under a root, empty for the root, nil outside it, through symbolic links"
+  )
+  func archiveRelativePath() throws {
+    let archive = try TemporaryDirectory()
+    try archive.createFolder("Töpferei")
+    let root = archive.url
+    // The temporary directory lies under /var, a symbolic link to /private/var.
+    let resolvedRoot = root.resolvingSymlinksInPath()
+    let decomposed = "Töpferei".decomposedStringWithCanonicalMapping
+
+    #expect(
+      DestinationIndex.archiveRelativePath(
+        of: resolvedRoot.appending(path: decomposed), under: root)
+        == "Töpferei".precomposedStringWithCanonicalMapping)
+    #expect(DestinationIndex.archiveRelativePath(of: root, under: resolvedRoot) == "")
+    #expect(
+      DestinationIndex.archiveRelativePath(
+        of: root.deletingLastPathComponent(), under: root) == nil)
+  }
+
   @Test("lists every folder below the root, parents before children, siblings in Finder order")
   func listsFoldersInFinderOrder() throws {
     let archive = try TemporaryDirectory()
