@@ -44,6 +44,14 @@ struct ShortcutCatalogTests {
     }
   }
 
+  @Test("Entry titles are unique within a section, since they identify the rows")
+  func uniqueTitles() {
+    for section in catalog.sections {
+      let titles = section.entries.map(\.title)
+      #expect(titles.count == Set(titles).count, "\(section.title) repeats a title")
+    }
+  }
+
   @Test("No two menu commands share a shortcut")
   func menuCommandsAreDistinct() {
     let keys = MenuCommand.allCases.map(\.keys)
@@ -53,11 +61,7 @@ struct ShortcutCatalogTests {
   @Test("Every key the destination picker handles is listed under Destination picker")
   func pickerKeysAreListed() {
     let listed = Set(combinations(in: .destinationPicker))
-    let pickerKeys: [PickerKey] = [
-      .upArrow, .downArrow, .rightArrow, .leftArrow, .delete, .commandUpArrow, .tab, .returnKey,
-      .shiftTab, .escape, .shiftCommandN, .commandReturn,
-    ]
-    for key in pickerKeys {
+    for key in PickerKey.allCases {
       #expect(listed.contains(KeyCombination(pickerKey: key)), "\(key) is not listed")
     }
   }
@@ -73,11 +77,7 @@ struct ShortcutCatalogTests {
 
   @Test("The picker keys' combinations are the keys the picker recognises")
   func pickerKeyCombinationsRoundTrip() throws {
-    let pickerKeys: [PickerKey] = [
-      .upArrow, .downArrow, .rightArrow, .leftArrow, .delete, .commandUpArrow, .tab, .returnKey,
-      .shiftTab, .escape, .shiftCommandN, .commandReturn,
-    ]
-    for key in pickerKeys {
+    for key in PickerKey.allCases {
       let event = try #require(KeyEventFactory.keyDown(KeyCombination(pickerKey: key)))
       #expect(PickerKey(event) == key, "\(KeyCombination(pickerKey: key).notation) is not \(key)")
     }
@@ -86,8 +86,7 @@ struct ShortcutCatalogTests {
   @Test("Every key the Quick Look panel handles is listed under Quick Look panel")
   func quickLookPanelKeysAreListed() {
     let listed = Set(combinations(in: .quickLookPanel))
-    let panelKeys: [QuickLookPanelKey] = [.upArrow, .downArrow, .space, .escape]
-    for key in panelKeys {
+    for key in QuickLookPanelKey.allCases {
       #expect(listed.contains(KeyCombination(quickLookPanelKey: key)), "\(key) is not listed")
     }
   }
