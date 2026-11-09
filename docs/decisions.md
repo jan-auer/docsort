@@ -212,3 +212,12 @@ user's setting), plain buttons are focusable, so Folder contents' focus landed o
 keys never arrived. Hosted unit tests can't check SwiftUI focus: the test host app is never active, so focus writes
 and key events in its windows do nothing (even in a window that reports itself key); a focus bug needs one targeted UI
 test (`targeted-ui-tests`). Reason: the click-to-focus bug in Folder contents, 2026-11-09.
+
+## toolbar-glow-under-panel
+
+The toolbar's blur over a scrolled PDF spans preview and filing panel because the PDF view runs under the panel
+(Keynote's structure); the panel still starts below the toolbar. AppKit draws the scroll edge effect (`NSScrollPocket`)
+only across a scroll view's width minus `contentInsets`, so the panel's share is reserved through PDFView's page
+margins (`PartlyCoveredPDFView`), not content insets or safe-area insets. The system separator still stops at the panel;
+the panel draws its own one-pixel line. Rejected on screen by the user (2026-11-09): a divider line through the toolbar,
+and `.backgroundExtensionEffect()` (mirrored copies of the PDF everywhere).

@@ -2,6 +2,17 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-09 claude/toolbar-glass-under-panel: toolbar blur spans preview and filing panel
+- What landed: the PDF view runs under the filing panel, so the toolbar's blur over a scrolled PDF runs across the
+  whole toolbar; `PartlyCoveredPDFView` keeps pages fitted and centred left of the panel through page margins
+  (decision `toolbar-glow-under-panel`), and the pages follow the panel's slide. The panel keeps its own line under the
+  toolbar. 3 new hosted tests; 319 core and 179 app unit tests pass.
+- Divergence: the panel now lies over the PDF view's trailing edge instead of beside it. Two rejected spikes (a line
+  through the toolbar, mirrored PDF copies) are not in the branch; a removed-and-restored panel line is. The derived
+  covered width (no jump at launch) is unseen on screen; UI tests not run.
+- Follow-ups: cursor over the panel while a zoomed page lies under it; "Show scroll bars: Always" fit; the
+  Shortcuts-style glass inspector is still being compared (`claude/inspector-glass-6c32d3`).
+
 ## 2026-11-09 install-script: scripts/install.sh builds Release and installs it
 - What landed: `scripts/install.sh` builds the Release configuration into `.build/xcode` (incremental, next to
   Debug), replaces `/Applications/Docsort.app` and opens it (`--no-open` skips that); it stops if the installed app
