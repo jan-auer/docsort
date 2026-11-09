@@ -221,3 +221,11 @@ only across a scroll view's width minus `contentInsets`, so the panel's share is
 margins (`PartlyCoveredPDFView`), not content insets or safe-area insets. The system separator still stops at the panel;
 the panel draws its own one-pixel line. Rejected on screen by the user (2026-11-09): a divider line through the toolbar,
 and `.backgroundExtensionEffect()` (mirrored copies of the PDF everywhere).
+
+## no-glass-in-panel-content
+
+The filing panel's controls (search field, name field, lists) stay standard, without Liquid Glass. Liquid Glass belongs
+to the navigation layer (toolbar, sidebars, inspectors) floating over content; the panel is content on an opaque
+background, so glass there adds nothing and reads as an imitation. A glass search field was built and tried on screen
+(branch `claude/glass-search-37b52d`); the user found the plain field cleaner (2026-11-09). A full-height glass
+inspector, where glass would fit, is parked on `claude/inspector-glass-6c32d3`.
