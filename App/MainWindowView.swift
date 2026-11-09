@@ -105,6 +105,7 @@ struct MainWindowView: View {
     }
     // The system's line between the toolbar and the content scrolling under it, as Finder shows it.
     .background(TitlebarSeparatorLine())
+    .background(AttachedSheetObserver(model: model))
     .focusedSceneValue(\.mainWindowModel, model)
     .keyboardShortcutsSheet()
     .accessibilityElement(children: .contain)

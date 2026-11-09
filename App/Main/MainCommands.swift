@@ -7,10 +7,10 @@ import SwiftUI
 /// the keyboard shortcuts sheet lists.
 ///
 /// The file and view commands act on the key main window through the `mainWindowModel` focused value and are
-/// disabled when it is not key or when they do not apply. History is always available; Keyboard Shortcuts toggles
-/// the sheet over the key main window.
+/// disabled when it is not key, while a sheet or alert is attached to it, or when they do not apply. History is always
+/// available; Keyboard Shortcuts toggles the sheet over the key main window.
 struct MainCommands: Commands {
-  @FocusedValue(\.mainWindowModel) private var mainWindowModel
+  @FocusedValue(\.mainWindowModel) private var focusedMainWindowModel
   @FocusedValue(\.keyboardShortcutsSheet) private var keyboardShortcutsSheet
   @Environment(\.openWindow) private var openWindow
 
@@ -130,6 +130,13 @@ struct MainCommands: Commands {
       .keyboardShortcut(for: .keyboardShortcuts)
       .disabled(keyboardShortcutsSheet == nil)
     }
+  }
+
+  /// The key main window's model, or `nil` while a sheet or alert is attached to the window: the focused value covers
+  /// the whole scene, sheets included, and the menu sees ⌘ keys before a sheet's text field does.
+  private var mainWindowModel: MainWindowModel? {
+    guard let focusedMainWindowModel, !focusedMainWindowModel.isSheetAttached else { return nil }
+    return focusedMainWindowModel
   }
 
   /// The file selected in the key main window.
