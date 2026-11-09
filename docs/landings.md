@@ -2,6 +2,15 @@
 
 Work landed on `master`, newest first. Written by `/coord-land`.
 
+## 2026-11-09 install-script: scripts/install.sh builds Release and installs it
+- What landed: `scripts/install.sh` builds the Release configuration into `.build/xcode` (incremental, next to
+  Debug), replaces `/Applications/Docsort.app` and opens it (`--no-open` skips that); it stops if the installed app
+  is running.
+- Divergence: done by the hub on a branch in the main checkout, without a coordinator; reviewed by the hub (small
+  diff), without the reviewer subagent. The README's "Install a Release build" section is unchanged at the user's
+  request and still shows `.build/xcode-release`. The build step was run; the install step was not run by an agent.
+- Follow-ups: None.
+
 ## 2026-11-09 claude/folder-focus-fix-6fe6ad: Folder contents keeps focus after a click
 - What landed: the focus binding moved from the Folder contents drawer to its file list, so a click focuses the
   list (↓ and Space work) instead of the header's chevron when keyboard navigation is on. One targeted UI test;
