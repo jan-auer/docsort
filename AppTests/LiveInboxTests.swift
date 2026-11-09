@@ -53,7 +53,9 @@ struct LiveInboxTests {
     _ = try writeInboxFile(
       named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
 
-    #expect(await eventually { row(named: "2033-10-11_Optik Klarblick.pdf") != nil })
+    try await waitUntil(timeout: .seconds(10)) {
+      row(named: "2033-10-11_Optik Klarblick.pdf") != nil
+    }
     let arrived = try #require(row(named: "2033-10-11_Optik Klarblick.pdf"))
     #expect(arrived.isNewArrival)
     library.markSeen(arrived.id)
@@ -71,8 +73,9 @@ struct LiveInboxTests {
     try FileManager.default.moveItem(
       at: invoice, to: environment.webDownloads.appending(path: "2033-10-13 Notenhaus.pdf"))
 
-    #expect(
-      await eventually { library.row(for: before.id)?.item.name == "2033-10-13 Notenhaus.pdf" })
+    try await waitUntil(timeout: .seconds(10)) {
+      library.row(for: before.id)?.item.name == "2033-10-13 Notenhaus.pdf"
+    }
     #expect(library.row(for: before.id)?.isNewArrival == false)
     #expect(reported.changes.isEmpty)
   }
@@ -91,7 +94,7 @@ struct LiveInboxTests {
 
     try FileManager.default.removeItem(at: invoice)
 
-    #expect(await eventually { library.row(for: removed.id) == nil })
+    try await waitUntil(timeout: .seconds(10)) { library.row(for: removed.id) == nil }
     #expect(
       reported.changes == [
         .removed(
@@ -121,8 +124,9 @@ struct LiveInboxTests {
       _ = try writeInboxFile(
         named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf", in: environment.webDownloads,
         date: october2033(20))
-      #expect(
-        await eventually { row(named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf") != nil })
+      try await waitUntil(timeout: .seconds(10)) {
+        row(named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf") != nil
+      }
       #expect(library.row(for: invoiceRow.id) != nil)
       return outcome
     }
@@ -165,8 +169,9 @@ struct LiveInboxTests {
       named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf", in: environment.webDownloads,
       date: october2033(20))
 
-    #expect(
-      await eventually { row(named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf") != nil })
+    try await waitUntil(timeout: .seconds(10)) {
+      row(named: "2033-10-20 Verlängerung Jahreskarte Konrad.pdf") != nil
+    }
     #expect(library.row(for: invoiceRow.id)?.mark?.filedDocumentID == outcome.event.documentID)
     #expect(reported.changes.isEmpty)
   }
@@ -198,25 +203,10 @@ struct LiveInboxTests {
 
     try FileManager.default.removeItem(at: invoice)
 
-    #expect(await eventually { model.sidebarSelection == .item(next.id) })
+    try await waitUntil(timeout: .seconds(10)) { model.sidebarSelection == .item(next.id) }
     #expect(
       model.statusMessage?.text
         == "“Rechnung_NA-33-08812.pdf” was removed from Web-Downloads outside docsort.")
-  }
-
-  /// Whether `condition` holds within 10 seconds, checked every 20 ms while the main actor is free to apply updates.
-  private func eventually(_ condition: () -> Bool) async -> Bool {
-    let deadline = ContinuousClock.now + .seconds(10)
-    while !condition() {
-      guard ContinuousClock.now < deadline else { return false }
-      do {
-        try await Task.sleep(for: .milliseconds(20))
-      } catch {
-        // Cancelled: the test is over.
-        return false
-      }
-    }
-    return true
   }
 }
 
