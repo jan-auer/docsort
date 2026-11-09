@@ -167,4 +167,92 @@ struct MainWindowModelArchiveFileTests {
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == filedMark }
     #expect(exists(filed.movedURL))
   }
+
+  /// Files the inbox file `invoice` into Noten & Bücher and marks `row` filed, as the filing panel does.
+  private func fileInvoice(
+    _ invoice: URL, row: InboxItemID, in model: MainWindowModel, environment: TestFolderEnvironment
+  ) async throws -> (outcome: MoveOutcome, mark: InboxItemMark) {
+    let filed = try await model.filing.file(
+      invoice, into: environment.archive.appending(path: notenPath), archivePath: notenPath,
+      named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
+    let mark = InboxItemMark.filed(
+      newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
+      documentID: filed.event.documentID)
+    model.inboxes.setMark(row, mark)
+    return (filed, mark)
+  }
+
+  @Test(
+    "Put Back of a filed file trashed in Folder contents returns it to its folder, filed; undo and redo follow"
+  )
+  func putBackArchiveTrashedFile() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let (model, undoManager) = try await makeModel(environment)
+    let row = try #require(model.inboxes.orderedRows.first)
+    let (filed, _) = try await fileInvoice(
+      invoice, row: row.id, in: model, environment: environment)
+    model.handlePickerEvent(.trashFileRequested(folderFile(at: filed.movedURL)))
+    try await waitUntil { undoManager.canUndo }
+    undoManager.removeAllActions()
+    let trashedFile = try #require(model.file(row.id))
+    #expect(trashedFile.returnToInboxAction == .putBack)
+
+    model.returnToInbox(trashedFile)
+    try await waitUntil { undoManager.canUndo }
+
+    func isFiledAtArchivePlace() -> Bool {
+      guard
+        case .filed(let url, let path, _, let documentID)? = model.inboxes.row(for: row.id)?.mark
+      else { return false }
+      return url.path(percentEncoded: false) == filed.movedURL.path(percentEncoded: false)
+        && path == notenPath && documentID == filed.event.documentID
+    }
+    #expect(isFiledAtArchivePlace())
+    #expect(exists(filed.movedURL))
+    #expect(!exists(invoice))
+    #expect(model.statusMessage?.text.contains("Noten & Bücher") == true)
+    #expect(model.statusMessage?.text.contains("Web-Downloads") == false)
+
+    undoManager.undo()
+    try await waitUntil {
+      if case .trashed? = model.inboxes.row(for: row.id)?.mark { true } else { false }
+    }
+    #expect(!exists(filed.movedURL))
+
+    undoManager.redo()
+    try await waitUntil { isFiledAtArchivePlace() }
+    #expect(exists(filed.movedURL))
+  }
+
+  @Test(
+    "Renaming the selected filed file in Folder contents updates the name field; undo and redo too")
+  func renameSelectedFiledFileUpdatesNameField() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let (model, undoManager) = try await makeModel(environment)
+    let row = try #require(model.inboxes.orderedRows.first)
+    let (filed, _) = try await fileInvoice(
+      invoice, row: row.id, in: model, environment: environment)
+    model.select(row.id)
+    model.resetPanel()
+    #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")
+
+    model.handlePickerEvent(
+      .renameFileRequested(
+        folderFile(at: filed.movedURL), to: "2033-10-13 Notenhaus Allegretto Advent"))
+    try await waitUntil { undoManager.canUndo }
+    #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto Advent")
+    #expect(model.filedFileChange != .rename)
+
+    undoManager.undo()
+    try await waitUntil { model.panel.nameText == "2033-10-13 Notenhaus Allegretto" }
+
+    undoManager.redo()
+    try await waitUntil { model.panel.nameText == "2033-10-13 Notenhaus Allegretto Advent" }
+  }
 }

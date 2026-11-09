@@ -129,6 +129,14 @@ extension MainWindowModel {
     for row in rows {
       inboxes.setMark(row.id, row.markBefore)
     }
+    nameFieldFollowsSelectedFile(amongRows: rows)
+  }
+
+  /// When the selected file is one of `rows`, puts its current name into the name field, so the panel sees no rename
+  /// the user did not ask for (⌘Return would otherwise rename it back).
+  private func nameFieldFollowsSelectedFile(amongRows rows: [MarkedRow]) {
+    guard let selectedFile, rows.contains(where: { $0.id == selectedFile.id }) else { return }
+    panel.reset(currentName: selectedFile.name)
   }
 
   /// Gives every row that filed the history's document `documentID` the mark `newMark` makes of its current one, and
@@ -142,6 +150,7 @@ extension MainWindowModel {
       inboxes.setMark(id, newMark(markBefore))
       rows.append(MarkedRow(id: id, markBefore: markBefore))
     }
+    nameFieldFollowsSelectedFile(amongRows: rows)
     return rows
   }
 }

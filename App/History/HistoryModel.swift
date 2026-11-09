@@ -220,12 +220,32 @@ final class HistoryModel {
 
   /// What returns `entry`'s file to its inbox: Move Back for a filed, renamed or moved file, Put Back for a trashed
   /// one; `nil` for other entries and for files no longer where the entry put them.
+  ///
+  /// An archive file that was never in an inbox (renamed or trashed in Folder contents, `inboxName` is `nil`) is never
+  /// returned to an inbox: Move Back of its rename restores its earlier name in its folder (Revert Name), Put Back
+  /// returns it to its folder.
   func returnAction(for entry: HistoryEntry) -> ReturnToInboxAction? {
     guard entry.isCurrent else { return nil }
+    if entry.inboxName == nil {
+      return switch entry.kind {
+      case .renamed: .moveBack
+      case .trashed: .putBack
+      case .filed, .movedOn, .movedBack, .replaced: nil
+      }
+    }
     return switch entry.kind {
     case .filed, .renamed, .movedOn: .moveBack
     case .trashed: .putBack
     case .movedBack, .replaced: nil
+    }
+  }
+
+  /// The title of `entry`'s return action, for its button and menu item; `nil` when it has none.
+  func returnTitle(for entry: HistoryEntry) -> String? {
+    switch returnAction(for: entry) {
+    case .moveBack: entry.inboxName == nil ? "Revert Name" : "Move Back to Inbox"
+    case .putBack: "Put Back"
+    case nil: nil
     }
   }
 
@@ -258,6 +278,12 @@ final class HistoryModel {
     defer { isActionInProgress = false }
     let rowID = inboxRowID(of: entry)
     let inbox = entry.inboxName ?? "its inbox"
+    // An archive file's Move Back reverts its rename in its folder (see `returnAction(for:)`).
+    let isArchiveFile = entry.inboxName == nil
+    let moveBackFailure =
+      isArchiveFile
+      ? "“\(entry.currentName)” can’t be renamed back"
+      : "“\(entry.currentName)” can’t be moved back to \(inbox)"
     switch action {
     case .moveBack:
       do {
@@ -267,7 +293,9 @@ final class HistoryModel {
         await refresh()
         selection = outcome.event.id
         statusMessage =
-          "Moved “\(entry.currentName)” back to \(inbox) as \(outcome.movedURL.lastPathComponent)"
+          isArchiveFile
+          ? "Renamed “\(entry.currentName)” back to “\(outcome.movedURL.lastPathComponent)”"
+          : "Moved “\(entry.currentName)” back to \(inbox) as \(outcome.movedURL.lastPathComponent)"
       } catch .fileOperation(.nameConflict(let existing)) {
         moveBackConflict = HistoryMoveBackConflict(entry: entry, blockingURL: existing)
       } catch .fileChangedSinceFiling(let url) {
@@ -275,7 +303,7 @@ final class HistoryModel {
           "Refused to move \(url.lastPathComponent, privacy: .private) back from History: another file is there since it was filed"
         )
         alert = FilingAlert(
-          title: "“\(entry.currentName)” can’t be moved back to \(inbox)",
+          title: moveBackFailure,
           message: FilingMessages.text(for: .fileChangedSinceFiling(url)))
         await refresh()
       } catch {
@@ -283,16 +311,20 @@ final class HistoryModel {
           "Moving \(entry.currentName, privacy: .private) back from History failed: \(String(describing: error), privacy: .private)"
         )
         alert = FilingAlert(
-          title: "“\(entry.currentName)” can’t be moved back to \(inbox)",
+          title: moveBackFailure,
           message: FilingMessages.text(for: error))
         await refresh()
       }
     case .putBack:
       do {
-        _ = try await filing.putBack(entry.url)
-        returned(rowID)
+        let outcome = try await filing.putBack(entry.url)
+        let returnedURL = outcome.restored.url
+        returned(
+          rowID,
+          mark: mainWindow.mark(afterPutBackTo: returnedURL, documentID: outcome.documentID))
         await refresh()
-        statusMessage = "Put “\(entry.originalName)” back in \(inbox)"
+        statusMessage =
+          "Put “\(returnedURL.lastPathComponent)” back in \(mainWindow.placeName(ofFolderHolding: returnedURL))"
       } catch {
         Logger.filing.error(
           "Putting \(entry.originalName, privacy: .private) back from History failed: \(String(describing: error), privacy: .private)"
@@ -305,11 +337,12 @@ final class HistoryModel {
     }
   }
 
-  /// After a file came back to its inbox: unmarks its row (`rowID`), as the filing panel does. A file without a row (filed
-  /// in an earlier session) gets one, and a row shows the file under a numbered name, once the watcher lists it.
-  private func returned(_ rowID: InboxItemID?) {
+  /// After a file came back: gives its row (`rowID`) `mark`, as the filing panel does: none for a file back in its inbox,
+  /// filed for one put back into the archive folder it was trashed from. A file without a row (filed in an earlier
+  /// session) gets one, and a row shows the file under a numbered name, once the watcher lists it.
+  private func returned(_ rowID: InboxItemID?, mark: InboxItemMark? = nil) {
     guard let rowID else { return }
-    inboxes.setMark(rowID, nil)
+    inboxes.setMark(rowID, mark)
     if mainWindow.selectedFile?.id == rowID { mainWindow.resetPanel() }
   }
 

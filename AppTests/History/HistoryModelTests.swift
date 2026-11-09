@@ -309,4 +309,77 @@ struct HistoryModelTests {
     #expect(inboxes.row(for: scanRow.id)?.mark?.filedDocumentID == replacing.event.documentID)
     #expect(history.returnAction(for: try #require(history.entries.first)) == nil)
   }
+
+  // MARK: Archive files
+
+  @Test(
+    "An archive file's rename offers Revert Name and its trash Put Back to its folder, never an inbox"
+  )
+  func archiveFileEntries() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let folder = environment.archive.appending(path: notenPath)
+    let sheet = try writeInboxFile(
+      named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(13))
+    let other = try writeInboxFile(
+      named: "2033-10-13 Notenhaus Allegretto alt.pdf", in: folder, date: october2033(13))
+    let history = await makeModel(environment)
+    let filing = history.mainWindow.filing
+    let renamed = try await filing.rename(sheet, to: "2033-10-13 Notenhaus Allegretto.pdf")
+    _ = try await filing.trash(other)
+    await history.refresh()
+
+    let renameEntry = try #require(history.entries.first)
+    let trashEntry = try #require(history.entries.last)
+    #expect(history.entries.map(\.kind) == [.renamed, .trashed])
+    #expect(renameEntry.inboxName == nil)
+    #expect(history.returnTitle(for: renameEntry) == "Revert Name")
+    #expect(history.returnTitle(for: trashEntry) == "Put Back")
+
+    await history.returnToInbox(renameEntry)
+    #expect(exists(sheet))
+    #expect(!exists(renamed.movedURL))
+    #expect(history.statusMessage?.contains("inbox") == false)
+    #expect(history.statusMessage?.contains("2033-10-13 Notenhaus.pdf") == true)
+
+    let currentTrashEntry = try #require(history.entries.first { $0.id == trashEntry.id })
+    await history.returnToInbox(currentTrashEntry)
+    #expect(exists(other))
+    #expect(history.statusMessage?.contains("Noten & Bücher") == true)
+    #expect(history.statusMessage?.contains("inbox") == false)
+    #expect(history.alert == nil)
+  }
+
+  @Test("Put Back from History of a filed file trashed in Folder contents files its row again")
+  func putBackArchiveTrashedFiledFile() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let history = await makeModel(environment)
+    let inboxes = history.mainWindow.inboxes
+    let row = try #require(inboxes.orderedRows.first)
+    let filing = history.mainWindow.filing
+    let filed = try await filing.file(
+      invoice, into: environment.archive.appending(path: notenPath), archivePath: notenPath,
+      named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
+    let trashed = try await filing.trash(filed.movedURL)
+    inboxes.setMark(
+      row.id, .trashed(trashedURL: trashed.record.trashedURL, date: trashed.event.date))
+    await history.refresh()
+
+    let trashEntry = try #require(history.entries.last)
+    #expect(history.returnTitle(for: trashEntry) == "Put Back")
+    await history.returnToInbox(trashEntry)
+
+    #expect(exists(filed.movedURL))
+    guard case .filed(let url, let path, _, let documentID)? = inboxes.row(for: row.id)?.mark else {
+      Issue.record("The row is not filed: \(String(describing: inboxes.row(for: row.id)?.mark))")
+      return
+    }
+    #expect(url.path(percentEncoded: false) == filed.movedURL.path(percentEncoded: false))
+    #expect(path == notenPath)
+    #expect(documentID == filed.event.documentID)
+    #expect(history.statusMessage?.contains("Noten & Bücher") == true)
+  }
 }

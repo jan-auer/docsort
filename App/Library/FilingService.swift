@@ -54,6 +54,8 @@ nonisolated struct TrashOutcome: Sendable {
 nonisolated struct UndoOutcome: Sendable {
   /// The event that was undone.
   let eventID: FilingEvent.ID
+  /// The filing history's document the event moved or trashed.
+  let documentID: UUID
   /// Where the file is back now.
   let restored: RestoredItem
   /// The service's state after the undo.
@@ -307,7 +309,8 @@ actor FilingService {
     self.history = history
     save()
     Logger.filing.notice("Undid filing event \(eventID, privacy: .public)")
-    return UndoOutcome(eventID: eventID, restored: restored, status: currentStatus)
+    return UndoOutcome(
+      eventID: eventID, documentID: event.documentID, restored: restored, status: currentStatus)
   }
 
   /// Moves the filed document `documentID`, which lies at `currentURL`, back to where it came from: the folder and

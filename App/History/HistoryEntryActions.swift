@@ -14,8 +14,8 @@ struct HistoryEntryActions: View {
           .keyboardShortcut("o")
           .accessibilityIdentifier("history-open")
       }
-      if let returnAction = model.returnAction(for: entry) {
-        Button(returnAction.title) {
+      if let returnTitle = model.returnTitle(for: entry) {
+        Button(returnTitle) {
           Task { await model.returnToInbox(entry) }
         }
         .keyboardShortcut("z", modifiers: [.option, .command])
@@ -66,8 +66,8 @@ struct HistoryEntryMenu: View {
         FileActions.revealInFinder(entry.url.deletingLastPathComponent())
       }
     }
-    if let returnAction = model.returnAction(for: entry) {
-      Button(returnAction.title) {
+    if let returnTitle = model.returnTitle(for: entry) {
+      Button(returnTitle) {
         Task { await model.returnToInbox(entry) }
       }
       .disabled(!model.canReturnToInbox(entry))
@@ -80,13 +80,6 @@ struct HistoryEntryMenu: View {
         openWindow(id: SceneID.main)
       }
     }
-  }
-}
-
-extension ReturnToInboxAction {
-  /// The action's button and menu title.
-  fileprivate var title: String {
-    self == .putBack ? "Put Back" : "Move Back to Inbox"
   }
 }
 
