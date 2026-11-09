@@ -7,6 +7,8 @@ import SwiftUI
 ///
 /// The view is reused when `document` changes, which resets the zoom to fit-to-width and scrolls to the first page.
 /// While on screen, the `PDFView` is attached to `controller`, so the window's zoom and scroll commands reach it.
+/// The view may run on under a pane laid over its trailing edge (the filing panel); it keeps its pages in the part
+/// left of `trailingInset`.
 struct PDFPreview: NSViewRepresentable {
   /// The margin around each page, in page units, so it scales with the zoom. At fit-to-width in a typical preview
   /// column it comes to about 16–25 points beside the page.
@@ -16,6 +18,8 @@ struct PDFPreview: NSViewRepresentable {
   let document: PDFDocument
   /// The controller the PDF view is attached to while it is on screen.
   let controller: PreviewController
+  /// The width of the trailing part covered by a pane laid over the view.
+  let trailingInset: CGFloat
 
   /// Keeps the controller the current view is attached to, so that `dismantleNSView` can detach it.
   final class Coordinator {
@@ -31,19 +35,21 @@ struct PDFPreview: NSViewRepresentable {
     Coordinator(controller: controller)
   }
 
-  func makeNSView(context: Context) -> PDFView {
-    let view = PDFView()
+  func makeNSView(context: Context) -> TrailingInsetPDFView {
+    let view = TrailingInsetPDFView()
     view.displayMode = .singlePageContinuous
     view.displayDirection = .vertical
     view.displaysPageBreaks = true
     view.pageBreakMargins = Self.pageMargins
     view.autoScales = true
     view.document = document
+    view.trailingInset = trailingInset
     controller.attach(view)
     return view
   }
 
-  func updateNSView(_ view: PDFView, context: Context) {
+  func updateNSView(_ view: TrailingInsetPDFView, context: Context) {
+    view.trailingInset = trailingInset
     if view.document !== document {
       view.document = document
       view.autoScales = true
@@ -55,7 +61,7 @@ struct PDFPreview: NSViewRepresentable {
     controller.attach(view)
   }
 
-  static func dismantleNSView(_ view: PDFView, coordinator: Coordinator) {
+  static func dismantleNSView(_ view: TrailingInsetPDFView, coordinator: Coordinator) {
     coordinator.controller.detach(view)
   }
 }
@@ -95,7 +101,7 @@ extension PDFPreview {
     @Previewable @State var document: PDFDocument?
     Group {
       if let document {
-        PDFPreview(document: document, controller: controller)
+        PDFPreview(document: document, controller: controller, trailingInset: 0)
       } else {
         ProgressView()
       }

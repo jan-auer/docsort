@@ -24,6 +24,9 @@ struct MainWindowView: View {
   /// The widths the filing panel can be dragged to.
   private static let filingPanelWidths = 300.0...480.0
 
+  /// The width the filing panel and its divider cover at the preview's trailing edge while the panel is shown.
+  @State private var filingPanelCoverWidth = 0.0
+
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
       SidebarColumn {
@@ -35,13 +38,17 @@ struct MainWindowView: View {
     } detail: {
       // The filing panel is the main work surface, not details about the selection, so it is a pane of the detail
       // column (HIG: inspectors are for details), resizable against the preview by dragging the divider between them.
-      HStack(spacing: 0) {
-        VStack(spacing: 0) {
-          detailColumn
-            .frame(maxHeight: .infinity)
-          WindowBottomBar(model: model)
-        }
-        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      VStack(spacing: 0) {
+        detailColumn
+          .frame(maxHeight: .infinity)
+        WindowBottomBar(model: model)
+      }
+      .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+      // The panel is a trailing safe-area inset of the preview rather than a sibling beside it, as an inspector is to
+      // the detail column in Keynote: the PDF's scroll view runs on under the panel (`PreviewView`), so the pages'
+      // glow under the translucent toolbar spans the whole toolbar, panel included. The panel still starts below the
+      // toolbar and covers the PDF view there; the PDF keeps its pages in the part left of the panel.
+      .safeAreaInset(edge: .trailing, spacing: 0) {
         if model.isFilingPanelShown {
           HStack(spacing: 0) {
             PaneDivider(width: $filingPanelWidth, range: Self.filingPanelWidths)
@@ -54,6 +61,11 @@ struct MainWindowView: View {
           }
           // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
           // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
+          .onGeometryChange(for: Double.self) { geometry in
+            geometry.size.width
+          } action: { width in
+            filingPanelCoverWidth = width
+          }
           .transition(.move(edge: .trailing))
         }
       }
@@ -150,7 +162,9 @@ struct MainWindowView: View {
     if !model.areFoldersConfigured {
       WelcomeView()
     } else if let selectedFile = model.selectedFile {
-      PreviewView(document: selectedFile.previewDocument, controller: model.previewController)
+      PreviewView(
+        document: selectedFile.previewDocument, controller: model.previewController,
+        trailingInset: model.isFilingPanelShown ? filingPanelCoverWidth : 0)
     } else {
       ContentUnavailableView("No file selected", systemImage: "doc")
         .accessibilityIdentifier("no-selection")
