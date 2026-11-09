@@ -2,26 +2,6 @@ import DocsortCore
 import Foundation
 import OSLog
 
-/// A rename of an archive file from Folder contents, with what is needed to redo it.
-nonisolated struct ArchiveRenameRequest: Hashable, Sendable {
-  /// Where the file was before the rename.
-  let source: URL
-  /// The new name, with its extension.
-  let name: String
-  /// The file's name before the rename, for the Undo menu item.
-  let originalName: String
-}
-
-/// A move to the Trash of an archive file from Folder contents, with what is needed to redo it.
-nonisolated struct ArchiveTrashRequest: Hashable, Sendable {
-  /// Where the file was.
-  let url: URL
-  /// The file's name, for the Undo menu item.
-  let originalName: String
-  /// The file Folder contents selects once the file is gone: the next one, else the previous one.
-  let selectionAfter: URL?
-}
-
 /// Rename… and Move to Trash in the menu of a file in Folder contents: archive files, renamed and trashed through the
 /// `FilingService` like inbox files, so the filing history records them, ⌘Z undoes them, and an inbox row that filed
 /// the file follows it (its new name, or trashed with Put Back).
