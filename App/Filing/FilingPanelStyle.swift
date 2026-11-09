@@ -25,13 +25,8 @@ enum FilingPanelStyle {
   /// panel's parts use it to stand in for that glass.
   static let background = Color(nsColor: .windowBackgroundColor)
     .mix(with: Color(nsColor: .labelColor), by: 0.05)
-  /// The background of fields: the text background (white, or near black). The lists don't use it: they sit on the
-  /// inspector's glass.
-  static let listBackground = Color(nsColor: .textBackgroundColor)
   /// A divider inset by the bars' margin, setting the lists on the inspector's glass apart from the bars.
   static var insetDivider: some View {
     Divider().padding(.horizontal, edgeMargin)
   }
-  /// The hairline around fields.
-  static let fieldBorder = Color(nsColor: .separatorColor)
 }
