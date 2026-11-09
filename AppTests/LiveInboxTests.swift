@@ -172,7 +172,7 @@ struct LiveInboxTests {
   }
 
   @Test(
-    "When the selected file is removed outside docsort, the next unfiled file is selected and the bar says so"
+    "When the selected file is removed outside docsort, the next unhandled file is selected and the bar says so"
   )
   func selectionFollowsRemoval() async throws {
     defer { environment.remove() }

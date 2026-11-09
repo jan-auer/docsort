@@ -77,9 +77,9 @@ struct InboxLibraryTests {
   }
 
   @Test(
-    "A new file arriving under a filed file's name gets an unfiled row of its own; the filed row stays"
+    "A new file arriving under a filed file's name gets an unhandled row of its own; the filed row stays"
   )
-  func newFileUnderFiledNameIsUnfiled() async throws {
+  func newFileUnderFiledNameIsUnhandled() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
     let invoice = try writeInboxFile(

@@ -78,7 +78,7 @@ struct InboxRowView: View {
     }
   }
 
-  /// The row's state for accessibility and UI tests.
+  /// The row's state for accessibility and UI tests, which match these words; "unfiled" is an unhandled file.
   private var state: String {
     switch row.mark {
     case .filed: "filed"
