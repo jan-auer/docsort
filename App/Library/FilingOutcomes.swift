@@ -23,8 +23,14 @@ nonisolated struct FilingStatus: Equatable, Sendable {
   let recents: RecentDestinations
 }
 
+/// What a completed filing operation returns: at least the service's state after it.
+nonisolated protocol FilingOutcome: Sendable {
+  /// The service's state after the operation.
+  var status: FilingStatus { get }
+}
+
 /// A completed move.
-nonisolated struct MoveOutcome: Sendable {
+nonisolated struct MoveOutcome: FilingOutcome {
   /// The history event recording the move.
   let event: FilingEvent
   /// What the move did, including where the file is now.
@@ -40,7 +46,7 @@ nonisolated struct MoveOutcome: Sendable {
 }
 
 /// A completed move to the Trash.
-nonisolated struct TrashOutcome: Sendable {
+nonisolated struct TrashOutcome: FilingOutcome {
   /// The history event recording the trash.
   let event: FilingEvent
   /// What the trash did.
@@ -50,7 +56,7 @@ nonisolated struct TrashOutcome: Sendable {
 }
 
 /// A completed undo.
-nonisolated struct UndoOutcome: Sendable {
+nonisolated struct UndoOutcome: FilingOutcome {
   /// The event that was undone.
   let eventID: FilingEvent.ID
   /// The filing history's document the event moved or trashed.
