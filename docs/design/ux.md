@@ -107,13 +107,21 @@ concept C's structure (`filing-panel-redesign`).
 - **Banners**: the filed/trashed status (green tint or the content colour) and the failures (orange tint, orange
   warning symbol) run across the top of the panel, so information and failure never look alike.
 - **Empty states** use `ContentUnavailableView`, like the preview.
-- **The window's toolbar spans the preview and the filing panel**; the panel starts below it, and the file's actions
-  and the panel toggle sit in the toolbar's trailing area above the panel. The panel's backgrounds stop at the
-  toolbar instead of running under it. PDF pages scroll under the translucent toolbar (AppKit insets them and draws
-  the scroll edge effect); Quick Look content stays below it. The window's titlebar separator (`NSWindow.titlebarSeparatorStyle =
-  .line`), the system hairline, separates the toolbar from the content, as in Finder. The system draws
-  it only where content scrolls under the toolbar (the PDF preview); the panel, which starts below the toolbar so
-  nothing shows through it there, continues it with the same one-pixel separator-colour line at its top edge.
+- **The window's toolbar spans the preview and the filing panel** as one glass surface, as Keynote's toolbar spans
+  its canvas and inspector. The panel starts below the toolbar; the file's actions and the panel toggle sit in the
+  toolbar's trailing area above it. The panel's backgrounds stop at the toolbar instead of running under it, so it
+  never reads as a full-height column. The panel lies over the preview's trailing edge (a trailing safe-area inset
+  of the preview column) rather than beside it, and a PDF's view runs on under it: its pages scroll under the
+  translucent toolbar (AppKit insets them at the top), and AppKit's scroll edge effect (blur and darkening) covers
+  the whole toolbar, panel included, with no edge at the divider. Above the panel it shows the PDF's background,
+  and page colour only where a zoomed page reaches there. The PDF keeps its pages in the part left of the panel:
+  fit-to-width fits that width, pages centre in it (narrower pages of a mixed-width PDF too), and a page scrolled
+  fully right stops one margin short of the panel. The panel's width is reserved in the pages' right margin, not
+  in the scroll view's content insets, because the edge effect only covers the inset content area
+  (`TrailingInsetPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
+  (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
+  Finder. The system draws it with the edge effect, so it runs across preview and panel when a PDF is shown; the
+  panel draws no line of its own, and without a PDF there is none over either.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is
