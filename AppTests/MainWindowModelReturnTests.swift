@@ -196,15 +196,18 @@ struct MainWindowModelReturnTests {
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
   }
 
-  @Test("Renaming a filed file keeps it selected and shows its new name")
+  @Test(
+    "A filed file can be moved again only once its name or folder changes; renaming it keeps it selected under its new name"
+  )
   func renameFiledFileShowsNewName() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
     let invoice = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let folder = environment.archive.appending(path: notenPath)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     let (model, _) = try await TestWindow.open(on: environment)
     let row = try #require(model.inboxes.row(listing: invoice))
-    let folder = environment.archive.appending(path: notenPath)
     let filed = try await model.filing.file(
       invoice, into: folder, archivePath: notenPath, named: invoice.lastPathComponent,
       resolution: .refuse)
@@ -214,18 +217,17 @@ struct MainWindowModelReturnTests {
         newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
         documentID: filed.event.documentID))
     model.select(row.id)
+    try await waitUntil { model.picker.destination?.path == notenPath }
+    #expect(model.filedFileChange == nil)
+    #expect(!model.canMoveSelectedFile)
 
-    let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
-    model.resolve(
-      FilingConflict(
-        existingName: renamedName,
-        request: MoveRequest(
-          itemID: row.id, source: filed.movedURL, folderURL: folder, archivePath: notenPath,
-          name: renamedName, originalName: invoice.lastPathComponent,
-          kind: .renaming(documentID: filed.event.documentID))),
-      with: .refuse)
+    model.panel.nameText = "2033-10-13 Notenhaus Allegretto"
+    #expect(model.filedFileChange == .rename)
+    #expect(model.canMoveSelectedFile)
+    model.moveSelectedFile()
     try await waitUntil { model.statusMessage != nil }
 
+    let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
     let status = try #require(model.statusMessage?.text)
     #expect(status.contains(renamedName))
     #expect(status.contains("Undo"))
