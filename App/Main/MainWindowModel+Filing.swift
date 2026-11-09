@@ -2,6 +2,13 @@ import DocsortCore
 import Foundation
 import OSLog
 
+extension InboxItemMark {
+  /// The mark of a file that `outcome`'s move to the Trash put there.
+  static func trashed(by outcome: TrashOutcome) -> InboxItemMark {
+    .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date)
+  }
+}
+
 extension MainWindowModel {
   // MARK: Destinations
 
@@ -195,6 +202,10 @@ extension MainWindowModel {
 
   /// Files the inbox file of `request`, or renames or moves on its filed file, refusing when that file is no longer
   /// the document the row filed.
+  ///
+  /// Like the other step helpers here (`applyMarks`, `finishMove`, `trashKeepingRow`, `finishHandling`,
+  /// `showReturned`), it skips the `isFilingInProgress` guard of `startFilingOperation`: it is internal only for
+  /// undo and redo (`MainWindowModel+Undo.swift`), which run outside that guard.
   func moveFile(
     of request: MoveRequest, resolution: ConflictResolution
   ) async throws(FilingError) -> MoveOutcome {
@@ -288,9 +299,7 @@ extension MainWindowModel {
   private func perform(_ request: TrashRequest) async {
     do {
       let outcome = try await trashKeepingRow(request.itemID, url: request.url)
-      inboxes.setMark(
-        request.itemID,
-        .trashed(by: outcome))
+      inboxes.setMark(request.itemID, .trashed(by: outcome))
       registerUndo(of: .trash(request), ticket: FilingEventTicket(eventID: outcome.event.id))
       statusMessage = .undoable("Moved “\(request.originalName)” to the Trash")
       finishHandling(request.itemID)
