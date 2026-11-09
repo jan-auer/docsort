@@ -120,8 +120,8 @@ concept C's structure (`filing-panel-redesign`).
   in the scroll view's content insets, because the edge effect only covers the inset content area
   (`TrailingInsetPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
   (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
-  Finder. The system draws it with the edge effect, so it runs across preview and panel when a PDF is shown; the
-  panel draws no line of its own, and without a PDF there is none over either.
+  Finder. The system draws it only over the preview (and only with a PDF), even though the PDF runs on under the
+  panel; the panel continues it with the same one-pixel separator-colour line at its top edge.
 - **Toolbar**: sidebar toggle, a ‹ › pair (Previous File / Next File, like Finder's back and forward, each disabled
   at the list's start or end), then the standard window title as in Finder: the selected file's name as the title
   and its inbox as the subtitle (`navigationTitle` and `navigationSubtitle`), or "docsort" while nothing is

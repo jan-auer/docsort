@@ -30,6 +30,9 @@ struct FilingPanel: View {
 
   @FocusState private var focusedField: PanelField?
 
+  /// Points per pixel on the current display, for the one-pixel line under the toolbar.
+  @Environment(\.displayScale) private var displayScale
+
   /// The height of Folder contents' list, kept with the window.
   @SceneStorage("filing-panel.contents-height") private var contentsHeight = 150.0
   /// Whether Folder contents is collapsed to its header, kept with the window.
@@ -59,6 +62,15 @@ struct FilingPanel: View {
     // area: the window's toolbar spans the preview and the panel, and a background reaching under it made the panel
     // look like a full-height column of its own beside the toolbar.
     .background(FilingPanelStyle.background, ignoresSafeAreaEdges: [])
+    // The system draws its toolbar line (`titlebarSeparatorStyle = .line`) only over the preview, even where the PDF
+    // view runs on under the panel, and not at all without a PDF. So the panel draws the same one-pixel
+    // separator-colour line at its top edge, continuing the system's line.
+    .overlay(alignment: .top) {
+      Rectangle()
+        .fill(Color(nsColor: .separatorColor))
+        .frame(height: 1 / displayScale)
+        .accessibilityHidden(true)
+    }
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("filing-panel")
   }
