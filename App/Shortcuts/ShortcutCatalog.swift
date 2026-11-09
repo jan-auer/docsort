@@ -283,24 +283,6 @@ extension ShortcutCatalog {
   private static let toggleSidebar = KeyCombination("s", modifiers: [.control, .command])
   /// docsort › Settings, from the `Settings` scene.
   private static let settings = KeyCombination(",", modifiers: .command)
-
-  /// Shortcuts the menu bar has in every Mac app, which the sheet leaves out: quitting, hiding, closing and minimizing
-  /// windows, full screen, the text editing commands, Emoji & Symbols and Help.
-  static let standardMacShortcuts: [KeyCombination] = [
-    KeyCombination("q", modifiers: .command),
-    KeyCombination("h", modifiers: .command),
-    KeyCombination("h", modifiers: [.option, .command]),
-    KeyCombination("w", modifiers: .command),
-    KeyCombination("w", modifiers: [.option, .command]),
-    KeyCombination("m", modifiers: .command),
-    KeyCombination("f", modifiers: [.control, .command]),
-    KeyCombination("x", modifiers: .command),
-    KeyCombination("c", modifiers: .command),
-    KeyCombination("v", modifiers: .command),
-    KeyCombination("a", modifiers: .command),
-    KeyCombination(.space, modifiers: .command),
-    KeyCombination("?", modifiers: .command),
-  ]
 }
 
 extension KeyCombination {
