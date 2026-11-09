@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 /// The editing commands of a text field that the filing panel handles itself.
+///
+/// The name field passes ↑ and ↓ on to the field today; they are reported so that the planned ⌥↑/⌥↓ can be handled
+/// there.
 enum TextFieldKeyCommand {
   /// ↑
   case moveUp
@@ -17,19 +20,11 @@ enum TextFieldKeyCommand {
   case cancel
 }
 
-/// Where the caret goes when the field gains focus.
-enum TextFieldFocusSelection {
-  /// After the last character, so typing continues the text (the destination filter).
-  case end
-  /// Around all of the text, so typing replaces it (the name field).
-  case all
-}
-
-/// A single-line `NSTextField` that reports ↑, ↓, Tab, ⇧Tab, Return and Esc to `onCommand` and takes focus when asked.
+/// A single-line `NSTextField` that reports ↑, ↓, Tab, ⇧Tab, Return and Esc to `onCommand` and takes focus when asked,
+/// with all of its text selected, so typing replaces it (the name field).
 ///
-/// SwiftUI's `TextField` selects all of its text whenever it gains focus and gives no reliable hook for these keys
-/// on macOS, so the filter could not continue a search started by typing in the sidebar. This field places the
-/// caret as `focusSelection` says, and reports focus changes so the window knows where focus is.
+/// SwiftUI's `TextField` gives no reliable hook for these keys on macOS, nor a way to keep room free for controls
+/// drawn over its trailing edge. This field also reports focus changes, so the window knows where focus is.
 struct KeyCommandTextField: NSViewRepresentable {
   /// The field's text.
   @Binding var text: String
@@ -37,8 +32,6 @@ struct KeyCommandTextField: NSViewRepresentable {
   let placeholder: String
   /// The accessibility identifier.
   let identifier: String
-  /// Where the caret goes when the field gains focus.
-  let focusSelection: TextFieldFocusSelection
   /// A focus request for this field; each new value makes the field first responder once.
   let focusRequestID: UUID?
   /// Called when the field gains (`true`) or loses (`false`) focus.
@@ -86,7 +79,7 @@ struct KeyCommandTextField: NSViewRepresentable {
       if window.firstResponder !== field.currentEditor() {
         window.makeFirstResponder(field)
       }
-      context.coordinator.placeCaret(in: field)
+      context.coordinator.selectAll(in: field)
     }
   }
 
@@ -108,13 +101,9 @@ struct KeyCommandTextField: NSViewRepresentable {
       parent.onFocusChange(true)
     }
 
-    func placeCaret(in field: NSTextField) {
+    func selectAll(in field: NSTextField) {
       guard let editor = field.currentEditor() else { return }
-      let length = (field.stringValue as NSString).length
-      switch parent.focusSelection {
-      case .end: editor.selectedRange = NSRange(location: length, length: 0)
-      case .all: editor.selectedRange = NSRange(location: 0, length: length)
-      }
+      editor.selectedRange = NSRange(location: 0, length: (field.stringValue as NSString).length)
     }
 
     func controlTextDidChange(_ notification: Notification) {
@@ -192,7 +181,7 @@ final class TrailingInsetTextFieldCell: NSTextFieldCell {
   @Previewable @State var text = "noten"
   KeyCommandTextField(
     text: $text, placeholder: "Search folders", identifier: "preview-field",
-    focusSelection: .end, focusRequestID: nil, onFocusChange: { _ in },
+    focusRequestID: nil, onFocusChange: { _ in },
     onCommand: { _ in false }
   )
   .padding()
