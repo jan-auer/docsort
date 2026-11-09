@@ -24,3 +24,19 @@ enum FolderContents: Equatable {
     }
   }
 }
+
+extension FolderContents {
+  /// The archive-relative folder the contents are about, if a folder on disk.
+  var folder: String? {
+    switch self {
+    case .none, .notOnDisk: nil
+    case .loading(let folder), .files(let folder, _), .failed(let folder, _): folder
+    }
+  }
+
+  /// The folder whose files are listed; `nil` unless the contents are ``files(folder:_:)``.
+  var listedFolder: String? {
+    if case .files(let folder, _) = self { return folder }
+    return nil
+  }
+}

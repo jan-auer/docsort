@@ -79,7 +79,8 @@ nonisolated enum FilingError: Error, Equatable, Sendable {
   case fileChangedSinceFiling(URL)
 }
 
-/// Moves, trashes and undoes inbox files, keeping the filing history and the recent destinations in step.
+/// Moves, trashes and undoes inbox files, and renames and trashes archive files, keeping the filing history and the
+/// recent destinations in step.
 ///
 /// The only owner of `FileOperations`, `FilingHistory`, `FilingHistoryStore` and `RecentDestinations` in the app.
 /// Every operation is perform → record → save inside one actor call, so the history never falls behind the disk, and
@@ -224,7 +225,32 @@ actor FilingService {
       event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
   }
 
-  /// Moves `url` to the Trash, records it and saves the history.
+  /// Renames the file at `url` in its folder to `name` (an archive file, from Folder contents), records the rename
+  /// and saves the history; it does not count as a recent destination. When the file is a filed document, the
+  /// rename continues that document, so Move Back still finds it.
+  ///
+  /// A taken name throws `.fileOperation(.nameConflict(existing:))` and changes nothing.
+  func rename(_ url: URL, to name: String) throws(FilingError) -> MoveOutcome {
+    var history = try writableHistory()
+    let record: MoveRecord
+    do {
+      record = try expectedChanges.perform(
+        { () throws(FileOperationError) in
+          try fileOperations.move(
+            url, into: url.deletingLastPathComponent(), named: name, resolution: .refuse)
+        }, expecting: Self.changes(madeBy:))
+    } catch {
+      throw .fileOperation(error)
+    }
+    let event = history.recordMove(record, at: Date())
+    self.history = history
+    save()
+    Logger.filing.notice(
+      "Renamed \(url.lastPathComponent, privacy: .private) to \(name, privacy: .private)")
+    return MoveOutcome(event: event, record: record, replacedEvent: nil, status: currentStatus)
+  }
+
+  /// Moves `url` (an inbox or an archive file) to the Trash, records it and saves the history.
   func trash(_ url: URL) throws(FilingError) -> TrashOutcome {
     var history = try writableHistory()
     let record: TrashRecord

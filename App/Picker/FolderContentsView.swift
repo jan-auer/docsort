@@ -248,16 +248,6 @@ struct FolderContentsListing: View {
   }
 }
 
-extension FolderContents {
-  /// The archive-relative folder the contents are about, if a folder on disk.
-  fileprivate var folder: String? {
-    switch self {
-    case .none, .notOnDisk: nil
-    case .loading(let folder), .files(let folder, _), .failed(let folder, _): folder
-    }
-  }
-}
-
 /// One file in Folder contents: its icon and name, in the same row style as the folder list; a click takes the name.
 struct FolderContentsFileRow: View {
   let file: FolderFile

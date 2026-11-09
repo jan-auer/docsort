@@ -176,4 +176,11 @@ public struct FolderFile: Hashable, Sendable {
   public let name: String
   /// The item's content modification date; `Date.distantPast` when the file system reports none.
   public let modificationDate: Date
+
+  /// The item at `url`, named `name`, last modified at `modificationDate`.
+  public init(url: URL, name: String, modificationDate: Date) {
+    self.url = url
+    self.name = name
+    self.modificationDate = modificationDate
+  }
 }

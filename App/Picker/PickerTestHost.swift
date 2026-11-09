@@ -142,7 +142,7 @@
       switch event {
       case .chose:
         focus = .name
-      case .moveRequested:
+      case .moveRequested, .renameFileRequested, .trashFileRequested:
         break
       case .steppedBack:
         focus = .sidebar
@@ -162,6 +162,8 @@
       case .steppedBack: "steppedBack"
       case .tookFileName(let fileName): "tookFileName \(fileName)"
       case .refreshRequested: "refreshRequested"
+      case .renameFileRequested(let file, let name): "renameFileRequested \(file.name) to \(name)"
+      case .trashFileRequested(let file): "trashFileRequested \(file.name)"
       }
     }
 
