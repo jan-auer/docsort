@@ -81,7 +81,7 @@ final class TrailingInsetPDFView: PDFView {
       autoScales = true
     }
     Logger.preview.debug(
-      "PDF view fitted to trailing inset \(self.trailingInset): right margin \(margins.right), width \(self.bounds.width), scale \(self.scaleFactor), content insets right \(scrollView.contentInsets.right)"
+      "PDF view fitted to trailing inset \(self.trailingInset): right margin \(margins.right), width \(self.bounds.width), scale \(self.scaleFactor)"
     )
   }
 
