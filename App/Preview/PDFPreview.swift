@@ -8,7 +8,7 @@ import SwiftUI
 /// The view is reused when `document` changes, which resets the zoom to fit-to-width and scrolls to the first page.
 /// While on screen, the `PDFView` is attached to `controller`, so the window's zoom and scroll commands reach it.
 /// The view may run on under a pane laid over its trailing edge (the filing panel); it keeps its pages in the part
-/// left of `coveredWidth`. Use `PanelCoveredPDFPreview` to have the pages follow an animated change of it.
+/// left of `coveredWidth`. Use `PartlyCoveredPDFPreview` to have the pages follow an animated change of it.
 struct PDFPreview: NSViewRepresentable {
   /// The margin around each page, in page units, so it scales with the zoom. At fit-to-width in a typical preview
   /// column it comes to about 16–25 points beside the page.
@@ -66,11 +66,11 @@ struct PDFPreview: NSViewRepresentable {
   }
 }
 
-/// A `PDFPreview` under the filing panel whose covered width animates: while the panel slides in or out, the width
+/// A `PDFPreview` whose covered width animates: while the filing panel slides in or out, the width
 /// reaches the PDF view frame by frame, so the pages refit along with the slide, as they did when the preview itself
 /// resized. (A representable that adopts `Animatable` itself gets only the final value; a view with a body gets every
 /// frame's.)
-struct PanelCoveredPDFPreview: View, Animatable {
+struct PartlyCoveredPDFPreview: View, Animatable {
   /// The document to show.
   let document: PDFDocument
   /// The controller the PDF view is attached to while it is on screen.
