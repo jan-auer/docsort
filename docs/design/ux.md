@@ -110,15 +110,13 @@ concept C's structure (`filing-panel-redesign`).
 - **The window's toolbar spans the preview and the filing panel** as one glass surface, as Keynote's toolbar spans
   its canvas and inspector. The panel starts below the toolbar; the file's actions and the panel toggle sit in the
   toolbar's trailing area above it. The panel's backgrounds stop at the toolbar instead of running under it, so it
-  never reads as a full-height column. The panel lies over the preview's trailing edge (a trailing safe-area inset
-  of the preview column) rather than beside it, and a PDF's view runs on under it: its pages scroll under the
-  translucent toolbar (AppKit insets them at the top), and AppKit's scroll edge effect (blur and darkening) covers
-  the whole toolbar, panel included, with no edge at the divider. Above the panel it shows the PDF's background,
-  and page colour only where a zoomed page reaches there. The PDF keeps its pages in the part left of the panel:
-  fit-to-width fits that width, pages centre in it (narrower pages of a mixed-width PDF too), and a page scrolled
-  fully right stops one margin short of the panel. The panel's width is reserved in the pages' right margin, not
-  in the scroll view's content insets, because the edge effect only covers the inset content area
-  (`PartlyCoveredPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
+  never reads as a full-height column. The panel lies over the preview's trailing edge rather than beside it, and a
+  PDF runs on under it: its pages scroll under the translucent toolbar, and the system's scroll edge effect (blur
+  and darkening) covers the whole toolbar, panel included, with no edge at the divider. Above the panel it shows
+  the PDF's background, and page colour only where a zoomed page reaches there. The PDF keeps its pages in the part
+  left of the panel: fit-to-width fits that width, pages centre in it (narrower pages of a mixed-width PDF too), a
+  page scrolled fully right stops one margin short of the panel, and the pages refit along with the panel's slide
+  (how: `PartlyCoveredPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
   (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
   Finder. The system draws it only over the preview (and only with a PDF), even though the PDF runs on under the
   panel; the panel continues it with the same one-pixel separator-colour line at its top edge.
