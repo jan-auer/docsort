@@ -25,7 +25,7 @@ struct MainWindowView: View {
   private static let filingPanelWidths = 300.0...480.0
 
   /// The width the filing panel and its divider cover at the preview's trailing edge while the panel is shown.
-  @State private var filingPanelCoverWidth = 0.0
+  @State private var previewCoveredWidth = 0.0
 
   var body: some View {
     NavigationSplitView(columnVisibility: $model.columnVisibility) {
@@ -64,7 +64,7 @@ struct MainWindowView: View {
           .onGeometryChange(for: Double.self) { geometry in
             geometry.size.width
           } action: { width in
-            filingPanelCoverWidth = width
+            previewCoveredWidth = width
           }
           .transition(.move(edge: .trailing))
         }
@@ -164,7 +164,7 @@ struct MainWindowView: View {
     } else if let selectedFile = model.selectedFile {
       PreviewView(
         document: selectedFile.previewDocument, controller: model.previewController,
-        trailingInset: model.isFilingPanelShown ? filingPanelCoverWidth : 0)
+        coveredWidth: model.isFilingPanelShown ? previewCoveredWidth : 0)
     } else {
       ContentUnavailableView("No file selected", systemImage: "doc")
         .accessibilityIdentifier("no-selection")

@@ -35,7 +35,7 @@ struct PreviewView: View {
   let controller: PreviewController
   /// The width of the trailing part covered by the filing panel, which a PDF runs on under; none outside the main
   /// window.
-  var trailingInset: CGFloat = 0
+  var coveredWidth: CGFloat = 0
 
   /// What the preview shows for a complete file, after loading.
   private enum Content {
@@ -90,7 +90,7 @@ struct PreviewView: View {
         // under its inspector, so the edge effect spans the whole toolbar; the PDF view keeps its pages left of the
         // panel. Quick Look stays below the toolbar: it has no inset that would keep a file's top visible.
         PanelCoveredPDFPreview(
-          document: pdfDocument, controller: controller, trailingInset: trailingInset
+          document: pdfDocument, controller: controller, coveredWidth: coveredWidth
         )
         .ignoresSafeArea(.container, edges: [.top, .trailing])
         .accessibilityIdentifier("preview-pdf")

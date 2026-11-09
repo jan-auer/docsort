@@ -118,7 +118,7 @@ concept C's structure (`filing-panel-redesign`).
   fit-to-width fits that width, pages centre in it (narrower pages of a mixed-width PDF too), and a page scrolled
   fully right stops one margin short of the panel. The panel's width is reserved in the pages' right margin, not
   in the scroll view's content insets, because the edge effect only covers the inset content area
-  (`TrailingInsetPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
+  (`PartlyCoveredPDFView`). Quick Look content stays below the toolbar. The window's titlebar separator
   (`NSWindow.titlebarSeparatorStyle = .line`), the system hairline, separates the toolbar from the content, as in
   Finder. The system draws it only over the preview (and only with a PDF), even though the PDF runs on under the
   panel; the panel continues it with the same one-pixel separator-colour line at its top edge.

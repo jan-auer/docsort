@@ -8,7 +8,7 @@ import SwiftUI
 /// The view is reused when `document` changes, which resets the zoom to fit-to-width and scrolls to the first page.
 /// While on screen, the `PDFView` is attached to `controller`, so the window's zoom and scroll commands reach it.
 /// The view may run on under a pane laid over its trailing edge (the filing panel); it keeps its pages in the part
-/// left of `trailingInset`. Use `PanelCoveredPDFPreview` to have the pages follow an animated change of it.
+/// left of `coveredWidth`. Use `PanelCoveredPDFPreview` to have the pages follow an animated change of it.
 struct PDFPreview: NSViewRepresentable {
   /// The margin around each page, in page units, so it scales with the zoom. At fit-to-width in a typical preview
   /// column it comes to about 16–25 points beside the page.
@@ -19,7 +19,7 @@ struct PDFPreview: NSViewRepresentable {
   /// The controller the PDF view is attached to while it is on screen.
   let controller: PreviewController
   /// The width of the trailing part covered by a pane laid over the view.
-  let trailingInset: CGFloat
+  let coveredWidth: CGFloat
 
   /// Keeps the controller the current view is attached to, so that `dismantleNSView` can detach it.
   final class Coordinator {
@@ -35,21 +35,21 @@ struct PDFPreview: NSViewRepresentable {
     Coordinator(controller: controller)
   }
 
-  func makeNSView(context: Context) -> TrailingInsetPDFView {
-    let view = TrailingInsetPDFView()
+  func makeNSView(context: Context) -> PartlyCoveredPDFView {
+    let view = PartlyCoveredPDFView()
     view.displayMode = .singlePageContinuous
     view.displayDirection = .vertical
     view.displaysPageBreaks = true
     view.pageMargins = Self.pageMargins
     view.autoScales = true
     view.document = document
-    view.trailingInset = trailingInset
+    view.coveredWidth = coveredWidth
     controller.attach(view)
     return view
   }
 
-  func updateNSView(_ view: TrailingInsetPDFView, context: Context) {
-    view.trailingInset = trailingInset
+  func updateNSView(_ view: PartlyCoveredPDFView, context: Context) {
+    view.coveredWidth = coveredWidth
     if view.document !== document {
       view.document = document
       view.autoScales = true
@@ -61,7 +61,7 @@ struct PDFPreview: NSViewRepresentable {
     controller.attach(view)
   }
 
-  static func dismantleNSView(_ view: TrailingInsetPDFView, coordinator: Coordinator) {
+  static func dismantleNSView(_ view: PartlyCoveredPDFView, coordinator: Coordinator) {
     coordinator.controller.detach(view)
   }
 }
@@ -76,16 +76,16 @@ struct PanelCoveredPDFPreview: View, Animatable {
   /// The controller the PDF view is attached to while it is on screen.
   let controller: PreviewController
   /// The width of the trailing part covered by the panel.
-  var trailingInset: CGFloat
+  var coveredWidth: CGFloat
 
   /// The covered width, interpolated while it animates.
   var animatableData: CGFloat {
-    get { trailingInset }
-    set { trailingInset = newValue }
+    get { coveredWidth }
+    set { coveredWidth = newValue }
   }
 
   var body: some View {
-    PDFPreview(document: document, controller: controller, trailingInset: trailingInset)
+    PDFPreview(document: document, controller: controller, coveredWidth: coveredWidth)
   }
 }
 
@@ -124,7 +124,7 @@ extension PDFPreview {
     @Previewable @State var document: PDFDocument?
     Group {
       if let document {
-        PDFPreview(document: document, controller: controller, trailingInset: 0)
+        PDFPreview(document: document, controller: controller, coveredWidth: 0)
       } else {
         ProgressView()
       }

@@ -15,11 +15,11 @@ import PDFKit
 ///
 /// The refit posts a scale change, which asks for one more layout; that pass computes the same margins and stops at
 /// the change guard in `layout()`, so the guard must stay.
-final class TrailingInsetPDFView: PDFView {
+final class PartlyCoveredPDFView: PDFView {
   /// The width of the trailing part covered by another pane.
-  var trailingInset: CGFloat = 0 {
+  var coveredWidth: CGFloat = 0 {
     didSet {
-      guard trailingInset != oldValue else { return }
+      guard coveredWidth != oldValue else { return }
       needsLayout = true
     }
   }
@@ -56,7 +56,7 @@ final class TrailingInsetPDFView: PDFView {
 
   @available(*, unavailable)
   required init?(coder: NSCoder) {
-    fatalError("TrailingInsetPDFView is created in code only")
+    fatalError("PartlyCoveredPDFView is created in code only")
   }
 
   isolated deinit {
@@ -69,22 +69,22 @@ final class TrailingInsetPDFView: PDFView {
     super.layout()
     guard let scrollView = documentView?.enclosingScrollView else { return }
     // The scroller stays beside the covered part rather than under it.
-    if scrollView.scrollerInsets.right != trailingInset {
+    if scrollView.scrollerInsets.right != coveredWidth {
       var scrollerInsets = scrollView.scrollerInsets
-      scrollerInsets.right = trailingInset
+      scrollerInsets.right = coveredWidth
       scrollView.scrollerInsets = scrollerInsets
     }
     if cachedWidestPageWidth == nil { cachedWidestPageWidth = widestPageWidth() }
-    guard let widestPage = cachedWidestPageWidth, bounds.width > trailingInset else { return }
+    guard let widestPage = cachedWidestPageWidth, bounds.width > coveredWidth else { return }
     // At fit-to-width the scale is the one that fits the widest page and its own margins into the uncovered width;
     // otherwise it is the reader's zoom.
     let scale =
       autoScales
-      ? (bounds.width - trailingInset) / (widestPage + pageMargins.left + pageMargins.right)
+      ? (bounds.width - coveredWidth) / (widestPage + pageMargins.left + pageMargins.right)
       : scaleFactor
     guard scale > 0 else { return }
     var margins = pageMargins
-    margins.right += trailingInset / scale
+    margins.right += coveredWidth / scale
     guard
       abs(margins.right - pageBreakMargins.right) > 0.01 || pageBreakMargins.left != margins.left
         || pageBreakMargins.top != margins.top || pageBreakMargins.bottom != margins.bottom
@@ -97,7 +97,7 @@ final class TrailingInsetPDFView: PDFView {
       autoScales = true
     }
     Logger.preview.debug(
-      "PDF view fitted to trailing inset \(self.trailingInset): right margin \(margins.right), width \(self.bounds.width), scale \(self.scaleFactor)"
+      "PDF view fitted to covered width \(self.coveredWidth): right margin \(margins.right), width \(self.bounds.width), scale \(self.scaleFactor)"
     )
   }
 
