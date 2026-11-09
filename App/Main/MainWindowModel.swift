@@ -108,7 +108,7 @@ final class MainWindowModel {
   }
   /// Subfolder groups the user collapsed; groups are expanded otherwise.
   var collapsedGroups: Set<URL> = []
-  /// Whether the filing panel (the pane beside the preview) is shown.
+  /// Whether the filing panel is shown: the pane that sits beside the preview, laid over the PDF view's trailing edge.
   var isFilingPanelShown = true
   /// Which split-view columns are shown. The sidebar toggle (⌃⌘S) and the automatic collapsing change it.
   var columnVisibility: NavigationSplitViewVisibility = .all

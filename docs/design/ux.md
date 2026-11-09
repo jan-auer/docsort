@@ -87,7 +87,8 @@ panel. Accepted by the user in round 1; the panel left `.inspector` for a pane o
      and capsule-shaped, with its shortcut shown inside it as a small key-cap badge to the right of the label:
      `Move  ⌘↩`. For a filed file the label reads Rename or Move.
 
-  The panel is always visible but inactive until a file is selected; it never covers the preview.
+  The panel is always visible but inactive until a file is selected; it never covers the preview's pages (it sits
+  beside the preview, though it lies over the PDF view's trailing edge, see "Filing panel look").
 
 ### Filing panel look
 
@@ -583,7 +584,8 @@ Kept free, not designed here:
 
 Settled by the user:
 
-- Three columns with the filing panel always beside the preview.
+- Three columns with the filing panel always beside the preview (since the toolbar work it lies over the PDF view's
+  trailing edge, with the pages kept clear of it).
 - Each inbox is its own sidebar section; files oldest first.
 - Filed files stay in place, checked off; no Filed section. A persistent filing history with a History view.
 - Filed files can be renamed; revert restores the pre-filing name.
