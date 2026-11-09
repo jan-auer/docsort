@@ -5,10 +5,10 @@ import OSLog
 /// Saves a filing history that failed to save earlier one last time before the app quits (the approved
 /// history-save-failure policy), and asks the user whether to quit anyway when it still fails.
 ///
-/// `DocsortApp` installs it as the application delegate and hands it the app's `FilingModel` once the models exist.
+/// `DocsortApp` installs it as the application delegate and hands it the app's `FilingStatusModel` once the models exist.
 final class QuitSaveDelegate: NSObject, NSApplicationDelegate {
   /// The app's filing model; until it is set there is nothing to save.
-  var filing: FilingModel?
+  var filing: FilingStatusModel?
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     guard let filing, filing.pendingSaveError != nil else { return .terminateNow }

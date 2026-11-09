@@ -33,7 +33,7 @@ struct MainWindowModelNavigationTests {
     let historyURL = environment.root.appending(path: "FilingHistory.json")
     model = MainWindowModel(
       folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-      filing: FilingModel(
+      filing: FilingStatusModel(
         service: FilingService(
           historyURL: historyURL,
           recentsPreference: RecentDestinations.preference(in: environment.defaults),

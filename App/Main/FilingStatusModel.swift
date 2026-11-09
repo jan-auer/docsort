@@ -7,7 +7,7 @@ import Observation
 ///
 /// One per app. It decides nothing itself; the window model words messages and applies outcomes.
 @Observable
-final class FilingModel {
+final class FilingStatusModel {
   /// Whether the filing history could be loaded.
   private(set) var historyAvailability: FilingHistoryAvailability = .loading
   /// Why the last history save failed, while a save is pending.

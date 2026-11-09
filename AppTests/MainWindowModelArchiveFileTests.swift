@@ -30,7 +30,7 @@ struct MainWindowModelArchiveFileTests {
       expectedChanges: expectedChanges)
     let model = MainWindowModel(
       folders: folders, inboxes: inboxes, archive: ArchiveLibrary(folders: folders),
-      filing: FilingModel(service: service, historyFileURL: historyURL),
+      filing: FilingStatusModel(service: service, historyFileURL: historyURL),
       search: SearchSettings(defaults: environment.defaults))
     let undoManager = UndoManager()
     model.undoManager = undoManager

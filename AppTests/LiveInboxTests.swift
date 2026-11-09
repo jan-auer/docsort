@@ -183,7 +183,7 @@ struct LiveInboxTests {
     let historyURL = environment.root.appending(path: "FilingHistory.json")
     let model = MainWindowModel(
       folders: folders, inboxes: library, archive: ArchiveLibrary(),
-      filing: FilingModel(
+      filing: FilingStatusModel(
         service: FilingService(
           historyURL: historyURL,
           recentsPreference: RecentDestinations.preference(in: environment.defaults),

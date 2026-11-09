@@ -172,7 +172,7 @@ struct HistoryModelTests {
       expectedChanges: expectedChanges)
     let mainWindow = MainWindowModel(
       folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-      filing: FilingModel(service: service, historyFileURL: historyURL),
+      filing: FilingStatusModel(service: service, historyFileURL: historyURL),
       search: SearchSettings(defaults: environment.defaults))
     return HistoryModel(mainWindow: mainWindow, calendar: utcCalendar)
   }

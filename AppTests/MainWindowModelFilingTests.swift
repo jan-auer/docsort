@@ -33,7 +33,7 @@ struct MainWindowModelFilingTests {
       expectedChanges: expectedChanges)
     let model = MainWindowModel(
       folders: folders, inboxes: inboxes, archive: ArchiveLibrary(folders: folders),
-      filing: FilingModel(service: service, historyFileURL: historyURL),
+      filing: FilingStatusModel(service: service, historyFileURL: historyURL),
       search: SearchSettings(defaults: environment.defaults))
     // The archive library and the picker receive their inputs asynchronously.
     try await waitUntil { model.picker.index?.contains(tierarztPath) == true }

@@ -91,7 +91,7 @@ nonisolated enum MainWindowWidthClass: Sendable {
 ///
 /// The main window's views read it, and the menu commands reach it through the `mainWindowModel` focused value while
 /// the main window is key. The rows come from the app's `InboxLibrary`, the destinations from its `ArchiveLibrary`,
-/// and moves, trashes and undos go through its `FilingModel` (see `MainWindowModel+Filing.swift`).
+/// and moves, trashes and undos go through its `FilingStatusModel` (see `MainWindowModel+Filing.swift`).
 @Observable
 final class MainWindowModel {
   /// Below this window width the sidebar collapses on its own, so that the preview keeps its room.
@@ -137,7 +137,7 @@ final class MainWindowModel {
   /// The app's archive index.
   let archive: ArchiveLibrary
   /// The app's filing service, as the main actor sees it.
-  let filing: FilingModel
+  let filing: FilingStatusModel
   /// The destination-search settings.
   let search: SearchSettings
   /// What the filing panel holds for the selected file, beyond the destination picker.
@@ -170,7 +170,8 @@ final class MainWindowModel {
 
   /// Creates the state of a main window showing the app's models.
   init(
-    folders: FolderLibrary, inboxes: InboxLibrary, archive: ArchiveLibrary, filing: FilingModel,
+    folders: FolderLibrary, inboxes: InboxLibrary, archive: ArchiveLibrary,
+    filing: FilingStatusModel,
     search: SearchSettings
   ) {
     self.folders = folders
@@ -351,7 +352,7 @@ final class MainWindowModel {
       let environment = AppEnvironment.inert(named: "previews")
       let model = MainWindowModel(
         folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-        filing: FilingModel(
+        filing: FilingStatusModel(
           service: .make(environment: environment, expectedChanges: ExpectedChanges()),
           historyFileURL: environment.filingHistoryURL),
         search: SearchSettings(defaults: environment.defaults))
