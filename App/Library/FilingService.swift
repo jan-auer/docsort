@@ -126,6 +126,24 @@ actor FilingService {
     _ source: URL, into folder: URL, archivePath: String, named name: String,
     resolution: ConflictResolution, in history: FilingHistory
   ) throws(FilingError) -> MoveOutcome {
+    let (event, record) = try performRecordedMove(
+      source, into: folder, named: name, resolution: resolution, in: history,
+      recentDestination: archivePath)
+    let replacedEvent =
+      record.replaced == nil ? nil : self.history?.events.last { $0.causedBy == event.id }
+    Logger.filing.notice(
+      "Filed \(source.lastPathComponent, privacy: .private) to \(archivePath, privacy: .private)")
+    return MoveOutcome(
+      event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
+  }
+
+  /// Moves `source` into `folder` under `name`, records the move into `history`, counts `recentDestination` (an
+  /// archive-relative path; `nil` when the move is no filing) as a recent destination, and saves the history and the
+  /// recents.
+  private func performRecordedMove(
+    _ source: URL, into folder: URL, named name: String, resolution: ConflictResolution,
+    in history: FilingHistory, recentDestination: String?
+  ) throws(FilingError) -> (event: FilingEvent, record: MoveRecord) {
     var history = history
     let record: MoveRecord
     do {
@@ -137,15 +155,10 @@ actor FilingService {
       throw .fileOperation(error)
     }
     let event = history.recordMove(record, at: Date())
-    let replacedEvent =
-      record.replaced == nil ? nil : history.events.last { $0.causedBy == event.id }
     self.history = history
-    recents.record(archivePath)
+    if let recentDestination { recents.record(recentDestination) }
     save()
-    Logger.filing.notice(
-      "Filed \(source.lastPathComponent, privacy: .private) to \(archivePath, privacy: .private)")
-    return MoveOutcome(
-      event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
+    return (event, record)
   }
 
   /// Renames the file at `url` in its folder to `name` (an archive file, from Folder contents), records the rename
@@ -154,20 +167,9 @@ actor FilingService {
   ///
   /// A taken name throws `.fileOperation(.nameConflict(existing:))` and changes nothing.
   func rename(_ url: URL, to name: String) throws(FilingError) -> MoveOutcome {
-    var history = try writableHistory()
-    let record: MoveRecord
-    do {
-      record = try expectedChanges.perform(
-        { () throws(FileOperationError) in
-          try fileOperations.move(
-            url, into: url.deletingLastPathComponent(), named: name, resolution: .refuse)
-        }, expecting: Self.changes(madeBy:))
-    } catch {
-      throw .fileOperation(error)
-    }
-    let event = history.recordMove(record, at: Date())
-    self.history = history
-    save()
+    let (event, record) = try performRecordedMove(
+      url, into: url.deletingLastPathComponent(), named: name, resolution: .refuse,
+      in: try writableHistory(), recentDestination: nil)
     Logger.filing.notice(
       "Renamed \(url.lastPathComponent, privacy: .private) to \(name, privacy: .private)")
     return MoveOutcome(event: event, record: record, replacedEvent: nil, status: currentStatus)
@@ -247,25 +249,14 @@ actor FilingService {
   func moveBack(
     document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
   ) throws(FilingError) -> MoveOutcome {
-    var history = try writableHistory()
+    let history = try writableHistory()
     try verifyFiledPlacement(of: documentID, at: currentURL, in: history)
     guard let origin = history.origin(ofDocument: documentID) else {
       throw .noHistoryRecord(currentURL)
     }
-    let record: MoveRecord
-    do {
-      record = try expectedChanges.perform(
-        { () throws(FileOperationError) in
-          try fileOperations.move(
-            currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
-            resolution: resolution)
-        }, expecting: Self.changes(madeBy:))
-    } catch {
-      throw .fileOperation(error)
-    }
-    let event = history.recordMove(record, at: Date())
-    self.history = history
-    save()
+    let (event, record) = try performRecordedMove(
+      currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
+      resolution: resolution, in: history, recentDestination: nil)
     Logger.filing.notice(
       "Moved \(currentURL.lastPathComponent, privacy: .private) back to \(record.destinationURL.deletingLastPathComponent().lastPathComponent, privacy: .private)"
     )
