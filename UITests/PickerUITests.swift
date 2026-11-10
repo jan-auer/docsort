@@ -48,72 +48,38 @@ final class PickerUITests: XCTestCase {
     XCTAssertEqual(result, .completed, "last event is “\(lastEvent)”", file: file, line: line)
   }
 
+  /// The picker's keys reach it through its key monitor and do what the model tests expect: → steps in, ⇧⌘N opens
+  /// the new-folder row and Return confirms it, Tab chooses, ⌘Return requests the move, Esc clears and then steps
+  /// back. The model tests cover what each intent does; this covers the routing in the real window.
   @MainActor
-  func testRightArrowStepsInAndTabChoosesThisFolder() throws {
+  func testPickerKeysStepInCreateChooseMoveAndStepBack() throws {
     let host = launchHost()
 
-    // Not "gesund": the recent `Gesundheit/Konrad/Physiotherapie` gets a boost and can rank above `Gesundheit`.
     host.filter.typeText("reisen")
     host.filter.typeKey(.rightArrow, modifierFlags: [])
     XCTAssertTrue(
       host.app.descendants(matching: .any)["picker-this-folder"].waitForExistence(timeout: 5))
-    host.filter.typeKey(.tab, modifierFlags: [])
+    host.filter.typeKey("n", modifierFlags: [.shift, .command])
+    let name = host.app.textFields["picker-new-folder-name"]
+    XCTAssertTrue(name.waitForExistence(timeout: 5))
+    name.typeText("2033-11 Besuch Westerholm")
+    name.typeKey(.return, modifierFlags: [])
+    expectLastEvent(host, "chose new Reisen/2033-11 Besuch Westerholm")
 
-    expectLastEvent(host, "chose Reisen")
-  }
-
-  @MainActor
-  func testCommandReturnRequestsMoveToTheHighlightedMatch() throws {
-    let host = launchHost()
-
+    host.filter.click()
+    host.filter.typeKey(.escape, modifierFlags: [])
     host.filter.typeText("ilmnet rechnungen")
+    host.filter.typeKey(.tab, modifierFlags: [])
+    expectLastEvent(host, "chose Kommunikation/Ilmnet Internet/Rechnungen")
+
+    host.filter.click()
     host.filter.typeKey(.return, modifierFlags: .command)
-
     expectLastEvent(host, "moveRequested Kommunikation/Ilmnet Internet/Rechnungen")
-  }
 
-  @MainActor
-  func testEscapeClearsTheFilterThenStepsBack() throws {
-    let host = launchHost()
-
-    host.filter.typeText("reisen")
     host.filter.typeKey(.escape, modifierFlags: [])
     XCTAssertEqual(host.filter.value as? String, "")
     host.filter.typeKey(.escape, modifierFlags: [])
-
     expectLastEvent(host, "steppedBack")
-  }
-
-  @MainActor
-  func testNewFolderInsideTheHighlightedFolderIsChosenAsPending() throws {
-    let host = launchHost()
-
-    host.filter.typeText("reisen")
-    host.filter.typeKey(.rightArrow, modifierFlags: [])
-    host.filter.typeKey("n", modifierFlags: [.shift, .command])
-    let name = host.app.textFields["picker-new-folder-name"]
-    XCTAssertTrue(name.waitForExistence(timeout: 5))
-    name.typeText("2033-11 Besuch Westerholm/Bahn")
-    name.typeKey(.return, modifierFlags: [])
-
-    expectLastEvent(host, "chose new Reisen/2033-11 Besuch Westerholm/Bahn")
-  }
-
-  @MainActor
-  func testNewFolderWithAnExistingNameChoosesTheExistingFolder() throws {
-    let host = launchHost()
-
-    host.filter.typeText("reisen")
-    host.filter.typeKey(.rightArrow, modifierFlags: [])
-    host.filter.typeKey("n", modifierFlags: [.shift, .command])
-    let name = host.app.textFields["picker-new-folder-name"]
-    XCTAssertTrue(name.waitForExistence(timeout: 5))
-    name.typeText("reiseplanung ideen")
-    XCTAssertTrue(
-      host.app.descendants(matching: .any)["picker-new-folder-notice"].waitForExistence(timeout: 5))
-    name.typeKey(.return, modifierFlags: [])
-
-    expectLastEvent(host, "chose Reisen/Reiseplanung Ideen")
   }
 
   @MainActor
