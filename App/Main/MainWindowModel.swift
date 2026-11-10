@@ -114,7 +114,12 @@ final class MainWindowModel {
   /// Subfolder groups the user collapsed; groups are expanded otherwise.
   var collapsedGroups: Set<URL> = []
   /// Whether the filing panel is shown: the pane that sits beside the preview, laid over the PDF view's trailing edge.
-  var isFilingPanelShown = true
+  /// Hiding it drops text typed in the sidebar that its filter has not received yet.
+  var isFilingPanelShown = true {
+    didSet {
+      if !isFilingPanelShown { picker.discardTextTypedBeforeFocus() }
+    }
+  }
   /// Which split-view columns are shown. The sidebar toggle (⌃⌘S) and the automatic collapsing change it.
   var columnVisibility: NavigationSplitViewVisibility = .all
   /// Where keyboard focus is, as the views report it.
@@ -284,7 +289,8 @@ final class MainWindowModel {
   /// Focus in the filing panel shows the panel first, so typed text never goes into a filter the user can't see.
   func requestFocus(_ target: MainWindowFocus) {
     if target == .destinationFilter || target == .nameField { isFilingPanelShown = true }
-    if target == .destinationFilter { panel.isFilterFocusPending = true }
+    // Text typed in the sidebar for the filter is dropped when focus goes elsewhere before the filter received it.
+    if target != .destinationFilter { picker.discardTextTypedBeforeFocus() }
     focusRequest = FocusRequest(target: target)
   }
 

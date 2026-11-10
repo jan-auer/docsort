@@ -62,6 +62,10 @@ final class DestinationPickerModel {
   /// with (the recents of a move that advanced to the next file) arrive before or after it.
   @ObservationIgnored private var placementSinceReset: HighlightRequest?
 
+  /// Text typed in the sidebar for the filter that the filter field has not received yet, because it has not taken
+  /// keyboard focus since (``enter(typing:)``, ``takeTextTypedBeforeFocus()``).
+  @ObservationIgnored private var textTypedBeforeFocus = ""
+
   /// The chosen destination, `nil` until the user chooses one.
   private(set) var destination: PickerDestination?
 
@@ -319,6 +323,7 @@ final class DestinationPickerModel {
     stateBeforeDraft = nil
     scope = ""
     query = ""
+    textTypedBeforeFocus = ""
     pendingFolders = []
     if case .newFolder(let path) = destination { pendingFolders = [path] }
     self.destination = destination
@@ -329,14 +334,37 @@ final class DestinationPickerModel {
     }
   }
 
-  /// Entry from the sidebar by typing: cancels a new-folder row and appends `text` to the filter. With a destination
-  /// chosen, it starts a new search instead: the chosen destination is dropped and `text` replaces the filter.
+  /// Entry from the sidebar by typing: cancels a new-folder row and keeps `text` for the filter field, which gets it
+  /// as typed text once it has keyboard focus (``takeTextTypedBeforeFocus()``). With a destination chosen, it starts
+  /// a new search: the chosen destination is dropped and the filter emptied.
+  ///
+  /// The field receives the text only once it has focus because `NSTextField` selects its whole text when it takes
+  /// focus: text put into the filter before would end up selected, and the next key would replace it.
   func enter(typing text: String) {
     cancelNewFolder()
-    let base = destination == nil ? query : ""
-    destination = nil
-    query = base + text
-    update(highlight: .first)
+    if destination != nil {
+      destination = nil
+      query = ""
+      update(highlight: .first)
+    }
+    textTypedBeforeFocus += text
+  }
+
+  /// Whether text typed in the sidebar waits for the filter field's focus.
+  var hasTextTypedBeforeFocus: Bool {
+    !textTypedBeforeFocus.isEmpty
+  }
+
+  /// Hands over the text typed in the sidebar (``enter(typing:)``) for the focused filter field to insert as typed,
+  /// and forgets it; empty when nothing waits.
+  func takeTextTypedBeforeFocus() -> String {
+    defer { textTypedBeforeFocus = "" }
+    return textTypedBeforeFocus
+  }
+
+  /// Forgets text typed in the sidebar that the filter field has not received, because focus went elsewhere.
+  func discardTextTypedBeforeFocus() {
+    textTypedBeforeFocus = ""
   }
 
   // MARK: Stepping

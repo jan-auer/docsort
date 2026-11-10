@@ -13,9 +13,6 @@ final class FilingPanelModel {
   var notice: String?
   /// The short hint floating under the name field, if any; it hides itself after two seconds.
   var hint: FilingHint?
-  /// Whether a key typed in the sidebar asked for the filter's focus, which it has not reported yet. Keys typed
-  /// meanwhile still reach the sidebar and are appended to the filter instead of starting it again.
-  var isFilterFocusPending = false
 
   /// Clears everything entered and pre-fills the name with `currentName` without its extension.
   func reset(currentName: String?) {

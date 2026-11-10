@@ -71,7 +71,8 @@ import DocsortCore
 /// it sends ``PickerEvent/chose(_:)``, ``PickerEvent/moveRequested(_:)`` or ``PickerEvent/steppedBack`` instead.
 ///
 /// - Entry from the sidebar by typing: call ``DestinationPickerModel/enter(typing:)`` with the typed text, then focus
-///   `.filter`. Entry with Tab, Return or ⌘L: just focus `.filter`.
+///   `.filter`. The field receives the typed text once it has focus, as if typed there. Entry with Tab, Return or
+///   ⌘L: just focus `.filter`; it selects its text as text fields do.
 /// - Entry back from the name field (⇧Tab, Esc): focus `.filter`. The chosen destination stays until the user types
 ///   or moves the highlight.
 ///

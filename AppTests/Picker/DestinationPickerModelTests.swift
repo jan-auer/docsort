@@ -313,19 +313,46 @@ struct DestinationPickerModelTests {
     #expect(model.highlightedPath == "Reisen")
   }
 
-  @Test("Entering by typing drops the destination and appends to the empty field")
+  @Test("Text typed in the sidebar waits for the filter's focus, then filters as typed")
   func enterTyping() throws {
+    let model = try makeModel()
+
+    model.enter(typing: "wander")
+    model.enter(typing: "woche")
+    #expect(model.filterText == "")
+
+    #expect(model.hasTextTypedBeforeFocus)
+    let typed = model.takeTextTypedBeforeFocus()
+    #expect(typed == "wanderwoche")
+    model.filterText = typed
+    #expect(model.highlightedPath == "Reisen/2033-06 Wanderwoche Hochalm")
+    #expect(!model.hasTextTypedBeforeFocus)
+    #expect(model.takeTextTypedBeforeFocus() == "")
+  }
+
+  @Test("Typing with a destination chosen starts a new search")
+  func enterTypingWithDestination() throws {
     let model = try makeModel()
     model.filterText = "physio"
     model.chooseHighlighted()
 
     model.enter(typing: "wander")
     #expect(model.destination == nil)
-    #expect(model.filterText == "wander")
-    #expect(model.highlightedPath == "Reisen/2033-06 Wanderwoche Hochalm")
+    #expect(model.filterText == "")
+    #expect(model.takeTextTypedBeforeFocus() == "wander")
+  }
 
-    model.enter(typing: "woche")
-    #expect(model.filterText == "wanderwoche")
+  @Test("A reset or a discard drops text typed for a filter that never took focus")
+  func typedTextDropped() throws {
+    let model = try makeModel()
+
+    model.enter(typing: "n")
+    model.reset()
+    #expect(model.takeTextTypedBeforeFocus() == "")
+
+    model.enter(typing: "n")
+    model.discardTextTypedBeforeFocus()
+    #expect(model.takeTextTypedBeforeFocus() == "")
   }
 
   // MARK: Index changes

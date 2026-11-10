@@ -63,12 +63,12 @@ enum PickerKey: Hashable, CaseIterable {
 ///
 /// SwiftUI's `TextField` on macOS hands Tab and ⇧Tab to the focus system, Return to `onSubmit` and arrows and Esc to
 /// its field editor, and `onKeyPress` does not reliably see them first. An app-local event monitor does: AppKit calls
-/// it for every key-down event before `NSApplication.sendEvent(_:)` dispatches it. The monitor runs while SwiftUI
-/// says the picker has focus (the view starts and stops it), but that focus state can lag behind AppKit: the name
-/// field takes focus with `makeFirstResponder`, outside SwiftUI. So the monitor acts only while the window's actual
-/// first responder is a text field inside the picker (inside its anchor's frame), only on events for the picker's own
-/// window, and leaves keys alone while an input method is composing text (marked text), so dead keys and IMEs keep
-/// working.
+/// it for every key-down event before `NSApplication.sendEvent(_:)` dispatches it. The monitor runs while the picker
+/// is on screen (the view starts and stops it), because SwiftUI's focus state lags behind AppKit's in both
+/// directions: the name field takes focus with `makeFirstResponder`, outside SwiftUI, and the filter takes AppKit's
+/// focus before SwiftUI reports it. So the monitor acts only while the window's actual first responder is a text
+/// field inside the picker (inside its anchor's frame), only on events for the picker's own window, and leaves keys
+/// alone while an input method is composing text (marked text), so dead keys and IMEs keep working.
 @MainActor
 final class PickerKeyMonitor {
   /// The window the picker is in; set by ``PickerKeyMonitorAnchor``.
@@ -81,15 +81,27 @@ final class PickerKeyMonitor {
 
   /// Starts handing picker keys to `handler`, replacing an earlier handler. A key the handler reports as
   /// `.handled` is consumed; any other key, and every key that is not a ``PickerKey``, goes on as usual.
-  func start(handler: @escaping @MainActor (PickerKey) -> KeyPress.Result) {
+  /// `beforeEachKey` runs first for every key pressed while a picker field has focus, before the field sees it.
+  func start(
+    beforeEachKey: @escaping @MainActor () -> Void,
+    handler: @escaping @MainActor (PickerKey) -> KeyPress.Result
+  ) {
     stop()
     monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-      guard let self, let window = self.window, event.window === window,
-        self.isPickerFieldFirstResponder(in: window),
-        !Self.isComposingText(in: window), let key = PickerKey(event)
-      else { return event }
-      return handler(key) == .handled ? nil : event
+      self?.process(event, beforeEachKey: beforeEachKey, handler: handler) ?? event
     }
+  }
+
+  /// What the monitor does with a key-down `event`: returns it to let it go on, `nil` to consume it.
+  func process(
+    _ event: NSEvent, beforeEachKey: () -> Void, handler: (PickerKey) -> KeyPress.Result
+  ) -> NSEvent? {
+    guard let window, event.window === window, let anchor,
+      window.fieldEditor(editingFieldInside: anchor) != nil, !Self.isComposingText(in: window)
+    else { return event }
+    beforeEachKey()
+    guard let key = PickerKey(event) else { return event }
+    return handler(key) == .handled ? nil : event
   }
 
   /// Stops handing keys to the picker.
@@ -101,18 +113,6 @@ final class PickerKeyMonitor {
 
   isolated deinit {
     stop()
-  }
-
-  /// Whether `window`'s first responder is the field editor of a text field inside the picker: the filter or the
-  /// new-folder name, and not the filing panel's name field or the sidebar.
-  private func isPickerFieldFirstResponder(in window: NSWindow) -> Bool {
-    guard let anchor, anchor.window === window,
-      let editor = window.firstResponder as? NSTextView, editor.isFieldEditor,
-      let field = editor.delegate as? NSView
-    else { return false }
-    let pickerFrame = anchor.convert(anchor.bounds, to: nil)
-    let fieldFrame = field.convert(field.bounds, to: nil)
-    return pickerFrame.contains(CGPoint(x: fieldFrame.midX, y: fieldFrame.midY))
   }
 
   /// Whether the focused text in `window` has marked text, i.e. an input method is composing a character.

@@ -13,7 +13,8 @@ import SwiftUI
 /// While one of the picker's fields has focus, a ``PickerKeyMonitor`` hands the picker's keys to ``handle(_:)``
 /// before the text field, the focus system or the menu see them, so Tab, ⇧Tab, Return, Esc and the arrows never
 /// move focus or the caret by themselves. → and ← still move the caret while the filter has text: → steps in only
-/// with the caret at the end, ← and ⌫ step out only with an empty filter.
+/// with the caret at the end, ← and ⌫ step out only with an empty filter. Before any key reaches the filter, text
+/// typed in the sidebar that the filter has not received yet goes in (``TypeAhead``), so keys keep their order.
 ///
 /// ## Accessibility
 ///
@@ -33,6 +34,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   let field: (PickerField) -> FocusValue
 
   @State private var keyMonitor = PickerKeyMonitor()
+  @State private var typeAhead = TypeAhead()
   @State private var filterSelection: TextSelection?
 
   init(
@@ -59,6 +61,8 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
           prompt: Text(model.filterPlaceholder)
         )
         .labelsHidden()
+        // Text typed in the sidebar arrives once the field has focus, so it is never selected.
+        .background(TypeAheadReceiver(typeAhead: typeAhead))
         .focused(focus, equals: field(.filter))
         .accessibilityIdentifier("picker-filter")
       }
@@ -80,15 +84,10 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("picker")
-    .onChange(of: focusedField, initial: true) { previousField, focusedField in
-      if focusedField == nil {
-        keyMonitor.stop()
-      } else {
-        keyMonitor.start { key in handle(key) }
-      }
-      if focusedField == .filter, previousField != .filter {
-        placeFilterCaretAtEnd()
-      }
+    .onChange(of: focusedField, initial: true) {
+      // Runs while the picker is on screen; restarted with each focus change so it sees the current focus.
+      typeAhead.takeText = { model.takeTextTypedBeforeFocus() }
+      keyMonitor.start(beforeEachKey: typeAhead.deliver) { key in handle(key) }
     }
     .onChange(of: model.newFolderDraft == nil) { _, draftEnded in
       // The new-folder row and its field are gone. After a cancel, focus goes back to the filter; after a choice,
@@ -109,18 +108,6 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     if focused == field(.filter) { return .filter }
     if focused == field(.newFolderName) { return .newFolderName }
     return nil
-  }
-
-  /// Puts the filter's caret after its last character, so text typed in the sidebar continues the query instead of
-  /// replacing it, and → can step in at once.
-  ///
-  /// SwiftUI's text field selects all of its text when it gains focus, which happens after this focus change; so the
-  /// caret is placed again on the next turn of the main actor, once the field has taken focus.
-  private func placeFilterCaretAtEnd() {
-    filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
-    Task { @MainActor in
-      filterSelection = TextSelection(insertionPoint: model.filterText.endIndex)
-    }
   }
 
   /// Whether the filter's caret sits at the end of its text (or nothing is known about it, as right after the

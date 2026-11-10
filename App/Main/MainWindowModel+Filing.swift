@@ -16,7 +16,7 @@ extension MainWindowModel {
   ///
   /// A new search starts at the archive root; keys typed before the filter has taken focus are appended.
   func startDestinationFilter(with text: String) {
-    if !panel.isFilterFocusPending { picker.reset() }
+    if !picker.hasTextTypedBeforeFocus { picker.reset() }
     picker.enter(typing: text)
     panel.notice = nil
     requestFocus(.destinationFilter)

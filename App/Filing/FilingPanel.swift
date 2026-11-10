@@ -145,7 +145,6 @@ struct FilingPanel: View {
       .onChange(of: focusedField, initial: true) { _, field in
         if case .picker = field {
           model.focus = .destinationFilter
-          model.panel.isFilterFocusPending = false
         } else if model.focus == .destinationFilter {
           model.focus = nil
         }

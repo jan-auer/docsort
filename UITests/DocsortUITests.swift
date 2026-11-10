@@ -267,14 +267,22 @@ final class DocsortUITests: XCTestCase {
     XCTAssertEqual(result, .completed, "reads “\(shown)”", file: file, line: line)
   }
 
-  /// Waits until the main window's title (the selected file's name) reads `text`.
+  /// Waits until the main window's title (the selected file's name) reads `text`. On macOS 27 the window's title as
+  /// UI tests see it carries the subtitle too (the inbox), as "<name> – <inbox>".
   @MainActor
   private func expectWindowTitle(
     _ text: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line
   ) {
     let window = app.windows.containing(.any, identifier: "main-window").firstMatch
+    let titles = normalizationForms(of: text)
+    let predicates = titles.flatMap { title in
+      [
+        NSPredicate(format: "title == %@", title),
+        NSPredicate(format: "title BEGINSWITH %@", "\(title) – "),
+      ]
+    }
     let expectation = XCTNSPredicateExpectation(
-      predicate: NSPredicate(format: "title IN %@", normalizationForms(of: text)), object: window)
+      predicate: NSCompoundPredicate(orPredicateWithSubpredicates: predicates), object: window)
     let result = XCTWaiter().wait(for: [expectation], timeout: 5)
     let shown = window.exists ? window.title : "(no window)"
     XCTAssertEqual(result, .completed, "title reads “\(shown)”", file: file, line: line)
