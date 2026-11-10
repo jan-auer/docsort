@@ -44,18 +44,6 @@ struct QuickLookPanelControllerTests {
     "2033-10-04 Rechnung Oktober.pdf",
   ]
 
-  /// Waits up to five seconds for `condition`, which observation makes true on a later main-actor turn.
-  private func waitUntil(_ condition: () -> Bool) async throws {
-    let deadline = ContinuousClock.now + .seconds(5)
-    while !condition() {
-      guard ContinuousClock.now < deadline else {
-        Issue.record("Timed out waiting for the controller")
-        return
-      }
-      try await Task.sleep(for: .milliseconds(10))
-    }
-  }
-
   @Test("Space opens the panel on the selected file and closes it again")
   func toggle() {
     let panel = FakeQuickLookPanel()

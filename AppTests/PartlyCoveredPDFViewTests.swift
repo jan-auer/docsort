@@ -64,14 +64,19 @@ struct PartlyCoveredPDFViewTests {
     }
   }
 
-  @Test("the right margin reserves the covered width at the current scale")
-  func rightMarginReservesCoveredWidth() throws {
-    let (view, window) = makeView(document: try makeDocument(pageSizes: [landscape, portrait]))
+  /// Where the trailing edge of `page` lies in `view`, in points from the view's leading edge.
+  private func trailingEdge(of page: PDFPage, in view: PDFView) -> CGFloat {
+    view.convert(page.bounds(for: view.displayBox), from: page).maxX
+  }
+
+  @Test("the widest page ends before the covered part of the view")
+  func widestPageStaysUncovered() throws {
+    let document = try makeDocument(pageSizes: [landscape, portrait])
+    let (view, window) = makeView(document: document)
     defer { window.close() }
 
-    #expect(
-      abs(view.pageBreakMargins.right - (pageMargins.right + coveredWidth / view.scaleFactor)) < 0.5
-    )
+    let widestPage = try #require(document.page(at: 0))
+    #expect(trailingEdge(of: widestPage, in: view) <= viewWidth - coveredWidth + 0.5)
   }
 
   @Test("fit-to-width fits the widest page and its margins into the uncovered width")
@@ -84,11 +89,10 @@ struct PartlyCoveredPDFViewTests {
     #expect(abs(view.scaleFactor - fittedScale) < 0.005)
   }
 
-  @Test("a document with a different widest page gets new margins")
+  @Test("a document with a different widest page is fitted anew")
   func newDocumentRefitsMargins() throws {
     let (view, window) = makeView(document: try makeDocument(pageSizes: [landscape, portrait]))
     defer { window.close() }
-    let landscapeMargin = view.pageBreakMargins.right
 
     view.document = try makeDocument(pageSizes: [portrait, portrait])
     view.autoScales = true
@@ -97,9 +101,5 @@ struct PartlyCoveredPDFViewTests {
     let fittedScale =
       (viewWidth - coveredWidth) / (portrait.width + pageMargins.left + pageMargins.right)
     #expect(abs(view.scaleFactor - fittedScale) < 0.005)
-    #expect(abs(view.pageBreakMargins.right - landscapeMargin) > 1)
-    #expect(
-      abs(view.pageBreakMargins.right - (pageMargins.right + coveredWidth / view.scaleFactor)) < 0.5
-    )
   }
 }

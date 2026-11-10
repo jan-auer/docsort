@@ -24,7 +24,6 @@ struct NameField: View {
         text: $panel.nameText,
         placeholder: FileNameParts(file.name).stem,
         identifier: "name-field",
-        focusSelection: .all,
         focusRequestID: focusRequestID,
         onFocusChange: { isFocused in
           if isFocused {

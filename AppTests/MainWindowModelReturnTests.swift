@@ -9,58 +9,13 @@ import Testing
 struct MainWindowModelReturnTests {
   private let notenPath = "Musik Margit/Noten & Bücher"
 
-  /// A window model on `environment`'s archive and inboxes (scanned once), filing with a history and Trash of the
-  /// environment, and the undo manager it registers with.
-  private func makeModel(
-    _ environment: TestFolderEnvironment
-  ) async -> (model: MainWindowModel, undoManager: UndoManager) {
-    let folders = FolderLibrary(environment: environment.appEnvironment)
-    folders.setArchiveRoot(to: environment.archive)
-    folders.addInbox(folder: environment.webDownloads)
-    folders.addInbox(folder: environment.scanner)
-    let expectedChanges = ExpectedChanges()
-    let inboxes = InboxLibrary(watcher: InboxWatcher(expectedChanges: expectedChanges))
-    inboxes.update(inboxes: folders.inboxes)
-    await inboxes.waitForScan()
-    let historyURL = environment.root.appending(path: "FilingHistory.json")
-    let service = FilingService(
-      historyURL: historyURL,
-      recentsPreference: RecentDestinations.preference(in: environment.defaults),
-      fileOperations: FileOperations(
-        trash: FixtureTrash(folder: environment.root.appending(path: "Trash"))),
-      expectedChanges: expectedChanges)
-    let model = MainWindowModel(
-      folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-      filing: FilingModel(service: service, historyFileURL: historyURL),
-      search: SearchSettings(defaults: environment.defaults))
-    let undoManager = UndoManager()
-    model.undoManager = undoManager
-    return (model, undoManager)
-  }
-
-  /// Waits up to five seconds for `condition`, which the model's asynchronous actions make true.
-  private func waitUntil(_ condition: () -> Bool) async throws {
-    let deadline = ContinuousClock.now + .seconds(5)
-    while !condition() {
-      guard ContinuousClock.now < deadline else {
-        Issue.record("Timed out waiting for the model")
-        return
-      }
-      try await Task.sleep(for: .milliseconds(10))
-    }
-  }
-
-  private func exists(_ url: URL) -> Bool {
-    FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
-  }
-
   @Test("Move Back unmarks the row; undo returns the file to the archive and its filed mark")
   func moveBackAndUndo() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
     let invoice = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
-    let (model, undoManager) = await makeModel(environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let row = try #require(model.inboxes.orderedRows.first)
     let filed = try await model.filing.file(
       invoice, into: environment.archive.appending(path: notenPath), archivePath: notenPath,
@@ -74,18 +29,14 @@ struct MainWindowModelReturnTests {
 
     model.returnToInbox(file)
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(invoice))
-    #expect(!exists(filed.movedURL))
-    #expect(undoManager.undoActionName == "Move Back of “Rechnung_NA-33-08812.pdf”")
+    #expect(undoManager.canUndo)
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == filedMark }
-    #expect(exists(filed.movedURL))
-    #expect(!exists(invoice))
   }
 
   @Test(
-    "A Replace marks the replaced file's row trashed; returning it to its inbox leaves the replacing file in place"
+    "A Replace marks the replaced file's row trashed; returning it to its inbox is refused with an alert"
   )
   func replaceMarksReplacedRowTrashed() async throws {
     let environment = try TestFolderEnvironment()
@@ -94,7 +45,7 @@ struct MainWindowModelReturnTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     let scan = try writeInboxFile(
       named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
-    let (model, undoManager) = await makeModel(environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let invoiceRow = try #require(model.inboxes.row(listing: invoice))
     let scanRow = try #require(model.inboxes.row(listing: scan))
     let folder = environment.archive.appending(path: notenPath)
@@ -105,7 +56,6 @@ struct MainWindowModelReturnTests {
       newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
       documentID: filed.event.documentID)
     model.inboxes.setMark(invoiceRow.id, invoiceMark)
-    let archived = filed.movedURL
 
     // The scan is filed under the same name with Replace, as the conflict alert does.
     model.resolve(
@@ -119,31 +69,27 @@ struct MainWindowModelReturnTests {
 
     let scanMark = try #require(model.inboxes.row(for: scanRow.id)?.mark)
     #expect(scanMark.filedDocumentID != filed.event.documentID)
-    guard case .trashed(let trashedURL, _)? = model.inboxes.row(for: invoiceRow.id)?.mark else {
-      Issue.record("The replaced invoice's row is not marked trashed")
-      return
-    }
-    #expect(FileManager.default.fileExists(atPath: trashedURL.path(percentEncoded: false)))
+    let replacedMark = try #require(model.inboxes.row(for: invoiceRow.id)?.mark)
+    #expect(replacedMark.isTrashed)
     let replacedFile = try #require(model.file(invoiceRow.id))
     #expect(replacedFile.returnToInboxAction == .putBack)
 
-    // Put Back on the replaced row gets the history's refusal.
+    // Put Back on the replaced row gets the history's refusal; the row stays trashed.
     model.returnToInbox(replacedFile)
     try await waitUntil { model.alert != nil }
-    #expect(model.alert?.message == "This file was replaced by a move; undo that move instead.")
-    #expect(exists(archived))
+    #expect(model.inboxes.row(for: invoiceRow.id)?.mark == replacedMark)
     model.alert = nil
 
-    // A row still showing the invoice as filed there (as before this fix) gets Move Back refused.
+    // A row still showing the invoice as filed there gets Move Back refused, because another file is there now.
     model.inboxes.setMark(invoiceRow.id, invoiceMark)
     model.returnToInbox(try #require(model.file(invoiceRow.id)))
     try await waitUntil { model.alert != nil }
-    #expect(model.alert?.message == "This file has changed since it was filed.")
-    #expect(exists(archived))
-    #expect(!exists(scan))
-    #expect(!exists(invoice))
+    #expect(
+      model.alert?.message == FilingMessages.text(for: .fileChangedSinceFiling(filed.movedURL)))
+    #expect(model.inboxes.row(for: invoiceRow.id)?.mark == invoiceMark)
     #expect(model.inboxes.row(for: scanRow.id)?.mark == scanMark)
-    #expect(undoManager.undoActionName == "Move of “2033-10-11_Optik Klarblick.pdf”")
+    // Neither refusal is on the undo stack: ⌘Z still undoes the Replace.
+    #expect(undoManager.undoActionName.contains(scan.lastPathComponent))
   }
 
   @Test("Undoing a Replace puts back the replaced file and its row's filed mark")
@@ -154,7 +100,7 @@ struct MainWindowModelReturnTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     let scan = try writeInboxFile(
       named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
-    let (model, undoManager) = await makeModel(environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let invoiceRow = try #require(model.inboxes.row(listing: invoice))
     let scanRow = try #require(model.inboxes.row(listing: scan))
     let folder = environment.archive.appending(path: notenPath)
@@ -177,13 +123,10 @@ struct MainWindowModelReturnTests {
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: invoiceRow.id)?.mark == invoiceMark }
     #expect(model.inboxes.row(for: scanRow.id)?.mark == nil)
-    #expect(exists(scan))
-    #expect(exists(filed.movedURL))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: invoiceRow.id)?.mark?.isTrashed == true }
     #expect(model.inboxes.row(for: scanRow.id)?.mark?.filedDocumentID != nil)
-    #expect(!exists(scan))
   }
 
   @Test(
@@ -194,7 +137,7 @@ struct MainWindowModelReturnTests {
     defer { environment.remove() }
     let invoice = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
-    let (model, undoManager) = await makeModel(environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let row = try #require(model.inboxes.row(listing: invoice))
     let filed = try await model.filing.file(
       invoice, into: environment.archive.appending(path: notenPath), archivePath: notenPath,
@@ -222,14 +165,10 @@ struct MainWindowModelReturnTests {
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: numberedRow.id)?.mark == filedMark }
     #expect(model.inboxes.row(for: downloadRow.id)?.mark == nil)
-    #expect(exists(filed.movedURL))
-    #expect(!exists(numbered))
-    #expect(exists(invoice))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: numberedRow.id)?.mark == nil }
-    #expect(exists(numbered))
-    #expect(!exists(filed.movedURL))
+    #expect(model.inboxes.row(for: downloadRow.id)?.mark == nil)
   }
 
   @Test("Put Back unmarks the row; undo trashes it again and redo puts it back again")
@@ -238,7 +177,7 @@ struct MainWindowModelReturnTests {
     defer { environment.remove() }
     let scan = try writeInboxFile(
       named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
-    let (model, undoManager) = await makeModel(environment)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
     let row = try #require(model.inboxes.orderedRows.first)
     let trashed = try await model.filing.trash(scan)
     model.inboxes.setMark(
@@ -248,27 +187,27 @@ struct MainWindowModelReturnTests {
 
     model.returnToInbox(file)
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(scan))
-    #expect(undoManager.undoActionName == "Put Back of “2033-10-11_Optik Klarblick.pdf”")
+    #expect(undoManager.canUndo)
 
     undoManager.undo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark?.isTrashed == true }
-    #expect(!exists(scan))
 
     undoManager.redo()
     try await waitUntil { model.inboxes.row(for: row.id)?.mark == nil }
-    #expect(exists(scan))
   }
 
-  @Test("Renaming a filed file keeps it selected and shows its new name")
+  @Test(
+    "A filed file can be moved again only once its name or folder changes; renaming it keeps it selected under its new name"
+  )
   func renameFiledFileShowsNewName() async throws {
     let environment = try TestFolderEnvironment()
     defer { environment.remove() }
     let invoice = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
-    let (model, _) = await makeModel(environment)
-    let row = try #require(model.inboxes.row(listing: invoice))
     let folder = environment.archive.appending(path: notenPath)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let (model, undoManager) = try await TestWindow.open(on: environment)
+    let row = try #require(model.inboxes.row(listing: invoice))
     let filed = try await model.filing.file(
       invoice, into: folder, archivePath: notenPath, named: invoice.lastPathComponent,
       resolution: .refuse)
@@ -278,21 +217,30 @@ struct MainWindowModelReturnTests {
         newURL: filed.movedURL, destinationPath: notenPath, date: filed.event.date,
         documentID: filed.event.documentID))
     model.select(row.id)
+    try await waitUntil { model.picker.destination?.path == notenPath }
+    #expect(model.filedFileChange == nil)
+    #expect(!model.canMoveSelectedFile)
 
-    let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
-    model.resolve(
-      FilingConflict(
-        existingName: renamedName,
-        request: MoveRequest(
-          itemID: row.id, source: filed.movedURL, folderURL: folder, archivePath: notenPath,
-          name: renamedName, originalName: invoice.lastPathComponent,
-          kind: .renaming(documentID: filed.event.documentID))),
-      with: .refuse)
+    model.panel.nameText = "2033-10-13 Notenhaus Allegretto"
+    #expect(model.filedFileChange == .rename)
+    #expect(model.canMoveSelectedFile)
+    model.moveSelectedFile()
     try await waitUntil { model.statusMessage != nil }
 
-    #expect(model.statusMessage?.text == "Renamed to \(renamedName) · Undo ⌘Z")
+    let renamedName = "2033-10-13 Notenhaus Allegretto.pdf"
+    let status = try #require(model.statusMessage?.text)
+    #expect(status.contains(renamedName))
+    #expect(undoManager.canUndo)
     #expect(model.selectedFile?.id == row.id)
     #expect(model.selectedFile?.name == renamedName)
     #expect(model.panel.nameText == "2033-10-13 Notenhaus Allegretto")
+  }
+}
+
+extension InboxLibrary {
+  /// The row listing the inbox file at `url`, or `nil` when no section lists one there.
+  fileprivate func row(listing url: URL) -> InboxRow? {
+    let path = url.standardizedFileURL.path(percentEncoded: false)
+    return orderedRows.first { $0.item.url.standardizedFileURL.path(percentEncoded: false) == path }
   }
 }

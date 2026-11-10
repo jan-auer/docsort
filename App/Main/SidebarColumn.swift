@@ -3,10 +3,10 @@ import SwiftUI
 /// The main window's sidebar column: the inbox list on top and, below a hairline at the very bottom, the fixed
 /// History row that opens the History window.
 ///
-/// The inbox list is the `inboxList` view builder: the sidebar step passes its list of inbox sections there. The
-/// column gives it all the height above the History row, aligned to the top, and adds nothing else around it.
+/// The column gives the `inboxList` view builder (the window's `InboxSidebar`) all the height above the History row,
+/// aligned to the top, and adds nothing else around it.
 struct SidebarColumn<InboxList: View>: View {
-  /// The inbox sections, filled in by the sidebar step.
+  /// The list of inbox sections.
   @ViewBuilder let inboxList: InboxList
 
   @Environment(\.openWindow) private var openWindow
@@ -47,23 +47,25 @@ struct SidebarColumn<InboxList: View>: View {
   }
 }
 
-#Preview("Sidebar with invented inboxes") {
-  SidebarColumn {
-    List {
-      Section("Web-Downloads") {
-        Text("Rechnung_NA-33-08812.pdf")
-        Text("2033-10-20 Verlängerung Jahreskarte Konrad.pdf")
+#if DEBUG
+  #Preview("Sidebar with invented inboxes") {
+    SidebarColumn {
+      List {
+        Section("Web-Downloads") {
+          Text("Rechnung_NA-33-08812.pdf")
+          Text("2033-10-20 Verlängerung Jahreskarte Konrad.pdf")
+        }
+        Section("Scanner") {
+          Text("2033-10-11_Optik Klarblick.pdf")
+        }
       }
-      Section("Scanner") {
-        Text("2033-10-11_Optik Klarblick.pdf")
-      }
+      .listStyle(.sidebar)
     }
-    .listStyle(.sidebar)
-  }
-  .frame(width: 260, height: 480)
-}
-
-#Preview("Empty sidebar") {
-  SidebarColumn {}
     .frame(width: 260, height: 480)
-}
+  }
+
+  #Preview("Empty sidebar") {
+    SidebarColumn {}
+      .frame(width: 260, height: 480)
+  }
+#endif

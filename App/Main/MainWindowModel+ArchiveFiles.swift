@@ -2,26 +2,6 @@ import DocsortCore
 import Foundation
 import OSLog
 
-/// A rename of an archive file from Folder contents, with what is needed to redo it.
-nonisolated struct ArchiveRenameRequest: Hashable, Sendable {
-  /// Where the file was before the rename.
-  let source: URL
-  /// The new name, with its extension.
-  let name: String
-  /// The file's name before the rename, for the Undo menu item.
-  let originalName: String
-}
-
-/// A move to the Trash of an archive file from Folder contents, with what is needed to redo it.
-nonisolated struct ArchiveTrashRequest: Hashable, Sendable {
-  /// Where the file was.
-  let url: URL
-  /// The file's name, for the Undo menu item.
-  let originalName: String
-  /// The file Folder contents selects once the file is gone: the next one, else the previous one.
-  let selectionAfter: URL?
-}
-
 /// Rename… and Move to Trash in the menu of a file in Folder contents: archive files, renamed and trashed through the
 /// `FilingService` like inbox files, so the filing history records them, ⌘Z undoes them, and an inbox row that filed
 /// the file follows it (its new name, or trashed with Put Back).
@@ -43,7 +23,7 @@ extension MainWindowModel {
       return
     }
     let request = ArchiveRenameRequest(source: file.url, name: name, originalName: file.name)
-    Task { await perform(request) }
+    startFilingOperation { await self.perform(request) }
   }
 
   /// Moves the archive file `file` to the Trash, without confirmation (it can be undone).
@@ -52,21 +32,17 @@ extension MainWindowModel {
     let request = ArchiveTrashRequest(
       url: file.url, originalName: file.name,
       selectionAfter: picker.contentsFile(replacing: file)?.url)
-    Task { await perform(request) }
+    startFilingOperation { await self.perform(request) }
   }
 
   private func perform(_ request: ArchiveRenameRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.rename(request.source, to: request.name)
       let filedRows = applyRename(outcome)
       registerUndo(
         of: .archiveRename(request, filedRows: filedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: "Renamed “\(request.originalName)” to \(request.name) · Undo ⌘Z")
+      statusMessage = .undoable("Renamed “\(request.originalName)” to \(request.name)")
     } catch {
       Logger.filing.error(
         "Renaming \(request.originalName, privacy: .private) failed: \(String(describing: error), privacy: .private)"
@@ -78,17 +54,13 @@ extension MainWindowModel {
   }
 
   private func perform(_ request: ArchiveTrashRequest) async {
-    guard !isFilingInProgress else { return }
-    isFilingInProgress = true
-    defer { isFilingInProgress = false }
     do {
       let outcome = try await filing.trash(request.url)
       let filedRows = applyTrash(outcome, selectingAfterwards: request.selectionAfter)
       registerUndo(
         of: .archiveTrash(request, filedRows: filedRows),
         ticket: FilingEventTicket(eventID: outcome.event.id))
-      statusMessage = WindowStatusMessage(
-        text: "Moved “\(request.originalName)” to the Trash · Undo ⌘Z")
+      statusMessage = .undoable("Moved “\(request.originalName)” to the Trash")
     } catch {
       Logger.filing.error(
         "Trashing \(request.originalName, privacy: .private) failed: \(String(describing: error), privacy: .private)"
@@ -118,7 +90,7 @@ extension MainWindowModel {
   @discardableResult
   func applyTrash(_ outcome: TrashOutcome, selectingAfterwards selection: URL?) -> [MarkedRow] {
     let filedRows = remark(filedAs: outcome.event.documentID) { _ in
-      .trashed(trashedURL: outcome.record.trashedURL, date: outcome.event.date)
+      .trashed(by: outcome)
     }
     picker.reloadContents(selecting: selection)
     return filedRows

@@ -2,85 +2,6 @@ import DocsortCore
 import Foundation
 import OSLog
 
-/// Whether the filing history could be loaded, which decides whether files can be moved and trashed.
-nonisolated enum FilingHistoryAvailability: Equatable, Sendable {
-  /// The history has not been loaded yet.
-  case loading
-  /// The history is loaded (or there was none yet); filing works.
-  case available
-  /// The history file exists but cannot be read. It is never saved over; moving and trashing are refused until the
-  /// user starts a new history.
-  case unreadable(FilingHistoryStoreError)
-}
-
-/// The filing service's state, as the window shows it.
-nonisolated struct FilingStatus: Equatable, Sendable {
-  /// Whether the history could be loaded.
-  let historyAvailability: FilingHistoryAvailability
-  /// Why the last save of the history failed; `nil` once a save succeeded. The changes are kept in memory and the
-  /// save is retried before every later operation.
-  let pendingSaveError: FilingHistoryStoreError?
-  /// The recent destinations, most recent first.
-  let recents: RecentDestinations
-}
-
-/// A completed move.
-nonisolated struct MoveOutcome: Sendable {
-  /// The history event recording the move.
-  let event: FilingEvent
-  /// What the move did, including where the file is now.
-  let record: MoveRecord
-  /// The history event recording the trip to the Trash of the item a Replace took the place of; `nil` when the move
-  /// replaced nothing. Its document is the replaced file's, so whatever showed that file can show it as trashed.
-  let replacedEvent: FilingEvent?
-  /// The service's state after the move.
-  let status: FilingStatus
-
-  /// Where the file is now.
-  var movedURL: URL { record.destinationURL }
-}
-
-/// A completed move to the Trash.
-nonisolated struct TrashOutcome: Sendable {
-  /// The history event recording the trash.
-  let event: FilingEvent
-  /// What the trash did.
-  let record: TrashRecord
-  /// The service's state after the trash.
-  let status: FilingStatus
-}
-
-/// A completed undo.
-nonisolated struct UndoOutcome: Sendable {
-  /// The event that was undone.
-  let eventID: FilingEvent.ID
-  /// The filing history's document the event moved or trashed.
-  let documentID: UUID
-  /// Where the file is back now.
-  let restored: RestoredItem
-  /// The service's state after the undo.
-  let status: FilingStatus
-}
-
-/// Why a filing operation did not happen.
-nonisolated enum FilingError: Error, Equatable, Sendable {
-  /// The filing history cannot be read, so nothing is moved or trashed until a new history is started.
-  case historyUnreadable(FilingHistoryStoreError)
-  /// The file operation failed; the core's error says why. A name conflict is
-  /// `.fileOperation(.nameConflict(existing:))`, which the caller can retry with another resolution.
-  case fileOperation(FileOperationError)
-  /// The history refuses the undo, for example because a later event of the same file must be undone first.
-  case undoRefused(FilingHistoryError)
-  /// The unreadable history file could not be set aside to start a new one.
-  case setAsideFailed(url: URL, reason: String)
-  /// The history has no record of how the file at this URL got there: for Move Back, no move of it into the archive
-  /// (its latest active event); for Put Back, no move of it to the Trash.
-  case noHistoryRecord(URL)
-  /// The history says another document is at this URL now than the filed one asked for (a Replace or a later filing
-  /// took its place), so nothing is moved.
-  case fileChangedSinceFiling(URL)
-}
-
 /// Moves, trashes and undoes inbox files, and renames and trashes archive files, keeping the filing history and the
 /// recent destinations in step.
 ///
@@ -205,6 +126,24 @@ actor FilingService {
     _ source: URL, into folder: URL, archivePath: String, named name: String,
     resolution: ConflictResolution, in history: FilingHistory
   ) throws(FilingError) -> MoveOutcome {
+    let (event, record) = try performRecordedMove(
+      source, into: folder, named: name, resolution: resolution, in: history,
+      recentDestination: archivePath)
+    let replacedEvent =
+      record.replaced == nil ? nil : self.history?.events.last { $0.causedBy == event.id }
+    Logger.filing.notice(
+      "Filed \(source.lastPathComponent, privacy: .private) to \(archivePath, privacy: .private)")
+    return MoveOutcome(
+      event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
+  }
+
+  /// Moves `source` into `folder` under `name`, records the move into `history`, counts `recentDestination` (an
+  /// archive-relative path; `nil` when the move is no filing) as a recent destination, and saves the history and the
+  /// recents.
+  private func performRecordedMove(
+    _ source: URL, into folder: URL, named name: String, resolution: ConflictResolution,
+    in history: FilingHistory, recentDestination: String?
+  ) throws(FilingError) -> (event: FilingEvent, record: MoveRecord) {
     var history = history
     let record: MoveRecord
     do {
@@ -216,15 +155,10 @@ actor FilingService {
       throw .fileOperation(error)
     }
     let event = history.recordMove(record, at: Date())
-    let replacedEvent =
-      record.replaced == nil ? nil : history.events.last { $0.causedBy == event.id }
     self.history = history
-    recents.record(archivePath)
+    if let recentDestination { recents.record(recentDestination) }
     save()
-    Logger.filing.notice(
-      "Filed \(source.lastPathComponent, privacy: .private) to \(archivePath, privacy: .private)")
-    return MoveOutcome(
-      event: event, record: record, replacedEvent: replacedEvent, status: currentStatus)
+    return (event, record)
   }
 
   /// Renames the file at `url` in its folder to `name` (an archive file, from Folder contents), records the rename
@@ -233,20 +167,9 @@ actor FilingService {
   ///
   /// A taken name throws `.fileOperation(.nameConflict(existing:))` and changes nothing.
   func rename(_ url: URL, to name: String) throws(FilingError) -> MoveOutcome {
-    var history = try writableHistory()
-    let record: MoveRecord
-    do {
-      record = try expectedChanges.perform(
-        { () throws(FileOperationError) in
-          try fileOperations.move(
-            url, into: url.deletingLastPathComponent(), named: name, resolution: .refuse)
-        }, expecting: Self.changes(madeBy:))
-    } catch {
-      throw .fileOperation(error)
-    }
-    let event = history.recordMove(record, at: Date())
-    self.history = history
-    save()
+    let (event, record) = try performRecordedMove(
+      url, into: url.deletingLastPathComponent(), named: name, resolution: .refuse,
+      in: try writableHistory(), recentDestination: nil)
     Logger.filing.notice(
       "Renamed \(url.lastPathComponent, privacy: .private) to \(name, privacy: .private)")
     return MoveOutcome(event: event, record: record, replacedEvent: nil, status: currentStatus)
@@ -326,25 +249,14 @@ actor FilingService {
   func moveBack(
     document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
   ) throws(FilingError) -> MoveOutcome {
-    var history = try writableHistory()
+    let history = try writableHistory()
     try verifyFiledPlacement(of: documentID, at: currentURL, in: history)
     guard let origin = history.origin(ofDocument: documentID) else {
       throw .noHistoryRecord(currentURL)
     }
-    let record: MoveRecord
-    do {
-      record = try expectedChanges.perform(
-        { () throws(FileOperationError) in
-          try fileOperations.move(
-            currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
-            resolution: resolution)
-        }, expecting: Self.changes(madeBy:))
-    } catch {
-      throw .fileOperation(error)
-    }
-    let event = history.recordMove(record, at: Date())
-    self.history = history
-    save()
+    let (event, record) = try performRecordedMove(
+      currentURL, into: origin.deletingLastPathComponent(), named: origin.lastPathComponent,
+      resolution: resolution, in: history, recentDestination: nil)
     Logger.filing.notice(
       "Moved \(currentURL.lastPathComponent, privacy: .private) back to \(record.destinationURL.deletingLastPathComponent().lastPathComponent, privacy: .private)"
     )

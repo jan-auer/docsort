@@ -66,6 +66,11 @@ nonisolated struct WindowStatusMessage: Hashable, Sendable, Identifiable {
   let id = UUID()
   /// The message.
   let text: String
+
+  /// The confirmation `text` of an action, offering ⌘Z to undo it.
+  static func undoable(_ text: String) -> WindowStatusMessage {
+    WindowStatusMessage(text: "\(text) · Undo ⌘Z")
+  }
 }
 
 /// An alert about a failed filing action.
@@ -91,7 +96,7 @@ nonisolated enum MainWindowWidthClass: Sendable {
 ///
 /// The main window's views read it, and the menu commands reach it through the `mainWindowModel` focused value while
 /// the main window is key. The rows come from the app's `InboxLibrary`, the destinations from its `ArchiveLibrary`,
-/// and moves, trashes and undos go through its `FilingModel` (see `MainWindowModel+Filing.swift`).
+/// and moves, trashes and undos go through its `FilingStatusModel` (see `MainWindowModel+Filing.swift`).
 @Observable
 final class MainWindowModel {
   /// Below this window width the sidebar collapses on its own, so that the preview keeps its room.
@@ -127,7 +132,7 @@ final class MainWindowModel {
   var moveBackConflict: MoveBackConflict?
   /// A failed action to tell the user about.
   var alert: FilingAlert?
-  /// Whether a move, trash, Move Back or Put Back is under way; further ones wait for it.
+  /// Whether a move, trash, Move Back, Put Back or archive file change is under way; others are dropped meanwhile.
   var isFilingInProgress = false
 
   /// The app's configured folders.
@@ -137,7 +142,7 @@ final class MainWindowModel {
   /// The app's archive index.
   let archive: ArchiveLibrary
   /// The app's filing service, as the main actor sees it.
-  let filing: FilingModel
+  let filing: FilingStatusModel
   /// The destination-search settings.
   let search: SearchSettings
   /// What the filing panel holds for the selected file, beyond the destination picker.
@@ -170,7 +175,8 @@ final class MainWindowModel {
 
   /// Creates the state of a main window showing the app's models.
   init(
-    folders: FolderLibrary, inboxes: InboxLibrary, archive: ArchiveLibrary, filing: FilingModel,
+    folders: FolderLibrary, inboxes: InboxLibrary, archive: ArchiveLibrary,
+    filing: FilingStatusModel,
     search: SearchSettings
   ) {
     self.folders = folders
@@ -296,8 +302,7 @@ final class MainWindowModel {
     sidebarSelection = .item(id)
   }
 
-  /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
-  /// Follows a change made outside docsort: when the selected file was removed, selects the next unfiled file (the
+  /// Follows a change made outside docsort: when the selected file was removed, selects the next unhandled file (the
   /// panel resets, discarding what was typed) and says so in the bottom bar; when the selected download completed into
   /// a file of its own (or a safe-save replaced it), selects that file, keeping what the filing panel holds.
   private func follow(_ change: InboxExternalChange) {
@@ -319,6 +324,7 @@ final class MainWindowModel {
     }
   }
 
+  /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
   private static func folderPath(of url: URL) -> String {
     let path = url.standardizedFileURL.path(percentEncoded: false)
     return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
@@ -351,7 +357,7 @@ final class MainWindowModel {
       let environment = AppEnvironment.inert(named: "previews")
       let model = MainWindowModel(
         folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-        filing: FilingModel(
+        filing: FilingStatusModel(
           service: .make(environment: environment, expectedChanges: ExpectedChanges()),
           historyFileURL: environment.filingHistoryURL),
         search: SearchSettings(defaults: environment.defaults))

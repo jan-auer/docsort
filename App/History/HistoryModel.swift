@@ -38,7 +38,7 @@ nonisolated struct HistoryMoveBackConflict: Identifiable, Sendable {
 /// The state of the History window: every move and trash of the filing history grouped by day, the search, the
 /// selection, and the actions on the selected entry.
 ///
-/// It reads the history through the app's `FilingModel` (`refresh()`, when the window appears and after each action;
+/// It reads the history through the app's `FilingStatusModel` (`refresh()`, when the window appears and after each action;
 /// there are no live updates) and moves files back through it. After Move Back or Put Back it updates the main
 /// window's inbox rows the way the filing panel does, through `InboxLibrary.setMark`.
 @Observable
@@ -86,7 +86,7 @@ final class HistoryModel {
     self.calendar = calendar
   }
 
-  private var filing: FilingModel { mainWindow.filing }
+  private var filing: FilingStatusModel { mainWindow.filing }
   private var inboxes: InboxLibrary { mainWindow.inboxes }
 
   // MARK: Listing

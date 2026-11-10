@@ -23,7 +23,7 @@ struct DocsortApp: App {
   /// The inbox rows, rescanned whenever the inboxes change.
   @State private var inboxes: InboxLibrary
   /// Moving, trashing and undoing, with the filing history.
-  @State private var filing: FilingModel
+  @State private var filing: FilingStatusModel
   /// The state of the one main window.
   @State private var mainWindowModel: MainWindowModel
   /// The state of the History window.
@@ -43,7 +43,7 @@ struct DocsortApp: App {
     let expectedChanges = ExpectedChanges()
     let inboxes = InboxLibrary(
       folders: folders, watcher: InboxWatcher(expectedChanges: expectedChanges))
-    let filing = FilingModel(
+    let filing = FilingStatusModel(
       service: .make(environment: environment, expectedChanges: expectedChanges),
       historyFileURL: environment.filingHistoryURL)
     _archive = State(initialValue: archive)

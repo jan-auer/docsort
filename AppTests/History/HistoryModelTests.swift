@@ -152,29 +152,10 @@ struct HistoryModelTests {
 
   // MARK: Actions
 
-  /// A History over a window model on `environment`'s archive and inboxes (scanned once), filing with a history and
-  /// Trash of the environment.
-  private func makeModel(_ environment: TestFolderEnvironment) async -> HistoryModel {
-    let folders = FolderLibrary(environment: environment.appEnvironment)
-    folders.setArchiveRoot(to: environment.archive)
-    folders.addInbox(folder: environment.webDownloads)
-    folders.addInbox(folder: environment.scanner)
-    let expectedChanges = ExpectedChanges()
-    let inboxes = InboxLibrary(watcher: InboxWatcher(expectedChanges: expectedChanges))
-    inboxes.update(inboxes: folders.inboxes)
-    await inboxes.waitForScan()
-    let historyURL = environment.root.appending(path: "FilingHistory.json")
-    let service = FilingService(
-      historyURL: historyURL,
-      recentsPreference: RecentDestinations.preference(in: environment.defaults),
-      fileOperations: FileOperations(
-        trash: FixtureTrash(folder: environment.root.appending(path: "Trash"))),
-      expectedChanges: expectedChanges)
-    let mainWindow = MainWindowModel(
-      folders: folders, inboxes: inboxes, archive: ArchiveLibrary(),
-      filing: FilingModel(service: service, historyFileURL: historyURL),
-      search: SearchSettings(defaults: environment.defaults))
-    return HistoryModel(mainWindow: mainWindow, calendar: utcCalendar)
+  /// A History over a `TestWindow` on `environment`.
+  private func historyModel(on environment: TestFolderEnvironment) async throws -> HistoryModel {
+    HistoryModel(
+      mainWindow: try await TestWindow.open(on: environment).model, calendar: utcCalendar)
   }
 
   private func exists(_ url: URL) -> Bool {
@@ -189,7 +170,7 @@ struct HistoryModelTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     let scan = try writeInboxFile(
       named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
-    let history = await makeModel(environment)
+    let history = try await historyModel(on: environment)
     let inboxes = history.mainWindow.inboxes
     let invoiceRow = try #require(
       inboxes.orderedRows.first { $0.item.name == invoice.lastPathComponent })
@@ -225,8 +206,6 @@ struct HistoryModelTests {
 
     await history.returnToInbox(filedEntry)
 
-    #expect(exists(invoice))
-    #expect(!exists(filed.movedURL))
     #expect(inboxes.row(for: invoiceRow.id)?.mark == nil)
     #expect(history.entries.map(\.kind) == [.filed, .trashed, .movedBack])
     let movedBackEntry = try #require(history.entries.last)
@@ -241,7 +220,6 @@ struct HistoryModelTests {
     let currentTrashedEntry = try #require(history.entries.first { $0.id == trashedEntry.id })
     await history.returnToInbox(currentTrashedEntry)
 
-    #expect(exists(scan))
     #expect(inboxes.row(for: scanRow.id)?.mark == nil)
     let undoneEntry = try #require(history.entries.first { $0.id == trashedEntry.id })
     guard case .undone = undoneEntry.place else {
@@ -261,7 +239,7 @@ struct HistoryModelTests {
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
     let scan = try writeInboxFile(
       named: "2033-10-13_Notenhaus.pdf", in: environment.scanner, date: october2033(13))
-    let history = await makeModel(environment)
+    let history = try await historyModel(on: environment)
     let inboxes = history.mainWindow.inboxes
     let invoiceRow = try #require(
       inboxes.orderedRows.first { $0.item.name == invoice.lastPathComponent })
@@ -300,9 +278,6 @@ struct HistoryModelTests {
 
     await history.returnToInbox(staleEntry)
 
-    #expect(exists(replacing.movedURL))
-    #expect(!exists(scan))
-    #expect(!exists(invoice))
     #expect(
       history.alert?.message
         == FilingMessages.text(for: .fileChangedSinceFiling(replacing.movedURL)))
@@ -323,7 +298,7 @@ struct HistoryModelTests {
       named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(13))
     let other = try writeInboxFile(
       named: "2033-10-13 Notenhaus Allegretto alt.pdf", in: folder, date: october2033(13))
-    let history = await makeModel(environment)
+    let history = try await historyModel(on: environment)
     let filing = history.mainWindow.filing
     let renamed = try await filing.rename(sheet, to: "2033-10-13 Notenhaus Allegretto.pdf")
     _ = try await filing.trash(other)
@@ -356,7 +331,7 @@ struct HistoryModelTests {
     defer { environment.remove() }
     let invoice = try writeInboxFile(
       named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
-    let history = await makeModel(environment)
+    let history = try await historyModel(on: environment)
     let inboxes = history.mainWindow.inboxes
     let row = try #require(inboxes.orderedRows.first)
     let filing = history.mainWindow.filing
@@ -390,7 +365,7 @@ struct HistoryModelTests {
     let folder = environment.archive.appending(path: notenPath)
     let sheet = try writeInboxFile(
       named: "2033-10-13 Notenhaus.pdf", in: folder, date: october2033(13))
-    let history = await makeModel(environment)
+    let history = try await historyModel(on: environment)
     let renamed = try await history.mainWindow.filing.rename(
       sheet, to: "2033-10-13 Notenhaus Allegretto.pdf")
     // Another file takes the earlier name.

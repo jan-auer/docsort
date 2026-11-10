@@ -184,7 +184,7 @@ struct ShortcutCatalogTests {
     }
     let inMenuBar = Set(titles.keys)
     let anywhere = Set(combinations(in: .anywhere))
-    let standard = Set(ShortcutCatalog.standardMacShortcuts)
+    let standard = Set(Self.standardMacShortcuts)
 
     let unlisted = inMenuBar.subtracting(anywhere).subtracting(standard)
     #expect(
@@ -211,6 +211,24 @@ struct ShortcutCatalogTests {
   private func titles(matching query: String) -> [String] {
     catalog.sections(matching: query).flatMap(\.entries).map(\.title)
   }
+
+  /// Shortcuts the menu bar has in every Mac app, which the sheet leaves out: quitting, hiding, closing and minimizing
+  /// windows, full screen, the text editing commands, Emoji & Symbols and Help.
+  private static let standardMacShortcuts: [KeyCombination] = [
+    KeyCombination("q", modifiers: .command),
+    KeyCombination("h", modifiers: .command),
+    KeyCombination("h", modifiers: [.option, .command]),
+    KeyCombination("w", modifiers: .command),
+    KeyCombination("w", modifiers: [.option, .command]),
+    KeyCombination("m", modifiers: .command),
+    KeyCombination("f", modifiers: [.control, .command]),
+    KeyCombination("x", modifiers: .command),
+    KeyCombination("c", modifiers: .command),
+    KeyCombination("v", modifiers: .command),
+    KeyCombination("a", modifiers: .command),
+    KeyCombination(.space, modifiers: .command),
+    KeyCombination("?", modifiers: .command),
+  ]
 
   /// Every item of `menu` and its submenus.
   private static func menuItems(in menu: NSMenu) -> [NSMenuItem] {

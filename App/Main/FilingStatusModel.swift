@@ -7,7 +7,7 @@ import Observation
 ///
 /// One per app. It decides nothing itself; the window model words messages and applies outcomes.
 @Observable
-final class FilingModel {
+final class FilingStatusModel {
   /// Whether the filing history could be loaded.
   private(set) var historyAvailability: FilingHistoryAvailability = .loading
   /// Why the last history save failed, while a save is pending.
@@ -39,14 +39,9 @@ final class FilingModel {
     _ source: URL, into folder: URL, archivePath: String, named name: String,
     resolution: ConflictResolution
   ) async throws(FilingError) -> MoveOutcome {
-    do {
-      let outcome = try await service.file(
+    try await mirroringStatus { service throws(FilingError) in
+      try await service.file(
         source, into: folder, archivePath: archivePath, named: name, resolution: resolution)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
     }
   }
 
@@ -55,51 +50,29 @@ final class FilingModel {
     document documentID: UUID, at source: URL, into folder: URL, archivePath: String,
     named name: String, resolution: ConflictResolution
   ) async throws(FilingError) -> MoveOutcome {
-    do {
-      let outcome = try await service.refile(
+    try await mirroringStatus { service throws(FilingError) in
+      try await service.refile(
         document: documentID, at: source, into: folder, archivePath: archivePath, named: name,
         resolution: resolution)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
     }
   }
 
   /// Renames the archive file at `url` to `name` in its folder; see `FilingService.rename`.
   func rename(_ url: URL, to name: String) async throws(FilingError) -> MoveOutcome {
-    do {
-      let outcome = try await service.rename(url, to: name)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
+    try await mirroringStatus { service throws(FilingError) in
+      try await service.rename(url, to: name)
     }
   }
 
   /// Moves `url` to the Trash; see `FilingService.trash`.
   func trash(_ url: URL) async throws(FilingError) -> TrashOutcome {
-    do {
-      let outcome = try await service.trash(url)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
-    }
+    try await mirroringStatus { service throws(FilingError) in try await service.trash(url) }
   }
 
   /// Undoes the event `eventID`; see `FilingService.undo`.
   func undo(eventID: FilingEvent.ID) async throws(FilingError) -> UndoOutcome {
-    do {
-      let outcome = try await service.undo(eventID: eventID)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
+    try await mirroringStatus { service throws(FilingError) in
+      try await service.undo(eventID: eventID)
     }
   }
 
@@ -107,26 +80,14 @@ final class FilingModel {
   func moveBack(
     document documentID: UUID, at currentURL: URL, resolution: ConflictResolution
   ) async throws(FilingError) -> MoveOutcome {
-    do {
-      let outcome = try await service.moveBack(
-        document: documentID, at: currentURL, resolution: resolution)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
+    try await mirroringStatus { service throws(FilingError) in
+      try await service.moveBack(document: documentID, at: currentURL, resolution: resolution)
     }
   }
 
   /// Puts the file at `trashedURL` back from the Trash; see `FilingService.putBack`.
   func putBack(_ trashedURL: URL) async throws(FilingError) -> UndoOutcome {
-    do {
-      let outcome = try await service.putBack(trashedURL)
-      apply(outcome.status)
-      return outcome
-    } catch {
-      await refreshStatus()
-      throw error
+    try await mirroringStatus { service throws(FilingError) in try await service.putBack(trashedURL)
     }
   }
 
@@ -150,6 +111,21 @@ final class FilingModel {
     let isSaved = await service.saveBeforeQuit()
     await refreshStatus()
     return isSaved
+  }
+
+  /// Runs `operation` on the service and mirrors the state it leaves: the outcome's on success, a fresh one when it
+  /// throws (a failed operation may still have loaded the history or retried a save).
+  private func mirroringStatus<Outcome: FilingOutcome>(
+    _ operation: (FilingService) async throws(FilingError) -> Outcome
+  ) async throws(FilingError) -> Outcome {
+    do {
+      let outcome = try await operation(service)
+      apply(outcome.status)
+      return outcome
+    } catch {
+      await refreshStatus()
+      throw error
+    }
   }
 
   private func refreshStatus() async {

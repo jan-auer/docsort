@@ -317,6 +317,46 @@ struct FilingServiceTests {
     }
   }
 
+  @Test(
+    "Put Back of the file a Replace sent to the Trash is refused until the Replace is undone, and changes nothing"
+  )
+  func putBackOfReplacedFileIsRefused() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let invoice = try writeInboxFile(
+      named: "Rechnung_NA-33-08812.pdf", in: environment.webDownloads, date: october2033(13))
+    let scan = try writeInboxFile(
+      named: "2033-10-11_Optik Klarblick.pdf", in: environment.scanner, date: october2033(11))
+    let folder = environment.archive.appending(path: notenPath)
+    let service = makeService(environment)
+    _ = try await service.file(
+      invoice, into: folder, archivePath: notenPath,
+      named: "2033-10-13 Notenhaus Allegretto.pdf", resolution: .refuse)
+    let replacing = try await service.file(
+      scan, into: folder, archivePath: notenPath, named: "2033-10-13 Notenhaus Allegretto.pdf",
+      resolution: .replace)
+    let replacedEvent = try #require(replacing.replacedEvent)
+    guard case .trashed(let replacedRecord) = replacedEvent.action else {
+      Issue.record("The Replace should trash the filed file, did \(replacedEvent.action)")
+      return
+    }
+
+    do {
+      _ = try await service.putBack(replacedRecord.trashedURL)
+      Issue.record("Expected the Put Back to be refused")
+    } catch .undoRefused(.undoneWithMove(let eventID, let move, _)) {
+      #expect(eventID == replacedEvent.id)
+      #expect(move == replacing.event.id)
+    } catch {
+      Issue.record("Expected undoneWithMove, got \(error)")
+    }
+
+    #expect(
+      FileManager.default.fileExists(atPath: replacedRecord.trashedURL.path(percentEncoded: false)))
+    #expect(FileManager.default.fileExists(atPath: replacing.movedURL.path(percentEncoded: false)))
+    #expect(!FileManager.default.fileExists(atPath: invoice.path(percentEncoded: false)))
+  }
+
   @Test("A failed save keeps the move, reports the error and succeeds on retry")
   func failedSaveKeepsTheChange() async throws {
     let environment = try TestFolderEnvironment()

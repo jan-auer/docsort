@@ -56,8 +56,8 @@ struct MainWindowView: View {
             .frame(width: filingPanelWidth.clamped(to: Self.filingPanelWidths))
             .frame(maxHeight: .infinity)
           }
-          // Slides in and out at the trailing edge as the inspector did, whichever command toggles it (toolbar,
-          // View menu, ⌥⌘I, or focusing the filter or name field while it is hidden).
+          // Slides in and out at the trailing edge, whichever command toggles it (toolbar, View menu, ⌥⌘I, or focusing
+          // the filter or name field while it is hidden).
           .transition(.move(edge: .trailing))
         }
       }
