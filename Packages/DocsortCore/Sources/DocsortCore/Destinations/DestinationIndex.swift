@@ -133,11 +133,10 @@ public struct DestinationIndex: Sendable {
     matcher.matches(query, folder: path, ranking: ranking)
   }
 
-  /// The visible files and packages directly in the folder at `path` (`""` for the root), newest first by
-  /// modification date, equal dates in Finder name order.
+  /// The visible files and packages directly in the folder at `path` (`""` for the root), in Finder name order, so
+  /// names in the archive's `YYYY-MM-DD Beschreibung` style read in date order with the newest at the bottom.
   ///
-  /// Hidden files and the custom-icon file `Icon\r` are left out. A file whose modification date the file system
-  /// does not report sorts last.
+  /// Hidden files and the custom-icon file `Icon\r` are left out.
   ///
   /// - Throws: ``FolderAccessError`` when the folder is missing, is not a folder, or cannot be listed.
   public func files(in path: String) throws(FolderAccessError) -> [FolderFile] {
@@ -146,17 +145,8 @@ public struct DestinationIndex: Sendable {
     let contents = try VisibleContentsWalker().walk(url(for: path), depth: .immediateContents)
     return contents.items
       .filter { $0.url.lastPathComponent != Self.customIconName }
-      .map { item in
-        FolderFile(
-          url: item.url, name: item.url.lastPathComponent,
-          modificationDate: item.modificationDate ?? .distantPast)
-      }
-      .sorted { lhs, rhs in
-        if lhs.modificationDate != rhs.modificationDate {
-          return lhs.modificationDate > rhs.modificationDate
-        }
-        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-      }
+      .map { item in FolderFile(url: item.url, name: item.url.lastPathComponent) }
+      .sorted { lhs, rhs in lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending }
   }
 
   /// The file Finder stores a folder's custom icon in. It usually carries the hidden flag, but not always.
@@ -192,13 +182,10 @@ public struct FolderFile: Hashable, Sendable {
   public let url: URL
   /// The item's file name, as the file system reports it.
   public let name: String
-  /// The item's content modification date; `Date.distantPast` when the file system reports none.
-  public let modificationDate: Date
 
-  /// The item at `url`, named `name`, last modified at `modificationDate`.
-  public init(url: URL, name: String, modificationDate: Date) {
+  /// The item at `url`, named `name`.
+  public init(url: URL, name: String) {
     self.url = url
     self.name = name
-    self.modificationDate = modificationDate
   }
 }

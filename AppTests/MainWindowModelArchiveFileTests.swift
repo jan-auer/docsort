@@ -15,7 +15,7 @@ struct MainWindowModelArchiveFileTests {
 
   /// The archive file at `url`, as Folder contents lists it.
   private func folderFile(at url: URL) -> FolderFile {
-    FolderFile(url: url, name: url.lastPathComponent, modificationDate: october2033(1))
+    FolderFile(url: url, name: url.lastPathComponent)
   }
 
   @Test("Rename… renames an archive file in its folder; undo restores its name")

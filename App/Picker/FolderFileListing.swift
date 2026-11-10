@@ -13,16 +13,13 @@ nonisolated protocol FolderFileListing: Sendable {
     -> [FolderFile]
 }
 
-/// Lists a folder's files from the archive on disk, alphabetically (Finder name order), so names in the archive's
-/// `YYYY-MM-DD Beschreibung` style read in date order with the newest at the bottom.
+/// Lists a folder's files from the archive on disk, in Finder name order (``DestinationIndex/files(in:)``).
 nonisolated struct ArchiveFolderFileListing: FolderFileListing {
-  /// Reads the folder on a background thread and sorts its files by name.
+  /// Reads the folder on a background thread.
   @concurrent
   func files(in folder: String, of index: DestinationIndex) async throws(FolderAccessError)
     -> [FolderFile]
   {
-    try index.files(in: folder).sorted { lhs, rhs in
-      lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-    }
+    try index.files(in: folder)
   }
 }

@@ -243,26 +243,25 @@ struct DestinationIndexTests {
         == "Töpferei/Werkstoffe/Glasur")
   }
 
-  @Test("lists a folder's files and packages newest first, ties by name")
-  func filesNewestFirst() throws {
+  @Test("lists a folder's files and packages in Finder name order, not its subfolders")
+  func filesInNameOrder() throws {
     let archive = try TemporaryDirectory()
-    try archive.createFile("Töpferei/frueh.pdf", modified: testDate(10))
-    try archive.createFile("Töpferei/spaet.pdf", modified: testDate(30))
-    try archive.createFile("Töpferei/b zugleich.pdf", modified: testDate(20))
-    try archive.createFile("Töpferei/a zugleich.pdf", modified: testDate(20))
-    let package = try archive.createFile("Töpferei/Skizze.rtfd/TXT.rtf")
-    try archive.setModificationDate(testDate(25), of: package.deletingLastPathComponent())
-    try archive.createFile("Töpferei/Ablage/darin.pdf", modified: testDate(40))
+    try archive.createFile("Töpferei/2034-05-02 Brennplan.pdf", modified: testDate(30))
+    try archive.createFile("Töpferei/2034-10-11 Ton.pdf", modified: testDate(10))
+    try archive.createFile("Töpferei/2034-5-20 Glasur.pdf", modified: testDate(20))
+    try archive.createFile("Töpferei/Skizze.rtfd/TXT.rtf")
+    try archive.createFile("Töpferei/Ablage/darin.pdf")
 
     let index = try DestinationIndex.build(root: archive.url)
     let files = try index.files(in: "Töpferei")
 
     #expect(
       files.map(\.name) == [
-        "spaet.pdf", "Skizze.rtfd", "a zugleich.pdf", "b zugleich.pdf", "frueh.pdf",
+        "2034-05-02 Brennplan.pdf", "2034-5-20 Glasur.pdf", "2034-10-11 Ton.pdf", "Skizze.rtfd",
       ])
-    #expect(files.first?.modificationDate == testDate(30))
-    #expect(files.first?.url.lastPathComponent == "spaet.pdf")
+    #expect(
+      files.first.map { FileLocation.path(of: $0.url) }
+        == FileLocation.path(of: archive.url.appending(path: "Töpferei/2034-05-02 Brennplan.pdf")))
   }
 
   @Test("lists the root's own files for the empty path")
