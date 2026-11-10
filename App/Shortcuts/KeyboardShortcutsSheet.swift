@@ -39,8 +39,20 @@ struct KeyboardShortcutsSheet: View {
       Text("Keyboard Shortcuts")
         .font(.title2.weight(.semibold))
       Spacer()
-      ShortcutSearchField(query: $query, isFocused: $isSearchFocused)
-        .frame(width: 240)
+      PickerFilterField(
+        focusState: isSearchFocused ? .focused : .unfocused, hasText: !query.isEmpty,
+        clearButtonIdentifier: "keyboard-shortcuts-clear-search",
+        clear: {
+          query = ""
+          isSearchFocused = true
+        }
+      ) {
+        TextField("Search", text: $query, prompt: Text("Search shortcuts"))
+          .labelsHidden()
+          .focused($isSearchFocused)
+          .accessibilityIdentifier("keyboard-shortcuts-search")
+      }
+      .frame(width: 240)
     }
     .padding(.horizontal, 24)
     .padding(.vertical, 16)
@@ -107,37 +119,6 @@ enum ShortcutColumns {
       heights[shortest] += section.entries.count + 2
     }
     return columns.filter { !$0.isEmpty }
-  }
-}
-
-/// The sheet's search field, styled as a macOS search field: a magnifying glass, the text and a clear button.
-private struct ShortcutSearchField: View {
-  @Binding var query: String
-  var isFocused: FocusState<Bool>.Binding
-
-  var body: some View {
-    HStack(spacing: 5) {
-      Image(systemName: "magnifyingglass")
-        .foregroundStyle(.secondary)
-      TextField("Search", text: $query, prompt: Text("Search shortcuts"))
-        .textFieldStyle(.plain)
-        .focused(isFocused)
-        .accessibilityIdentifier("keyboard-shortcuts-search")
-      if !query.isEmpty {
-        Button {
-          query = ""
-        } label: {
-          Image(systemName: "xmark.circle.fill")
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.borderless)
-        .accessibilityLabel("Clear Search")
-        .accessibilityIdentifier("keyboard-shortcuts-clear-search")
-      }
-    }
-    .padding(.horizontal, 8)
-    .frame(height: 28)
-    .background(.fill.tertiary, in: Capsule())
   }
 }
 

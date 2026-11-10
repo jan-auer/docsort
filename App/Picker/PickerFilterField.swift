@@ -3,12 +3,15 @@ import SwiftUI
 /// The chrome of the picker's filter field, shaped like the system search field: a capsule with a magnifier, the
 /// text field itself (`field`, built by ``DestinationPickerView`` so its focus binding stays there), a clear button
 /// while there is text, and a focus ring drawn outside the capsule. It holds only the query: the chosen folder is
-/// marked in the list and named on the panel's destination line.
+/// marked in the list and named on the panel's destination line. The keyboard shortcuts sheet's search field uses it
+/// too, so both look the same.
 struct PickerFilterField<Field: View>: View {
   /// Whether the text field has focus, for the focus ring.
   let focusState: FieldFocusState
   /// Whether the field holds text, for the clear button.
   let hasText: Bool
+  /// The clear button's accessibility identifier.
+  let clearButtonIdentifier: String
   /// Empties the field.
   let clear: () -> Void
   @ViewBuilder let field: () -> Field
@@ -30,7 +33,7 @@ struct PickerFilterField<Field: View>: View {
         .buttonStyle(.plain)
         .help("Clear")
         .accessibilityLabel("Clear")
-        .accessibilityIdentifier("picker-filter-clear")
+        .accessibilityIdentifier(clearButtonIdentifier)
       }
     }
     .padding(.leading, 9)

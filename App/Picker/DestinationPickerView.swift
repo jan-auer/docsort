@@ -51,6 +51,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       PickerFilterField(
         focusState: focusedField == .filter ? .focused : .unfocused,
         hasText: !model.filterText.isEmpty,
+        clearButtonIdentifier: "picker-filter-clear",
         clear: {
           model.filterText = ""
           focus.wrappedValue = field(.filter)
