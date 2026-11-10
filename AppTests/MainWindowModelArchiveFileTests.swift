@@ -216,7 +216,7 @@ struct MainWindowModelArchiveFileTests {
 
   /// The names Folder contents lists; empty unless it lists files.
   private func listedNames(_ model: MainWindowModel) -> [String] {
-    model.picker.contentsFiles.map(\.name)
+    model.picker.contents.files.map(\.name)
   }
 
   @Test(

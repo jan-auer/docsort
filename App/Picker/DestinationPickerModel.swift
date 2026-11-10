@@ -577,16 +577,10 @@ final class DestinationPickerModel {
 
   // MARK: Folder contents
 
-  /// The listed files, in order; empty unless ``contents`` lists files.
-  var contentsFiles: [FolderFile] {
-    if case .files(_, let files) = contents { return files }
-    return []
-  }
-
   /// The file selected in Folder contents, if it is listed.
   var selectedContentsFile: FolderFile? {
     guard let selectedContentsFileURL else { return nil }
-    return contentsFiles.first { $0.url == selectedContentsFileURL }
+    return contents.files.first { $0.url == selectedContentsFileURL }
   }
 
   /// A click on a file in Folder contents: selects it, as in Finder; its name is used only by
@@ -598,7 +592,7 @@ final class DestinationPickerModel {
   /// ↑ (`-1`) or ↓ (`1`) in Folder contents: moves the selection by `offset` files, stopping at the first and last.
   /// With nothing selected, ↓ selects the first file and ↑ the last (the newest of date-named files).
   func moveContentsSelection(by offset: Int) {
-    let files = contentsFiles
+    let files = contents.files
     guard !files.isEmpty, offset != 0 else { return }
     let target: Int
     if let index = files.firstIndex(where: { $0.url == selectedContentsFileURL }) {
@@ -644,7 +638,7 @@ final class DestinationPickerModel {
 
   /// The file that takes `file`'s place in the selection once it is gone: the next file, else the previous one.
   func contentsFile(replacing file: FolderFile) -> FolderFile? {
-    let files = contentsFiles
+    let files = contents.files
     guard let index = files.firstIndex(where: { $0.url == file.url }) else { return nil }
     if index + 1 < files.count { return files[index + 1] }
     return index > 0 ? files[index - 1] : nil

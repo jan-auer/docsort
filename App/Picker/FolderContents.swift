@@ -10,7 +10,7 @@ enum FolderContents: Equatable {
   case notOnDisk
   /// The files of the archive-relative `folder` are being listed.
   case loading(folder: String)
-  /// The files directly in `folder`, alphabetically.
+  /// The files directly in `folder`, in Finder name order.
   case files(folder: String, [FolderFile])
   /// Listing `folder` failed; `message` says why, in words for the user.
   case failed(folder: String, message: String)
@@ -32,6 +32,12 @@ extension FolderContents {
     case .none, .notOnDisk: nil
     case .loading(let folder), .files(let folder, _), .failed(let folder, _): folder
     }
+  }
+
+  /// The listed files, in order; empty unless the contents are ``files(folder:_:)``.
+  var files: [FolderFile] {
+    if case .files(_, let files) = self { return files }
+    return []
   }
 
   /// The folder whose files are listed; `nil` unless the contents are ``files(folder:_:)``.

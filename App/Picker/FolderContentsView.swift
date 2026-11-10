@@ -495,7 +495,7 @@ struct FolderContentsFileRow: View {
     let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
     ListingPreview { focus in
       FolderContentsListing(
-        contents: contents, selectedURL: contents.firstFileURL, conflictingName: nil,
+        contents: contents, selectedURL: contents.files.first?.url, conflictingName: nil,
         focus: focus, field: true, isListFocused: true, listHeight: .constant(120),
         isCollapsed: .constant(false),
         maxListHeight: 400
@@ -592,19 +592,5 @@ struct FolderContentsFileRow: View {
   #Preview("From the picker") {
     PickerFolderContentsPreview()
       .frame(width: 340, height: 160)
-  }
-
-  extension FolderContents {
-    /// The first listed file, for previews.
-    fileprivate var firstFileURL: URL? {
-      if case .files(_, let files) = self { return files.first?.url }
-      return nil
-    }
-
-    /// The listed files, for previews.
-    fileprivate var files: [FolderFile] {
-      if case .files(_, let files) = self { return files }
-      return []
-    }
   }
 #endif
