@@ -132,26 +132,6 @@ struct DestinationPickerSoftScopeTests {
     #expect(model.filterPlaceholder == "Search archive")
   }
 
-  @Test("Choosing keeps the query and the list and marks the chosen row; typing un-chooses")
-  func choosingKeepsTheQuery() throws {
-    let model = try makeModel()
-    model.jump(to: "Mobilität")
-    model.filterText = "physio"
-    model.moveHighlight(by: 1)
-    model.chooseHighlighted()
-
-    #expect(events.events == [.chose(.folder("Gesundheit/Margit/Physiotherapie"))])
-    #expect(model.filterText == "physio")
-    #expect(model.rowSummaries.count == 3)
-    let chosenRow = try #require(model.highlightedRow)
-    #expect(model.isChosen(chosenRow))
-    #expect(model.rows.filter(model.isChosen).count == 1)
-
-    model.filterText = "physiot"
-    #expect(model.destination == nil)
-    #expect(!model.rows.contains(where: model.isChosen))
-  }
-
   @Test("The destination path follows the highlight until a folder is chosen")
   func destinationPath() throws {
     let model = try makeModel()

@@ -112,7 +112,7 @@ struct DestinationPickerNewFolderTests {
     model.newFolderName = "2033-11 Besuch Westerholm"
     #expect(model.newFolderDraft?.notice == nil)
 
-    #expect(model.confirmNewFolder())
+    #expect(model.confirmNewFolder(reporting: PickerEvent.chose))
     #expect(events.events == [.chose(.newFolder(Self.visit))])
     #expect(model.newFolderDraft == nil)
     #expect(model.pendingFolders == [Self.visit])
@@ -131,7 +131,7 @@ struct DestinationPickerNewFolderTests {
       model.newFolderDraft?.notice
         == .existing(parentTitle: "Reisen", existingName: "Reiseplanung Ideen"))
 
-    #expect(model.confirmNewFolder())
+    #expect(model.confirmNewFolder(reporting: PickerEvent.chose))
     #expect(events.events == [.chose(.folder("Reisen/Reiseplanung Ideen"))])
     #expect(model.pendingFolders.isEmpty)
   }
@@ -144,7 +144,7 @@ struct DestinationPickerNewFolderTests {
     model.newFolderName = "2033-06 wanderwoche hochalm / Bahn"
     #expect(model.newFolderDraft?.notice == .nested(["2033-06 Wanderwoche Hochalm", "Bahn"]))
 
-    #expect(model.confirmNewFolderAndMove())
+    #expect(model.confirmNewFolder(reporting: PickerEvent.moveRequested))
     #expect(
       events.events == [.moveRequested(.newFolder("Reisen/2033-06 Wanderwoche Hochalm/Bahn"))])
   }
@@ -156,11 +156,11 @@ struct DestinationPickerNewFolderTests {
     model.beginNewFolder()
     model.newFolderName = "Bahn: Hotel"
     #expect(model.newFolderDraft?.notice == .invalid(.forbiddenCharacter(":")))
-    #expect(!model.confirmNewFolder())
+    #expect(!model.confirmNewFolder(reporting: PickerEvent.chose))
     #expect(model.newFolderDraft != nil)
 
     model.newFolderName = "  "
-    #expect(model.confirmNewFolder())
+    #expect(model.confirmNewFolder(reporting: PickerEvent.chose))
     #expect(model.newFolderDraft == nil)
     #expect(events.events.isEmpty)
   }

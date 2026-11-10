@@ -155,10 +155,12 @@ struct PickerListing {
     ]
   }
 
+  /// A folder row of `section` for the folder at `path`, showing `displayPath`; `isNew` for a pending folder. A pending
+  /// folder has no subfolders: the index lacks it (``DestinationPickerModel`` drops pending folders the index lists).
   private func folderRow(section: String, path: String, displayPath: String, isNew: Bool)
     -> PickerRow
   {
-    let hasSubfolders = !isNew && !(index?.subfolders(of: path).isEmpty ?? true)
+    let hasSubfolders = !(index?.subfolders(of: path).isEmpty ?? true)
     return PickerRow(
       id: "\(section):\(path)",
       kind: .folder(

@@ -227,10 +227,10 @@ struct FolderResolverTests {
       .resolve(settings)
 
     let inbox = try #require(session.inboxes.first)
-    #expect(inbox.folder.reference.lastKnownPath == FolderReference.path(of: moved))
+    #expect(inbox.folder.reference.lastKnownPath == FileLocation.path(of: moved))
     #expect(inbox.folder.reference.folderName == "Renamed")
     #expect(inbox.inbox.folder == inbox.folder.reference)
-    #expect(session.settings.inboxes.first?.folder.lastKnownPath == FolderReference.path(of: moved))
+    #expect(session.settings.inboxes.first?.folder.lastKnownPath == FileLocation.path(of: moved))
     #expect(session.settings.inboxes.first?.id == settings.inboxes.first?.id)
     #expect(session.settingsChanged)
   }

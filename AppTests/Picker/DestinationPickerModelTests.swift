@@ -159,22 +159,37 @@ struct DestinationPickerModelTests {
 
   // MARK: Choosing
 
-  @Test("Choosing keeps the filter, and moving the highlight un-chooses from the chosen row")
+  @Test(
+    "Choosing keeps the filter and the list, marking the chosen row; moving the highlight or typing un-chooses"
+  )
   func chooseAndUnchoose() throws {
     let model = try makeModel()
     model.jump(to: "Gesundheit")
     model.filterText = "physio"
     model.moveHighlight(by: 1)
+    let rowsBeforeChoosing = model.rowSummaries
     model.chooseHighlighted()
 
     #expect(events.events == [.chose(.folder("Gesundheit/Margit/Physiotherapie"))])
     #expect(model.destination == .folder("Gesundheit/Margit/Physiotherapie"))
     #expect(model.filterText == "physio")
+    #expect(model.rowSummaries == rowsBeforeChoosing)
+    #expect(
+      model.rows.filter(model.isChosen).map(\.folderPath) == ["Gesundheit/Margit/Physiotherapie"])
+
+    model.filterText = "physio"
+    #expect(model.destination != nil)
 
     model.moveHighlight(by: -1)
     #expect(model.destination == nil)
     #expect(model.filterText == "physio")
     #expect(model.highlightedPath == "Gesundheit/Konrad/Physiotherapie")
+
+    model.chooseHighlighted()
+    model.filterText = "z"
+    #expect(model.destination == nil)
+    #expect(!model.rows.contains(where: model.isChosen))
+    #expect(model.highlightedPath == "Gesundheit/Konrad/Zahnarzt")
   }
 
   @Test("\"This folder\" chooses the scope; ⌫ in the empty filter steps out and un-chooses it")
@@ -188,21 +203,6 @@ struct DestinationPickerModelTests {
     #expect(model.destination == nil)
     #expect(model.scope == "")
     #expect(model.highlightedPath == "Gesundheit")
-  }
-
-  @Test("Typing while chosen drops the destination and filters with the new text")
-  func typingWhileChosen() throws {
-    let model = try makeModel()
-    model.filterText = "physio"
-    model.chooseHighlighted()
-
-    model.filterText = "physio"
-    #expect(model.destination != nil)
-
-    model.filterText = "z"
-    #expect(model.destination == nil)
-    #expect(model.filterText == "z")
-    #expect(model.highlightedPath == "Gesundheit/Konrad/Zahnarzt")
   }
 
   @Test("⌘Return moves to the chosen destination, else chooses the highlighted row silently")

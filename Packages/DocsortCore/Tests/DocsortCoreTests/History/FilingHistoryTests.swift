@@ -60,20 +60,6 @@ struct FilingHistoryTests {
     #expect(history.events(ofDocument: first.documentID) == [first])
   }
 
-  @Test("locations compare as standardized paths, ignoring a trailing slash")
-  func comparesStandardizedPaths() {
-    var history = FilingHistory()
-    let first = history.recordMove(
-      moveRecord(from: "/Inbox/Scan.bundle/", to: "/Archiv/Rechnungen/Scan.bundle/"),
-      at: testDate(1))
-    let second = history.recordMove(
-      moveRecord(from: "/Archiv/./Rechnungen/../Rechnungen/Scan.bundle", to: "/Archiv/Scan.bundle"),
-      at: testDate(2))
-
-    #expect(second.documentID == first.documentID)
-    #expect(history.document(at: location("/Archiv/Scan.bundle/")) == first.documentID)
-  }
-
   @Test("undone events take no part in linking or locations")
   func undoneEventsExcluded() throws {
     var history = FilingHistory()
@@ -177,6 +163,30 @@ struct FilingHistoryTests {
     #expect(history.document(at: location("/Archiv/a.pdf")) == nil)
     #expect(history.document(at: location("/Inbox/scan.pdf")) == nil)
     #expect(history.document(at: location("/Archiv/unknown.pdf")) == nil)
+  }
+
+  @Test("finds a document by any spelling of its location: directory or file URL, dot components")
+  func documentAtOtherSpellingOfLocation() {
+    var recordedAsDirectory = FilingHistory()
+    let package = recordedAsDirectory.recordMove(
+      moveRecord(from: "/Inbox/Scan.bundle/", to: "/Archiv/Reisen/Scan.bundle/"), at: testDate(1))
+
+    #expect(
+      recordedAsDirectory.document(at: location("/Archiv/Reisen/Scan.bundle")) == package.documentID
+    )
+    #expect(
+      recordedAsDirectory.document(at: location("/Archiv/Reisen/../Reisen/./Scan.bundle"))
+        == package.documentID)
+
+    var recordedAsFile = FilingHistory()
+    let other = recordedAsFile.recordMove(
+      moveRecord(from: "/Inbox/Scan.bundle", to: "/Archiv/Reisen/Scan.bundle"), at: testDate(1))
+
+    #expect(
+      recordedAsFile.document(at: location("/Archiv/Reisen/Scan.bundle/")) == other.documentID)
+    #expect(
+      recordedAsFile.document(at: location("/Archiv/Reisen/../Reisen/./Scan.bundle/"))
+        == other.documentID)
   }
 
   @Test("when two documents end at the same place, the one changed most recently is there")

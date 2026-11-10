@@ -41,13 +41,10 @@ final class FakeBookmarks: BookmarkCoding {
       throw CocoaError(.fileReadCorruptFile)
     }
     let path = String(text[text.index(after: separator)...])
-    let isStale = state.withLock { $0.stalePaths.contains(Self.standardised(path)) }
+    let isStale = state.withLock {
+      $0.stalePaths.contains(FileLocation.path(of: URL(filePath: path)))
+    }
     return ResolvedBookmark(url: URL(filePath: path, directoryHint: .isDirectory), isStale: isStale)
-  }
-
-  /// `path` without a trailing slash, as `FolderReference.lastKnownPath` spells it.
-  private static func standardised(_ path: String) -> String {
-    path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
   }
 }
 
@@ -77,17 +74,12 @@ final class RecordingScopeAccess: SecurityScopeAccess {
   }
 
   func startAccessing(_ url: URL) -> Bool {
-    recorded.withLock { $0.append(.start(Self.path(of: url))) }
+    recorded.withLock { $0.append(.start(FileLocation.path(of: url))) }
     return true
   }
 
   func stopAccessing(_ url: URL) {
-    recorded.withLock { $0.append(.stop(Self.path(of: url))) }
-  }
-
-  private static func path(of url: URL) -> String {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
+    recorded.withLock { $0.append(.stop(FileLocation.path(of: url))) }
   }
 }
 
@@ -134,12 +126,6 @@ struct TestFolderEnvironment {
   /// The folder settings stored in the suite.
   func storedSettings() throws -> FolderSettings? {
     try FolderSettings.preference(in: defaults).load()
-  }
-
-  /// The path of `url` as `FolderReference.lastKnownPath` spells it.
-  func path(of url: URL) -> String {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
   }
 
   /// Deletes the defaults suite and the temporary folders.

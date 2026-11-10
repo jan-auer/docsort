@@ -1,16 +1,15 @@
-import AppKit
 import DocsortCore
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Folder contents (`docs/design/ux.md`, "Folder contents"): the files already in the chosen or highlighted folder,
-/// alphabetically, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder changes.
+/// in Finder name order, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder
+/// changes.
 ///
 /// Files are selected as in Finder: a click selects a file and focuses the list, ↑ ↓ move the selection, Space opens
 /// the Quick Look panel on it (↑ ↓ then move through the files with the panel following; Space or Esc closes it),
-/// and a double-click or Return uses its name for the name field (``PickerEvent/tookFileName(_:)``). A file's context
-/// menu offers Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename… and Move to
-/// Trash (``FolderContentsFileMenu``).
+/// and a double-click or Return uses its name for the name field (``PickerEvent/tookFileName(_:)``). A file's
+/// context menu offers Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename… and
+/// Move to Trash (``FolderContentsFileMenu``).
 ///
 /// It is a drawer under the folder list: its header ("Files in Rechnungen", the file count) can be dragged up and down
 /// to resize the list under it, and its chevron collapses the drawer to the header.
@@ -131,9 +130,13 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
   }
 
   private var clampedListHeight: Double {
-    min(
-      max(listHeight, FilingPanelStyle.contentsMinListHeight),
-      max(maxListHeight, FilingPanelStyle.contentsMinListHeight))
+    listHeight.clamped(to: listHeightRange)
+  }
+
+  /// The heights the list can take: from the minimum up to `maxListHeight`, the minimum when that is less.
+  private var listHeightRange: ClosedRange<Double> {
+    let minimum = FilingPanelStyle.contentsMinListHeight
+    return minimum...max(maxListHeight, minimum)
   }
 
   // MARK: Header
@@ -162,7 +165,7 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
         .foregroundStyle(.secondary)
         .lineLimit(1)
         .truncationMode(.middle)
-        .help(contents.folder.map(Self.title(of:)) ?? "")
+        .help(contents.folder.map(ArchivePath.breadcrumb(of:)) ?? "")
         .accessibilityAddTraits(.isHeader)
         .accessibilityIdentifier("folder-contents-header")
       Spacer(minLength: 4)
@@ -192,9 +195,8 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
     .gesture(resizeGesture)
     .accessibilityAdjustableAction { direction in
       switch direction {
-      case .increment: listHeight = min(clampedListHeight + 24, maxListHeight)
-      case .decrement:
-        listHeight = max(clampedListHeight - 24, FilingPanelStyle.contentsMinListHeight)
+      case .increment: listHeight = (clampedListHeight + 24).clamped(to: listHeightRange)
+      case .decrement: listHeight = (clampedListHeight - 24).clamped(to: listHeightRange)
       @unknown default: break
       }
     }
@@ -211,9 +213,7 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
         }
         let start = dragStartHeight ?? clampedListHeight
         dragStartHeight = start
-        listHeight = min(
-          max(start - drag.translation.height, FilingPanelStyle.contentsMinListHeight),
-          maxListHeight)
+        listHeight = (start - drag.translation.height).clamped(to: listHeightRange)
       }
       .onEnded { _ in
         dragStartHeight = nil
@@ -233,12 +233,6 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
   private var fileCount: Int? {
     if case .files(_, let files) = contents { return files.count }
     return nil
-  }
-
-  /// A folder's path as the header shows it: `Gesundheit › Konrad`, or ``ArchivePath/rootTitle``.
-  static func title(of folder: String) -> String {
-    folder.isEmpty
-      ? ArchivePath.rootTitle : ArchivePath.segments(of: folder).joined(separator: " › ")
   }
 
   // MARK: Content
@@ -392,72 +386,6 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
   }
 }
 
-/// One file in Folder contents: its icon and name, in the same row style as the folder list. A click selects it, a
-/// double-click uses its name.
-struct FolderContentsFileRow: View {
-  let file: FolderFile
-  /// How the row shows the selection.
-  let highlight: RowHighlight
-  /// Whether the file's name conflicts with the name field's (highlighted in the warning colour).
-  let isConflict: Bool
-  let select: () -> Void
-  let useName: () -> Void
-
-  var body: some View {
-    HStack(spacing: FilingPanelStyle.rowIconSpacing) {
-      Image(nsImage: Self.icon(for: file.name))
-        .resizable()
-        .frame(width: 16, height: 16)
-        .accessibilityHidden(true)
-      Text(file.name)
-        .fontWeight(isConflict ? .semibold : .regular)
-        .foregroundStyle(highlight.textTone.primary)
-        .lineLimit(1)
-        .truncationMode(.middle)
-      Spacer(minLength: 0)
-    }
-    .padding(.horizontal, FilingPanelStyle.rowPadding)
-    .frame(height: FilingPanelStyle.rowHeight)
-    .background(background, in: RoundedRectangle(cornerRadius: FilingPanelStyle.rowRadius))
-    .contentShape(Rectangle())
-    .onTapGesture {
-      // One gesture for both, so a single click selects at once instead of waiting out the double-click interval;
-      // the second click of a double click carries a click count of 2.
-      if (NSApp.currentEvent?.clickCount ?? 1) >= 2 {
-        useName()
-      } else {
-        select()
-      }
-    }
-    .help("Double-click to use this name")
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(file.name)
-    .accessibilityValue(accessibilityValue)
-    .accessibilityHint("Uses this name for the file")
-    .accessibilityAddTraits(highlight.isHighlighted ? [.isButton, .isSelected] : .isButton)
-    .accessibilityAction(.default, useName)
-    .accessibilityIdentifier("folder-contents-file")
-  }
-
-  /// The selection's background, else the warning colour for the conflicting file.
-  private var background: Color {
-    if highlight.isHighlighted { return highlight.background }
-    return isConflict ? Color(nsColor: .systemOrange).opacity(0.3) : .clear
-  }
-
-  private var accessibilityValue: String {
-    [highlight.isHighlighted ? "selected" : nil, isConflict ? "conflict" : nil]
-      .compactMap { $0 }.joined(separator: ", ")
-  }
-
-  /// The Finder icon for files named like `name`, from its extension alone (the file itself is not read).
-  private static func icon(for name: String) -> NSImage {
-    let fileExtension = (name as NSString).pathExtension
-    let type = UTType(filenameExtension: fileExtension) ?? .data
-    return NSWorkspace.shared.icon(for: type)
-  }
-}
-
 #if DEBUG
   /// The files of one folder of the sample archive, read synchronously, which a preview can afford.
   @MainActor
@@ -495,7 +423,7 @@ struct FolderContentsFileRow: View {
     let contents = sampleContents(of: "Kommunikation/Ilmnet Internet/Rechnungen")
     ListingPreview { focus in
       FolderContentsListing(
-        contents: contents, selectedURL: contents.firstFileURL, conflictingName: nil,
+        contents: contents, selectedURL: contents.files.first?.url, conflictingName: nil,
         focus: focus, field: true, isListFocused: true, listHeight: .constant(120),
         isCollapsed: .constant(false),
         maxListHeight: 400
@@ -592,19 +520,5 @@ struct FolderContentsFileRow: View {
   #Preview("From the picker") {
     PickerFolderContentsPreview()
       .frame(width: 340, height: 160)
-  }
-
-  extension FolderContents {
-    /// The first listed file, for previews.
-    fileprivate var firstFileURL: URL? {
-      if case .files(_, let files) = self { return files.first?.url }
-      return nil
-    }
-
-    /// The listed files, for previews.
-    fileprivate var files: [FolderFile] {
-      if case .files(_, let files) = self { return files }
-      return []
-    }
   }
 #endif

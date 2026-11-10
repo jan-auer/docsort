@@ -71,7 +71,9 @@ public struct FilingHistory: Codable, Equatable, Sendable {
     of eventID: FilingEvent.ID, restoredTo restored: RestoredItem, at date: Date
   ) throws(FilingHistoryError) {
     let event = try markUndone(eventID, at: date)
-    guard Self.locationKey(restored.url) != Self.locationKey(event.sourceURL) else { return }
+    guard FileLocation.path(of: restored.url) != FileLocation.path(of: event.sourceURL) else {
+      return
+    }
     let placement = MoveRecord(
       originalURL: event.sourceURL, destinationURL: restored.url, createdFolders: [],
       replaced: nil, movedItem: restored.identity)
@@ -219,10 +221,10 @@ public struct FilingHistory: Codable, Equatable, Sendable {
   /// another one was filed under its name), the one with the most recent activity, an event or an undo, is the one
   /// there.
   public func document(at url: URL) -> UUID? {
-    let wantedKey = Self.locationKey(url)
+    let wantedKey = FileLocation.path(of: url)
     var latest: (documentID: UUID, summary: DocumentSummary)?
     for (documentID, summary) in documentSummaries()
-    where Self.locationKey(summary.currentLocation) == wantedKey {
+    where FileLocation.path(of: summary.currentLocation) == wantedKey {
       if let current = latest, !summary.isMoreRecent(than: current.summary) { continue }
       latest = (documentID, summary)
     }
@@ -303,15 +305,6 @@ public struct FilingHistory: Codable, Equatable, Sendable {
       action: action, undoneDate: nil, causedBy: causedBy)
     events.append(event)
     return event
-  }
-
-  /// The standardized path of `url` without a trailing slash, under which equal locations compare equal.
-  private static func locationKey(_ url: URL) -> String {
-    var path = url.standardizedFileURL.path(percentEncoded: false)
-    while path.count > 1, path.hasSuffix("/") {
-      path.removeLast()
-    }
-    return path
   }
 }
 

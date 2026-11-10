@@ -80,7 +80,7 @@ private final class FSEventsWatch: Sendable {
     var context = FSEventStreamContext(
       version: 0, info: Unmanaged.passUnretained(delivery).toOpaque(),
       retain: EventDelivery.retainInfo, release: EventDelivery.releaseInfo, copyDescription: nil)
-    let rootPaths = roots.map { FolderReference.path(of: $0) } as CFArray
+    let rootPaths = roots.map { FileLocation.path(of: $0) } as CFArray
     let created = withExtendedLifetime(delivery) {
       FSEventStreamCreate(
         kCFAllocatorDefault, EventDelivery.deliver, &context, rootPaths,

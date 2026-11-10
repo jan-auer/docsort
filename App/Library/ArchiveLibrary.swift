@@ -23,24 +23,6 @@ nonisolated struct ArchiveIndexRequest: Equatable, Sendable {
   }
 }
 
-/// A folder below the archive root that the index could not include.
-nonisolated struct ArchiveIndexProblem: Hashable, Sendable {
-  /// Why the folder is not in the index.
-  enum Kind: Hashable, Sendable {
-    /// A symbolic link, which the index never follows.
-    case symbolicLink
-    /// A folder or entry that could not be read.
-    case unreadable
-  }
-
-  /// The item that was left out.
-  let url: URL
-  /// Why it was left out, in the file system's words.
-  let reason: String
-  /// What kind of problem it is.
-  let kind: Kind
-}
-
 /// How far the archive index is, as Settings and the destination picker show it.
 nonisolated enum ArchiveIndexStatus: Hashable, Sendable {
   /// There is no usable archive root to index.
@@ -48,7 +30,7 @@ nonisolated enum ArchiveIndexStatus: Hashable, Sendable {
   /// The index is being built.
   case indexing
   /// The index is ready with `folderCount` folders; `problems` lists what it left out.
-  case ready(folderCount: Int, problems: [ArchiveIndexProblem])
+  case ready(folderCount: Int, problems: [ScanProblem])
   /// The archive root could not be walked at all; `reason` is a sentence for the user.
   case failed(reason: String)
 }
@@ -176,8 +158,9 @@ final class ArchiveLibrary {
     }
     isRebuilding = false
     switch outcome {
-    case .built(let builtIndex, let problems):
+    case .built(let builtIndex):
       index = builtIndex
+      let problems = builtIndex.problems
       status = .ready(folderCount: builtIndex.folders.count, problems: problems)
       let linkCount = problems.count { $0.kind == .symbolicLink }
       Logger.archiveIndex.notice(
@@ -192,33 +175,17 @@ final class ArchiveLibrary {
 
   /// The outcome of one index build.
   private enum ArchiveIndexBuild: Sendable {
-    case built(DestinationIndex, problems: [ArchiveIndexProblem])
+    case built(DestinationIndex)
     case failed(FolderAccessError)
   }
 
-  /// Walks the archive for `request` and classifies what the walk left out.
+  /// Walks the archive for `request`.
   @concurrent private static func build(_ request: ArchiveIndexRequest) async -> ArchiveIndexBuild {
-    let builtIndex: DestinationIndex
     do {
-      builtIndex = try DestinationIndex.build(
-        root: request.root, excluding: Array(request.excludedFolders))
+      return .built(
+        try DestinationIndex.build(root: request.root, excluding: Array(request.excludedFolders)))
     } catch {
       return .failed(error)
-    }
-    let problems = builtIndex.problems.map { problem in
-      ArchiveIndexProblem(url: problem.url, reason: problem.reason, kind: kind(of: problem))
-    }
-    return .built(builtIndex, problems: problems)
-  }
-
-  /// Whether `problem` is a symbolic link, found by looking at the item itself (one stat, off the main actor).
-  nonisolated private static func kind(of problem: ScanProblem) -> ArchiveIndexProblem.Kind {
-    do {
-      let values = try problem.url.resourceValues(forKeys: [.isSymbolicLinkKey])
-      return values.isSymbolicLink == true ? .symbolicLink : .unreadable
-    } catch {
-      // An item that cannot even be looked at is unreadable, which is what the walk reported for it anyway.
-      return .unreadable
     }
   }
 

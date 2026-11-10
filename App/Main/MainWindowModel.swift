@@ -302,8 +302,8 @@ final class MainWindowModel {
       for _ in subfolderPath.split(separator: "/").dropFirst() {
         groupURL = groupURL.deletingLastPathComponent()
       }
-      let groupPath = Self.folderPath(of: groupURL)
-      collapsedGroups = collapsedGroups.filter { Self.folderPath(of: $0) != groupPath }
+      let groupPath = FileLocation.path(of: groupURL)
+      collapsedGroups = collapsedGroups.filter { FileLocation.path(of: $0) != groupPath }
     }
     sidebarSelection = .item(id)
   }
@@ -328,12 +328,6 @@ final class MainWindowModel {
       defer { isFollowingReplacement = false }
       select(replacement)
     }
-  }
-
-  /// The standardized path of the folder at `url`, without a trailing slash, under which equal folders compare equal.
-  private static func folderPath(of url: URL) -> String {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
   }
 
   /// Collapses the sidebar when the window becomes narrow, and shows it again when the window is widened if it is

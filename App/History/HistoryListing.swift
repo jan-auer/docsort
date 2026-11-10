@@ -77,9 +77,9 @@ nonisolated enum HistoryListing {
     case .trashed:
       return event.causedBy == nil ? .trashed : .replaced
     case .moved:
-      let sourceFolder = path(of: event.sourceURL.deletingLastPathComponent())
-      let resultFolder = path(of: event.resultURL.deletingLastPathComponent())
-      let origin = path(of: originFolder)
+      let sourceFolder = FileLocation.path(of: event.sourceURL.deletingLastPathComponent())
+      let resultFolder = FileLocation.path(of: event.resultURL.deletingLastPathComponent())
+      let origin = FileLocation.path(of: originFolder)
       if sourceFolder == resultFolder { return .renamed }
       if sourceFolder == origin { return .filed }
       if resultFolder == origin { return .movedBack }
@@ -111,7 +111,7 @@ nonisolated enum HistoryListing {
     {
       return relative.isEmpty ? archiveRoot.lastPathComponent : relative
     }
-    return DisplayPath.abbreviating(path(of: folder))
+    return DisplayPath.abbreviating(FileLocation.path(of: folder))
   }
 
   /// The label of the configured inbox holding `origin` (the innermost, should inboxes nest); for an origin outside
@@ -132,14 +132,5 @@ nonisolated enum HistoryListing {
   /// `url`'s path relative to `ancestor` (`""` when they are the same folder), or `nil` when it lies outside.
   private static func relativePath(of url: URL, in ancestor: URL) -> String? {
     DestinationIndex.archiveRelativePath(of: url, under: ancestor)
-  }
-
-  /// The standardized path of `url` without a trailing slash, under which equal locations compare equal.
-  private static func path(of url: URL) -> String {
-    var path = url.standardizedFileURL.path(percentEncoded: false)
-    while path.count > 1, path.hasSuffix("/") {
-      path.removeLast()
-    }
-    return path
   }
 }

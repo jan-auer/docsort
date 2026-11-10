@@ -27,7 +27,9 @@ public struct InboxScanner: Sendable {
     for visibleItem in contents.items {
       guard let item = inboxItem(visibleItem) else {
         problems.append(
-          ScanProblem(url: visibleItem.url, reason: "The file system reports no modification date.")
+          ScanProblem(
+            url: visibleItem.url, reason: "The file system reports no modification date.",
+            kind: .unreadable)
         )
         continue
       }

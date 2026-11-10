@@ -22,6 +22,11 @@ enum ArchivePath {
     segments(of: path).last ?? rootTitle
   }
 
+  /// The folder's whole path as the picker shows it: `Gesundheit › Konrad`; ``rootTitle`` for the root.
+  static func breadcrumb(of path: String) -> String {
+    path.isEmpty ? rootTitle : segments(of: path).joined(separator: " › ")
+  }
+
   /// `name` (one or more segments) inside `parent`.
   static func joining(_ parent: String, _ name: String) -> String {
     parent.isEmpty ? name : "\(parent)/\(name)"

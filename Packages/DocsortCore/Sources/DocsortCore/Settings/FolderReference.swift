@@ -19,20 +19,11 @@ public struct FolderReference: Codable, Hashable, Sendable {
 
   /// A reference to the folder with `bookmark`, last found at `url`.
   init(bookmark: Data, url: URL) {
-    self.init(bookmark: bookmark, lastKnownPath: Self.path(of: url))
+    self.init(bookmark: bookmark, lastKnownPath: FileLocation.path(of: url))
   }
 
   /// The last component of `lastKnownPath`, the folder's own name.
   public var folderName: String {
     URL(filePath: lastKnownPath, directoryHint: .isDirectory).lastPathComponent
-  }
-
-  /// The absolute, standardised path of `url`, without a trailing slash except for the root folder.
-  static func path(of url: URL) -> String {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    guard path.count > 1, path.hasSuffix("/") else {
-      return path
-    }
-    return String(path.dropLast())
   }
 }

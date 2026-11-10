@@ -48,9 +48,10 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      PickerFilterField(
+      SearchField(
         focusState: focusedField == .filter ? .focused : .unfocused,
         hasText: !model.filterText.isEmpty,
+        clearButtonIdentifier: "picker-filter-clear",
         clear: {
           model.filterText = ""
           focus.wrappedValue = field(.filter)
@@ -79,7 +80,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       folderList
         .background(FilingPanelStyle.listBackground)
       Divider()
-      bottomBar
+      footer
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
@@ -165,11 +166,11 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   private func handleInNewFolderName(_ key: PickerKey) -> KeyPress.Result {
     switch key {
     case .tab, .returnKey:
-      model.confirmNewFolder()
+      model.confirmNewFolder(reporting: PickerEvent.chose)
     case .escape, .shiftTab:
       model.cancelNewFolder()
     case .commandReturn:
-      model.confirmNewFolderAndMove()
+      model.confirmNewFolder(reporting: PickerEvent.moveRequested)
     case .upArrow, .downArrow, .rightArrow, .leftArrow, .delete, .commandUpArrow, .shiftCommandN:
       return .ignored
     }
@@ -299,11 +300,11 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     focus.wrappedValue = field(.filter)
   }
 
-  // MARK: Bottom bar
+  // MARK: Footer
 
-  /// The New Folder button (its tooltip names the parent and the shortcut), the refresh button, and the keys that
-  /// step into and out of folders.
-  private var bottomBar: some View {
+  /// The folder list's footer: the New Folder button (its tooltip names the parent and the shortcut), the refresh
+  /// button, and the keys that step into and out of folders.
+  private var footer: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
     return HStack(spacing: 6) {
       Button(action: beginNewFolder) {
@@ -313,7 +314,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       .buttonStyle(.borderless)
       .controlSize(.small)
       .disabled(model.newFolderDraft != nil)
-      .help("\(title) (⇧⌘N)")
+      .help("\(title) (\(KeyCombination(pickerKey: .shiftCommandN).notation))")
       .accessibilityLabel(title)
       .accessibilityIdentifier("picker-new-folder-button")
       .layoutPriority(1)
@@ -351,7 +352,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     }
     .buttonStyle(.borderless)
     .disabled(model.isRebuildingIndex)
-    .help("Refresh folders (⌘R)")
+    .help("Refresh folders (\(MenuCommand.refresh.keys.notation))")
     .accessibilityLabel("Refresh folders")
     .accessibilityValue(model.isRebuildingIndex ? "refreshing" : "")
     .accessibilityIdentifier("picker-refresh-button")

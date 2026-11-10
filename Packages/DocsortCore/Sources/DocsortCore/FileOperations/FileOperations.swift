@@ -115,31 +115,6 @@ public struct FileOperations: Sendable {
       replaced: replaced, movedItem: movedItem)
   }
 
-  /// Creates the folders of `relativePath` (components separated by `/`) inside `parent` that do not exist yet and
-  /// returns them, outermost first. Existing folders are matched as the volume matches them (on the archive volume:
-  /// case-insensitively). Every component is validated before anything is created; on failure, folders created by
-  /// this call are removed again.
-  @discardableResult
-  public func createFolders(_ relativePath: String, in parent: URL) throws(FileOperationError)
-    -> [URL]
-  {
-    let components = relativePath.split(separator: "/", omittingEmptySubsequences: false).map(
-      String.init)
-    for component in components {
-      if let problem = FileNaming.validationProblem(for: component) {
-        throw .invalidName(component, problem)
-      }
-    }
-    guard try FileSystemItem.resolvedItem(at: parent)?.isDirectory == true else {
-      throw .failed(
-        operation: "create folders", url: parent, reason: "the parent folder does not exist")
-    }
-    let target = components.reduce(parent) { folder, component in
-      folder.appending(path: component, directoryHint: .isDirectory)
-    }
-    return try makeFolders(try missingFolders(upTo: target))
-  }
-
   /// Moves the item at `url` to the Trash. Undo it with ``undo(_:)-(TrashRecord)``.
   public func moveToTrash(_ url: URL) throws(FileOperationError) -> TrashRecord {
     guard try FileSystemItem.item(at: url) != nil else { throw .sourceMissing(url) }

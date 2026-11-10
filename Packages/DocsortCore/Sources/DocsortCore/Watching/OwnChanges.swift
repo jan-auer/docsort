@@ -11,7 +11,7 @@ struct OwnChanges: Hashable, Sendable {
   /// No changes of docsort's own.
   static let empty = OwnChanges(removals: [], arrivals: [])
 
-  /// The absolute, standardised path by which own changes and listed items are compared: `FolderReference.path(of:)`
+  /// The absolute, standardised path by which own changes and listed items are compared: `FileLocation.path(of:)`
   /// of the nearest ancestor that exists (or the item itself), followed by the remaining components.
   ///
   /// Standardising consults the file system: it drops a leading `/private` only when the path exists. A removed
@@ -26,7 +26,7 @@ struct OwnChanges: Hashable, Sendable {
       missingComponents.insert(existingAncestor.lastPathComponent, at: 0)
       existingAncestor = existingAncestor.deletingLastPathComponent()
     }
-    let ancestorPath = FolderReference.path(of: existingAncestor)
+    let ancestorPath = FileLocation.path(of: existingAncestor)
     guard !missingComponents.isEmpty else { return ancestorPath }
     let separator = ancestorPath.hasSuffix("/") ? "" : "/"
     return ancestorPath + separator + missingComponents.joined(separator: "/")

@@ -3,6 +3,11 @@ import Testing
 
 @testable import DocsortCore
 
+extension VisibleContents {
+  /// The root-relative paths of ``folders``, in the same order.
+  fileprivate var folderPaths: [String] { folders.map(\.relativePath) }
+}
+
 @Suite("VisibleContentsWalker")
 struct VisibleContentsWalkerTests {
   let walker = VisibleContentsWalker()
@@ -10,7 +15,7 @@ struct VisibleContentsWalkerTests {
   @Test("lists visible descendant folders as root-relative paths")
   func listsVisibleDescendantFolders() throws {
     let root = try TemporaryDirectory()
-    try root.createFolder("Finanzen/Steuer/2025")
+    try root.createFolder("Finanzen/Steuer/2036")
     try root.createFolder("Wohnung")
     try root.createFolder(".git/objects")
     try root.createFolder("Versteckt")
@@ -22,7 +27,7 @@ struct VisibleContentsWalkerTests {
     let contents = try walker.walk(root.url)
 
     #expect(
-      contents.folderPaths == ["Finanzen", "Finanzen/Steuer", "Finanzen/Steuer/2025", "Wohnung"])
+      contents.folderPaths == ["Finanzen", "Finanzen/Steuer", "Finanzen/Steuer/2036", "Wohnung"])
     #expect(contents.problems.isEmpty)
   }
 
@@ -90,6 +95,7 @@ struct VisibleContentsWalkerTests {
     #expect(contents.items.map(\.relativePath) == ["Offen/aussen.pdf"])
     #expect(contents.folderPaths == ["Gesperrt", "Offen"])
     #expect(contents.problems.map(\.url.lastPathComponent) == ["Gesperrt"])
+    #expect(contents.problems.map(\.kind) == [.unreadable])
   }
 
   @Test("reports a symbolic link instead of following it, and walks the rest")
@@ -107,6 +113,7 @@ struct VisibleContentsWalkerTests {
     #expect(contents.items.map(\.relativePath) == ["Offen/aussen.pdf"])
     #expect(contents.folderPaths == ["Offen"])
     #expect(contents.problems.map(\.url.lastPathComponent) == ["Verknüpfung"])
+    #expect(contents.problems.map(\.kind) == [.symbolicLink])
   }
 
   @Test("throws notFound for a missing root")
