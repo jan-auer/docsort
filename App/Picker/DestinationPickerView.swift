@@ -48,7 +48,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      PickerFilterField(
+      SearchField(
         focusState: focusedField == .filter ? .focused : .unfocused,
         hasText: !model.filterText.isEmpty,
         clearButtonIdentifier: "picker-filter-clear",

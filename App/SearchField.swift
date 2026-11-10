@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// The chrome of the picker's filter field, shaped like the system search field: a capsule with a magnifier, the
-/// text field itself (`field`, built by ``DestinationPickerView`` so its focus binding stays there), a clear button
-/// while there is text, and a focus ring drawn outside the capsule. It holds only the query: the chosen folder is
-/// marked in the list and named on the panel's destination line. The keyboard shortcuts sheet's search field uses it
-/// too, so both look the same.
-struct PickerFilterField<Field: View>: View {
+/// A search field shaped like the system's: a capsule with a magnifier, the text field itself (`field`, built by the
+/// caller so its focus binding stays there), a clear button while there is text, and a focus ring drawn outside the
+/// capsule. The destination picker's filter field and the keyboard shortcuts sheet's search field use it, so both look
+/// the same.
+struct SearchField<Field: View>: View {
   /// Whether the text field has focus, for the focus ring.
   let focusState: FieldFocusState
   /// Whether the field holds text, for the clear button.

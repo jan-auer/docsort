@@ -39,7 +39,7 @@ struct KeyboardShortcutsSheet: View {
       Text("Keyboard Shortcuts")
         .font(.title2.weight(.semibold))
       Spacer()
-      PickerFilterField(
+      SearchField(
         focusState: isSearchFocused ? .focused : .unfocused, hasText: !query.isEmpty,
         clearButtonIdentifier: "keyboard-shortcuts-clear-search",
         clear: {
