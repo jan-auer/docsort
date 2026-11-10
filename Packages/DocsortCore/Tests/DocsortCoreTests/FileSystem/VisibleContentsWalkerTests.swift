@@ -3,6 +3,11 @@ import Testing
 
 @testable import DocsortCore
 
+extension VisibleContents {
+  /// The root-relative paths of ``folders``, in the same order.
+  fileprivate var folderPaths: [String] { folders.map(\.relativePath) }
+}
+
 @Suite("VisibleContentsWalker")
 struct VisibleContentsWalkerTests {
   let walker = VisibleContentsWalker()

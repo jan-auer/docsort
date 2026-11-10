@@ -41,6 +41,36 @@ struct MoveTests {
     #expect(fixture.exists(deliveryNotes.appending(path: "scan.pdf")))
   }
 
+  @Test("records only the folders it created, using an existing one spelt in another case")
+  func reusesExistingFolders() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf")
+    try fixture.directory.createFolder("Archiv/2033-11 Monitor")
+    let deliveryNotes = fixture.archive.appending(
+      path: "2033-11 monitor/Lieferschein", directoryHint: .isDirectory)
+
+    let record = try fixture.operations.move(
+      source, into: deliveryNotes, named: "scan.pdf", resolution: .refuse)
+
+    #expect(record.createdFolders.map(\.lastPathComponent) == ["Lieferschein"])
+    #expect(try fixture.names(in: fixture.archive) == ["2033-11 Monitor"])
+  }
+
+  @Test("fails when a file stands where a folder should be, changing nothing")
+  func fileInTheWay() throws {
+    let fixture = try FileOperationsFixture()
+    let source = try fixture.directory.createFile("Inbox/scan.pdf")
+    try fixture.directory.createFile("Archiv/a")
+
+    #expect(throws: FileOperationError.self) {
+      try fixture.operations.move(
+        source, into: fixture.archive.appending(path: "a/b", directoryHint: .isDirectory),
+        named: "scan.pdf", resolution: .refuse)
+    }
+    #expect(try fixture.names(in: fixture.archive) == ["a"])
+    #expect(fixture.exists(source))
+  }
+
   @Test("refuses a taken name and changes nothing")
   func refusesConflict() throws {
     let fixture = try FileOperationsFixture()

@@ -69,9 +69,6 @@ public struct VisibleContents: Sendable {
   /// Subfolders and entries that could not be read, and symbolic links, which are not followed. Everything else is
   /// still listed.
   public let problems: [ScanProblem]
-
-  /// The root-relative paths of ``folders``, in the same order.
-  public var folderPaths: [String] { folders.map(\.relativePath) }
 }
 
 /// Why a folder tree could not be walked at all.
