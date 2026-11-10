@@ -14,8 +14,12 @@ import Observation
 /// ``requestMove()`` act on the row, and any other intent cancels it first.
 ///
 /// Folder contents and New Folder live in `DestinationPickerModel+FolderContents.swift` and
-/// `DestinationPickerModel+NewFolder.swift`. Their state is set there too, so the setters below are internal rather
-/// than `private(set)`: only the model and those extensions set them.
+/// `DestinationPickerModel+NewFolder.swift`. Because extensions in other files cannot reach `private` members, the
+/// state they share with this file is internal: the setters of the state below (``query``, ``highlightedRowID``,
+/// ``contentsTask``, ``contentsTarget``, ``contentsLoadNumber``, ``stateBeforeDraft``, ``lastDraftEnding`` and the
+/// others), the helpers ``update(highlight:)``, ``choose(_:)``, ``followContents()`` and ``notice(for:)``, and the
+/// types ``HighlightRequest``, ``ContentsTarget`` and ``StateBeforeDraft``. They are set and called only by the model
+/// and its extensions; views, the panel and tests read the state and use the intents.
 @Observable
 final class DestinationPickerModel {
   // MARK: Inputs
