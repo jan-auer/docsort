@@ -90,6 +90,7 @@ struct VisibleContentsWalkerTests {
     #expect(contents.items.map(\.relativePath) == ["Offen/aussen.pdf"])
     #expect(contents.folderPaths == ["Gesperrt", "Offen"])
     #expect(contents.problems.map(\.url.lastPathComponent) == ["Gesperrt"])
+    #expect(contents.problems.map(\.kind) == [.unreadable])
   }
 
   @Test("reports a symbolic link instead of following it, and walks the rest")
@@ -107,6 +108,7 @@ struct VisibleContentsWalkerTests {
     #expect(contents.items.map(\.relativePath) == ["Offen/aussen.pdf"])
     #expect(contents.folderPaths == ["Offen"])
     #expect(contents.problems.map(\.url.lastPathComponent) == ["Verknüpfung"])
+    #expect(contents.problems.map(\.kind) == [.symbolicLink])
   }
 
   @Test("throws notFound for a missing root")

@@ -81,7 +81,8 @@ private struct Walk {
       do {
         values = try child.resourceValues(forKeys: Self.resourceKeys)
       } catch {
-        problems.append(ScanProblem(url: child, reason: error.localizedDescription))
+        problems.append(
+          ScanProblem(url: child, reason: error.localizedDescription, kind: .unreadable))
         continue
       }
 
@@ -95,7 +96,8 @@ private struct Walk {
         do {
           try list(child, relativePath: childPath)
         } catch {
-          problems.append(ScanProblem(url: child, reason: error.localizedDescription))
+          problems.append(
+            ScanProblem(url: child, reason: error.localizedDescription, kind: .unreadable))
         }
       case .directory?:
         appendItem(child, relativePath: childPath, kind: .package, values: values)
@@ -108,8 +110,8 @@ private struct Walk {
           ScanProblem(
             url: child,
             reason:
-              "It is a symbolic link; Docsort does not follow links. Add its target as its own folder."
-          ))
+              "It is a symbolic link; Docsort does not follow links. Add its target as its own folder.",
+            kind: .symbolicLink))
       default:
         // Sockets, devices and unknown types are not documents to file; skipping them is intended.
         continue
@@ -122,7 +124,9 @@ private struct Walk {
     _ url: URL, relativePath: String, kind: ItemKind, values: URLResourceValues
   ) {
     guard let fileID = values.fileIdentifier else {
-      problems.append(ScanProblem(url: url, reason: "The file system reports no file identifier."))
+      problems.append(
+        ScanProblem(
+          url: url, reason: "The file system reports no file identifier.", kind: .unreadable))
       return
     }
     items.append(

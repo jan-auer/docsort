@@ -40,12 +40,22 @@ public struct VisibleItem: Hashable, Sendable {
   public let byteCount: Int64?
 }
 
-/// A path the walk could not read, with the reason.
+/// A path the walk left out, with the reason.
 public struct ScanProblem: Hashable, Sendable {
-  /// The path that could not be read.
+  /// Why the path was left out.
+  public enum Kind: Hashable, Sendable {
+    /// A symbolic link, which the walk never follows.
+    case symbolicLink
+    /// A folder or entry that could not be read.
+    case unreadable
+  }
+
+  /// The path that was left out.
   public let url: URL
-  /// A human-readable explanation from the file system.
+  /// A human-readable explanation, mostly the file system's.
   public let reason: String
+  /// What kind of problem it is.
+  public let kind: Kind
 }
 
 /// The visible contents of a folder tree, as returned by ``VisibleContentsWalker``.
