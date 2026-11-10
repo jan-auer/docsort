@@ -240,7 +240,7 @@ struct MainWindowModelReturnTests {
 extension InboxLibrary {
   /// The row listing the inbox file at `url`, or `nil` when no section lists one there.
   fileprivate func row(listing url: URL) -> InboxRow? {
-    let path = url.standardizedFileURL.path(percentEncoded: false)
-    return orderedRows.first { $0.item.url.standardizedFileURL.path(percentEncoded: false) == path }
+    let path = FileLocation.path(of: url)
+    return orderedRows.first { FileLocation.path(of: $0.item.url) == path }
   }
 }

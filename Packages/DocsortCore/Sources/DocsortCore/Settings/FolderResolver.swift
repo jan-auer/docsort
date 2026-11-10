@@ -65,7 +65,7 @@ public struct FolderResolver: Sendable {
 
     let url = resolved.url
     var updatedReference = reference
-    updatedReference.lastKnownPath = FolderReference.path(of: url)
+    updatedReference.lastKnownPath = FileLocation.path(of: url)
 
     guard access.startAccessing(url) else {
       return ResolvedFolder(

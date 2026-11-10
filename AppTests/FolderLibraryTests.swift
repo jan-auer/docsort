@@ -42,9 +42,9 @@ struct FolderLibraryTests {
     #expect(library.inboxes.first?.url != nil)
 
     let stored = try #require(try environment.storedSettings())
-    #expect(stored.archiveRoot?.lastKnownPath == environment.path(of: environment.archive))
+    #expect(stored.archiveRoot?.lastKnownPath == FileLocation.path(of: environment.archive))
     #expect(
-      stored.inboxes.map(\.folder.lastKnownPath) == [environment.path(of: environment.scanner)])
+      stored.inboxes.map(\.folder.lastKnownPath) == [FileLocation.path(of: environment.scanner)])
 
     let relaunched = FolderLibrary(environment: environment.appEnvironment)
     #expect(relaunched.areFoldersConfigured)
@@ -61,8 +61,8 @@ struct FolderLibraryTests {
 
     library.addInbox(folder: environment.scanner)
 
-    let archive = environment.path(of: environment.archive)
-    let scanner = environment.path(of: environment.scanner)
+    let archive = FileLocation.path(of: environment.archive)
+    let scanner = FileLocation.path(of: environment.scanner)
     #expect(environment.access.events == [.start(archive), .start(scanner), .stop(archive)])
   }
 
@@ -106,7 +106,7 @@ struct FolderLibraryTests {
     first.addInbox(folder: environment.scanner)
     let before = try #require(try environment.storedSettings())
 
-    environment.bookmarks.setStale(true, forPath: environment.path(of: environment.scanner))
+    environment.bookmarks.setStale(true, forPath: FileLocation.path(of: environment.scanner))
     let relaunched = FolderLibrary(environment: environment.appEnvironment)
 
     let after = try #require(try environment.storedSettings())
@@ -172,7 +172,7 @@ struct FolderLibraryTests {
     #expect(relaunched.inboxes.first?.displayLabel == "Scans")
     #expect(relaunched.inboxes.first?.availability == .available)
     let stored = try #require(try environment.storedSettings())
-    #expect(stored.inboxes.first?.folder.lastKnownPath == environment.path(of: moved))
+    #expect(stored.inboxes.first?.folder.lastKnownPath == FileLocation.path(of: moved))
   }
 
   @Test("A missing archive root makes the archive unavailable, named by its path")
@@ -188,7 +188,7 @@ struct FolderLibraryTests {
 
     #expect(relaunched.areFoldersConfigured)
     #expect(relaunched.archiveRoot?.availability == .missing)
-    let displayPath = DisplayPath.abbreviating(environment.path(of: environment.archive))
+    let displayPath = DisplayPath.abbreviating(FileLocation.path(of: environment.archive))
     #expect(relaunched.archiveAvailability == .unreachable(displayPath: displayPath))
   }
 }

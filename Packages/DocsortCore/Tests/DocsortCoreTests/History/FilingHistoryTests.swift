@@ -60,20 +60,6 @@ struct FilingHistoryTests {
     #expect(history.events(ofDocument: first.documentID) == [first])
   }
 
-  @Test("locations compare as standardized paths, ignoring a trailing slash")
-  func comparesStandardizedPaths() {
-    var history = FilingHistory()
-    let first = history.recordMove(
-      moveRecord(from: "/Inbox/Scan.bundle/", to: "/Archiv/Rechnungen/Scan.bundle/"),
-      at: testDate(1))
-    let second = history.recordMove(
-      moveRecord(from: "/Archiv/./Rechnungen/../Rechnungen/Scan.bundle", to: "/Archiv/Scan.bundle"),
-      at: testDate(2))
-
-    #expect(second.documentID == first.documentID)
-    #expect(history.document(at: location("/Archiv/Scan.bundle/")) == first.documentID)
-  }
-
   @Test("undone events take no part in linking or locations")
   func undoneEventsExcluded() throws {
     var history = FilingHistory()

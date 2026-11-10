@@ -22,19 +22,6 @@ struct OwnChangesTests {
         == OwnChanges.path(of: folder.url.appending(path: "Ordner/gone.pdf")))
     #expect(
       OwnChanges.path(of: privateFolder.appending(path: "Ordner/gone.pdf"))
-        == FolderReference.path(of: folder.url) + "/Ordner/gone.pdf")
-  }
-
-  @Test("standardises the path: no trailing slash, no dot components")
-  func pathIsStandardised() throws {
-    let folder = try TemporaryDirectory()
-    let base = FolderReference.path(of: folder.url)
-
-    #expect(OwnChanges.path(of: folder.url) == base)
-    #expect(OwnChanges.path(of: folder.url.appending(path: "A/../B/./c.pdf")) == base + "/B/c.pdf")
-    #expect(
-      OwnChanges.path(of: folder.url.appending(path: "Brief.rtfd", directoryHint: .isDirectory))
-        == base + "/Brief.rtfd")
-    #expect(OwnChanges.path(of: URL(filePath: "/")) == "/")
+        == FileLocation.path(of: folder.url) + "/Ordner/gone.pdf")
   }
 }

@@ -174,14 +174,14 @@ struct RootMatcher: Sendable {
   /// Creates a matcher for `roots`, resolving their real paths now.
   init(roots: Set<URL>) {
     self.roots = roots.map { root in
-      let givenPath = FolderReference.path(of: root)
+      let givenPath = FileLocation.path(of: root)
       return Root(url: root, paths: [givenPath, Self.realPath(of: givenPath)])
     }
   }
 
   /// The roots that a change at `path` affects.
   func roots(affectedBy path: String) -> Set<URL> {
-    let changedPath = Self.withoutTrailingSlash(path)
+    let changedPath = FileLocation.path(of: URL(filePath: path))
     return Set(
       roots.filter { root in root.paths.contains { Self.isRelated(changedPath, $0) } }.map(\.url))
   }
@@ -193,14 +193,6 @@ struct RootMatcher: Sendable {
 
   private static func isAncestor(_ ancestor: String, of path: String) -> Bool {
     ancestor == "/" ? path != "/" : path.hasPrefix(ancestor + "/")
-  }
-
-  private static func withoutTrailingSlash(_ path: String) -> String {
-    var trimmed = Substring(path)
-    while trimmed.count > 1, trimmed.hasSuffix("/") {
-      trimmed = trimmed.dropLast()
-    }
-    return String(trimmed)
   }
 
   /// `path` with symbolic links resolved: the real path of its nearest existing ancestor (the path itself if it

@@ -383,8 +383,7 @@ final class HistoryModel {
   }
 
   private static func isSameLocation(_ url: URL, _ other: URL) -> Bool {
-    url.standardizedFileURL.path(percentEncoded: false)
-      == other.standardizedFileURL.path(percentEncoded: false)
+    FileLocation.path(of: url) == FileLocation.path(of: other)
   }
 
   #if DEBUG

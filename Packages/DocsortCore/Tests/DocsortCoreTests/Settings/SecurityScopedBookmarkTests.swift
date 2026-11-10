@@ -17,7 +17,7 @@ struct SecurityScopedBookmarkTests {
   }
 
   func folderPath(_ relativePath: String) -> String {
-    FolderReference.path(of: directory.url.appending(path: relativePath).resolvingSymlinksInPath())
+    FileLocation.path(of: directory.url.appending(path: relativePath).resolvingSymlinksInPath())
   }
 
   @Test("a bookmark resolves back to its folder, available and unchanged")
