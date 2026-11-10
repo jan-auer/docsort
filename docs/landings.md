@@ -3,6 +3,18 @@
 Work landed on `master`, newest first. Written by `/coord-land`. Older entries are compressed to one line; the full
 entries, with their divergences and follow-ups, are in `git show 84de681:docs/landings.md`.
 
+## 2026-11-10 claude/friendly-jemison-55046b: code cleanup round 1 (filing plumbing and tests)
+- What landed: one status-mirroring helper (`FilingStatusModel`), one recorded-move path in `FilingService`,
+  `MainWindowModel+Filing` split (835 → 486 lines), one shared `TestWindow` fixture; tests follow `test-intent`
+  (disk outcomes asserted once, status texts as facts, three UI tests that repeated model tests dropped). Net −211
+  lines; 332 core and 181 app unit tests pass.
+- Divergence: `FilingModel` renamed `FilingStatusModel`; undo types live in `MainWindowModel+Undo.swift`; six step
+  helpers are module-internal (documented as skipping the filing guard). HistoryModelTests keep their
+  History-specific disk checks. UI tests not run.
+- Follow-ups: UI coverage now gone at every level: ⌥⌘Z with the sidebar focused, ⌘Return from the name field, the
+  Rename button's label, the status strip's Move Back button; add as steps once the first-keystroke fix lets the UI
+  suite run.
+
 ## 2026-11-10 claude/loving-dijkstra-01ce93: docs cleaned up, decision history split out
 - What landed (squashed, 003179d): old design studies, mockups and screens deleted (~9 MB); decisions.md cut to
   standing rules (231 → 180 lines) with history in the new `docs/decision-log.md`; new decisions `test-intent`,
