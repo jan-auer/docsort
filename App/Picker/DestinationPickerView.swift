@@ -313,7 +313,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       .buttonStyle(.borderless)
       .controlSize(.small)
       .disabled(model.newFolderDraft != nil)
-      .help("\(title) (⇧⌘N)")
+      .help("\(title) (\(KeyCombination(pickerKey: .shiftCommandN).notation))")
       .accessibilityLabel(title)
       .accessibilityIdentifier("picker-new-folder-button")
       .layoutPriority(1)
@@ -351,7 +351,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     }
     .buttonStyle(.borderless)
     .disabled(model.isRebuildingIndex)
-    .help("Refresh folders (⌘R)")
+    .help("Refresh folders (\(MenuCommand.refresh.keys.notation))")
     .accessibilityLabel("Refresh folders")
     .accessibilityValue(model.isRebuildingIndex ? "refreshing" : "")
     .accessibilityIdentifier("picker-refresh-button")
