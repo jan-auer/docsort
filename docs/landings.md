@@ -3,6 +3,15 @@
 Work landed on `master`, newest first. Written by `/coord-land`. Older entries are compressed to one line; the full
 entries, with their divergences and follow-ups, are in `git show 84de681:docs/landings.md`.
 
+## 2026-11-10 claude/loving-dijkstra-01ce93: docs cleaned up, decision history split out
+- What landed (squashed, 003179d): old design studies, mockups and screens deleted (~9 MB); decisions.md cut to
+  standing rules (231 → 180 lines) with history in the new `docs/decision-log.md`; new decisions `test-intent`,
+  `coordinator-autonomy`, `archive-refresh`, `search-performance`; older landings compressed; ux.md, architecture.md,
+  backlog, README and CLAUDE.md brought in line with the app.
+- Divergence: squashed at the user's request. ux.md "Decisions" list kept, shortened; `layering`'s status ("due, not
+  started") is the coordinator's reading. ux.md's planned markings are checked against code, not the running app.
+- Follow-ups: architecture.md's `FilingService` sketch no longer matches the real API (noted there).
+
 ## 2026-11-10 claude/search-lag-0bed3b: destination search 3–10× faster on large archives
 - What landed: parallel scoring and highlighting over UTF-8 paths, and an index search outside a folder for the
   picker's Elsewhere; ~25,000 invented folders went from 16–60 ms per keystroke (worst 237 ms) to 4–9 ms (worst 24 ms)
