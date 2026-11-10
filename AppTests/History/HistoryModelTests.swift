@@ -285,6 +285,53 @@ struct HistoryModelTests {
     #expect(history.returnAction(for: try #require(history.entries.first)) == nil)
   }
 
+  @Test("The inbox row of a trashed or moved-back entry is found by any spelling of its location")
+  func inboxRowFoundBySpellingOfLocation() async throws {
+    let environment = try TestFolderEnvironment()
+    defer { environment.remove() }
+    let package = environment.webDownloads.appending(
+      path: "Scan.bundle", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+    let sheet = try writeInboxFile(
+      named: "2033-10-11_Optik Klarblick.pdf", in: environment.webDownloads, date: october2033(11))
+    let history = try await historyModel(on: environment)
+    let rows = history.mainWindow.inboxes.orderedRows
+    let packageRow = try #require(rows.first { $0.item.name == "Scan.bundle" })
+    let sheetRow = try #require(rows.first { $0.item.name == sheet.lastPathComponent })
+    #expect(packageRow.item.url.hasDirectoryPath)
+    #expect(!sheetRow.item.url.hasDirectoryPath)
+
+    func entry(_ kind: HistoryEntryKind, at url: URL) -> HistoryEntry {
+      HistoryEntry(
+        id: UUID(), documentID: UUID(), date: october2033(13), kind: kind,
+        originalName: url.lastPathComponent, inboxName: "Web-Downloads", newName: nil,
+        destination: "", url: url, place: .current)
+    }
+    let packagePath = package.path(percentEncoded: false)
+    let withoutSlash = URL(filePath: packagePath, directoryHint: .notDirectory)
+    let withDotComponents = URL(
+      filePath: environment.webDownloads.path(percentEncoded: false)
+        + "/../Web-Downloads/./Scan.bundle",
+      directoryHint: .notDirectory)
+    let sheetWithSlash = URL(
+      filePath: sheet.path(percentEncoded: false), directoryHint: .isDirectory)
+
+    // An unmarked row (a file back in its inbox) is matched by its item's location.
+    #expect(history.inboxRowID(for: entry(.movedBack, at: withoutSlash)) == packageRow.id)
+    #expect(history.inboxRowID(for: entry(.movedBack, at: withDotComponents)) == packageRow.id)
+    #expect(history.inboxRowID(for: entry(.movedBack, at: sheetWithSlash)) == sheetRow.id)
+
+    // A trashed row is matched by its place in the Trash.
+    let trashedPackage = URL(
+      filePath: "/Volumes/Daten/.Trashes/501/Scan.bundle", directoryHint: .isDirectory)
+    history.mainWindow.inboxes.setMark(
+      packageRow.id, .trashed(trashedURL: trashedPackage, date: october2033(13)))
+    let trashedWithoutSlash = URL(
+      filePath: "/Volumes/Daten/.Trashes/501/../501/Scan.bundle", directoryHint: .notDirectory)
+    #expect(history.inboxRowID(for: entry(.trashed, at: trashedWithoutSlash)) == packageRow.id)
+    #expect(history.inboxRowID(for: entry(.replaced, at: trashedWithoutSlash)) == packageRow.id)
+  }
+
   // MARK: Archive files
 
   @Test(

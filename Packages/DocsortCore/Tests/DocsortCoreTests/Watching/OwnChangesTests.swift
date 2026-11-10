@@ -24,4 +24,16 @@ struct OwnChangesTests {
       OwnChanges.path(of: privateFolder.appending(path: "Ordner/gone.pdf"))
         == FileLocation.path(of: folder.url) + "/Ordner/gone.pdf")
   }
+
+  @Test("resolves . and .. components in the part of a path that does not exist")
+  func pathResolvesDotComponentsInMissingTail() throws {
+    let folder = try TemporaryDirectory()
+
+    #expect(
+      OwnChanges.path(of: folder.url.appending(path: "Fehlt/../Weg/./scan.pdf"))
+        == OwnChanges.path(of: folder.url.appending(path: "Weg/scan.pdf")))
+    #expect(
+      OwnChanges.path(of: folder.url.appending(path: "Fehlt/../Weg/scan.pdf"))
+        == FileLocation.path(of: folder.url) + "/Weg/scan.pdf")
+  }
 }

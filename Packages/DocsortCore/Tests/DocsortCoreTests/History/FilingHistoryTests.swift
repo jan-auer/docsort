@@ -165,6 +165,30 @@ struct FilingHistoryTests {
     #expect(history.document(at: location("/Archiv/unknown.pdf")) == nil)
   }
 
+  @Test("finds a document by any spelling of its location: directory or file URL, dot components")
+  func documentAtOtherSpellingOfLocation() {
+    var recordedAsDirectory = FilingHistory()
+    let package = recordedAsDirectory.recordMove(
+      moveRecord(from: "/Inbox/Scan.bundle/", to: "/Archiv/Reisen/Scan.bundle/"), at: testDate(1))
+
+    #expect(
+      recordedAsDirectory.document(at: location("/Archiv/Reisen/Scan.bundle")) == package.documentID
+    )
+    #expect(
+      recordedAsDirectory.document(at: location("/Archiv/Reisen/../Reisen/./Scan.bundle"))
+        == package.documentID)
+
+    var recordedAsFile = FilingHistory()
+    let other = recordedAsFile.recordMove(
+      moveRecord(from: "/Inbox/Scan.bundle", to: "/Archiv/Reisen/Scan.bundle"), at: testDate(1))
+
+    #expect(
+      recordedAsFile.document(at: location("/Archiv/Reisen/Scan.bundle/")) == other.documentID)
+    #expect(
+      recordedAsFile.document(at: location("/Archiv/Reisen/../Reisen/./Scan.bundle/"))
+        == other.documentID)
+  }
+
   @Test("when two documents end at the same place, the one changed most recently is there")
   func mostRecentDocumentWins() {
     var history = FilingHistory()
