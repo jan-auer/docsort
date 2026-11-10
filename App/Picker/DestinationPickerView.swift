@@ -302,8 +302,8 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
 
   // MARK: Footer
 
-  /// The folder list's footer: the New Folder button (its tooltip names the parent and the shortcut), the refresh button, and the keys that
-  /// step into and out of folders.
+  /// The folder list's footer: the New Folder button (its tooltip names the parent and the shortcut), the refresh
+  /// button, and the keys that step into and out of folders.
   private var footer: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
     return HStack(spacing: 6) {

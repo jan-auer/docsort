@@ -8,6 +8,7 @@
 /// - `FileOperations`: moving, renaming, creating folders, trashing and undoing, never overwriting anything.
 /// - `History`: `FilingHistory` and `FilingHistoryStore`, the persistent, versioned log of every move and trash.
 /// - `Recents`, `Preferences`: recent destinations and the `UserDefaults` storage they and the settings use.
-/// - `FileSystem`: `VisibleContentsWalker`, the Finder-like walk the inbox scan and the destination index share.
+/// - `FileSystem`: `VisibleContentsWalker`, the Finder-like walk the inbox scan and the destination index share;
+///   `FileLocation`, the standardised path by which locations are compared.
 /// - `Watching`: `InboxWatcher` watches the inbox folders with FSEvents and delivers each changed inbox's new listing
 ///   with the changes made outside docsort; `ExpectedChanges` lets the filing service mark its own changes.

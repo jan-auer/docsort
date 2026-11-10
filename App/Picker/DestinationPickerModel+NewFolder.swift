@@ -51,9 +51,9 @@ extension DestinationPickerModel {
     }
   }
 
-  /// Confirms the new-folder row: chooses the folder the name gives and emits `event` with it, ``PickerEvent/chose(_:)``
-  /// for Tab or Return, ``PickerEvent/moveRequested(_:)`` for ⌘Return. A new folder becomes pending; a name that
-  /// exists (ignoring case) chooses the existing folder. An empty name cancels the row.
+  /// Confirms the new-folder row: chooses the folder the name gives and emits `event` with it,
+  /// ``PickerEvent/chose(_:)`` for Tab or Return, ``PickerEvent/moveRequested(_:)`` for ⌘Return. A new folder becomes
+  /// pending; a name that exists (ignoring case) chooses the existing folder. An empty name cancels the row.
   ///
   /// - Returns: `false` when the row stays because the name is invalid (or there is no row); `true` when it ended,
   ///   chosen or cancelled.

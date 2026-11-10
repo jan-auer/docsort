@@ -2,13 +2,14 @@ import DocsortCore
 import SwiftUI
 
 /// Folder contents (`docs/design/ux.md`, "Folder contents"): the files already in the chosen or highlighted folder,
-/// in Finder name order, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder changes.
+/// in Finder name order, scrolled to the bottom (the newest of the archive's date-named files) whenever the folder
+/// changes.
 ///
 /// Files are selected as in Finder: a click selects a file and focuses the list, ↑ ↓ move the selection, Space opens
 /// the Quick Look panel on it (↑ ↓ then move through the files with the panel following; Space or Esc closes it),
-/// and a double-click or Return uses its name for the name field (``PickerEvent/tookFileName(_:)``). A file's context
-/// menu offers Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename… and Move to
-/// Trash (``FolderContentsFileMenu``).
+/// and a double-click or Return uses its name for the name field (``PickerEvent/tookFileName(_:)``). A file's
+/// context menu offers Use Name, Quick Look, Open, Open With, Reveal in Finder, Copy Name, Copy Path, Rename… and
+/// Move to Trash (``FolderContentsFileMenu``).
 ///
 /// It is a drawer under the folder list: its header ("Files in Rechnungen", the file count) can be dragged up and down
 /// to resize the list under it, and its chevron collapses the drawer to the header.
