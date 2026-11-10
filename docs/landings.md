@@ -3,6 +3,18 @@
 Work landed on `master`, newest first. Written by `/coord-land`. Older entries are compressed to one line; the full
 entries, with their divergences and follow-ups, are in `git show 84de681:docs/landings.md`.
 
+## 2026-11-10 claude/code-cleanup-2-bc5e2c: code cleanup round 2 (picker, paths, core)
+- What landed: one core `FileLocation.path(of:)` instead of ~8 copies; Folder contents sorted once, in name order, by
+  the core; `DestinationPickerModel` split into `+FolderContents` / `+NewFolder` (893 → ~570 lines); `ScanProblem`
+  carries its kind from the walker; the shortcuts sheet and the picker share one `SearchField`; picker tests and
+  UI tests trimmed to one test per behaviour (`test-intent`). 331 core and 185+ app unit tests pass.
+- Divergence: History now matches locations with a trailing slash (finds moved-back packages' inbox rows). The
+  shortcuts sheet's search field looks like the picker's, its clear button refocuses the field and reads "Clear" to
+  VoiceOver; not seen on screen. The picker model's state setters are module-internal (set only by the model and its
+  extensions). `createFolders` deleted (its behaviours tested through `move`). Done without delegating to cheaper
+  subagents (the rule landed mid-way).
+- Follow-ups: None.
+
 ## 2026-11-10 claude/first-keystroke-db11d7: first letter after launch no longer replaced
 - What landed (squashed, b392731): text typed in the sidebar waits until the destination filter has focus and goes
   in as typed; the picker's key monitor hands it over before any key reaches the field, so fast typing keeps its
