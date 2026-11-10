@@ -24,7 +24,7 @@ extension DestinationPickerModel {
     guard !files.isEmpty, offset != 0 else { return }
     let target: Int
     if let index = files.firstIndex(where: { $0.url == selectedContentsFileURL }) {
-      target = min(max(index + offset, 0), files.count - 1)
+      target = (index + offset).clamped(to: 0...files.count - 1)
     } else {
       target = offset > 0 ? 0 : files.count - 1
     }

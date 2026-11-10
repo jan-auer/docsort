@@ -214,7 +214,7 @@ final class DestinationPickerModel {
     let selectable = rows.filter(\.isSelectable)
     guard !selectable.isEmpty else { return }
     let current = selectable.firstIndex { $0.id == highlightedRowID } ?? 0
-    let target = min(max(current + offset, 0), selectable.count - 1)
+    let target = (current + offset).clamped(to: 0...selectable.count - 1)
     highlightedRowID = selectable[target].id
     placementSinceReset = nil
     followContents()

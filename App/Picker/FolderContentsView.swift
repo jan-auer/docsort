@@ -129,9 +129,13 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
   }
 
   private var clampedListHeight: Double {
-    min(
-      max(listHeight, FilingPanelStyle.contentsMinListHeight),
-      max(maxListHeight, FilingPanelStyle.contentsMinListHeight))
+    listHeight.clamped(to: listHeightRange)
+  }
+
+  /// The heights the list can take: from the minimum up to `maxListHeight`, the minimum when that is less.
+  private var listHeightRange: ClosedRange<Double> {
+    let minimum = FilingPanelStyle.contentsMinListHeight
+    return minimum...max(maxListHeight, minimum)
   }
 
   // MARK: Header
@@ -190,9 +194,8 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
     .gesture(resizeGesture)
     .accessibilityAdjustableAction { direction in
       switch direction {
-      case .increment: listHeight = min(clampedListHeight + 24, maxListHeight)
-      case .decrement:
-        listHeight = max(clampedListHeight - 24, FilingPanelStyle.contentsMinListHeight)
+      case .increment: listHeight = (clampedListHeight + 24).clamped(to: listHeightRange)
+      case .decrement: listHeight = (clampedListHeight - 24).clamped(to: listHeightRange)
       @unknown default: break
       }
     }
@@ -209,9 +212,7 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
         }
         let start = dragStartHeight ?? clampedListHeight
         dragStartHeight = start
-        listHeight = min(
-          max(start - drag.translation.height, FilingPanelStyle.contentsMinListHeight),
-          maxListHeight)
+        listHeight = (start - drag.translation.height).clamped(to: listHeightRange)
       }
       .onEnded { _ in
         dragStartHeight = nil
