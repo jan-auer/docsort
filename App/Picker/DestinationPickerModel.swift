@@ -10,8 +10,12 @@ import Observation
 /// ``FolderFileListing`` it was created with.
 ///
 /// While a new folder is being named (``newFolderDraft``), the new-folder row's own intents apply
-/// (``newFolderName``, ``confirmNewFolder()``, ``cancelNewFolder()``); ``escape()``, ``stepBack()`` and
+/// (``newFolderName``, ``confirmNewFolder(reporting:)``, ``cancelNewFolder()``); ``escape()``, ``stepBack()`` and
 /// ``requestMove()`` act on the row, and any other intent cancels it first.
+///
+/// Folder contents and New Folder live in `DestinationPickerModel+FolderContents.swift` and
+/// `DestinationPickerModel+NewFolder.swift`. Their state is set there too, so the setters below are internal rather
+/// than `private(set)`: only the model and those extensions set them.
 @Observable
 final class DestinationPickerModel {
   // MARK: Inputs
@@ -45,17 +49,17 @@ final class DestinationPickerModel {
   // MARK: State
 
   /// The folder the picker is in, `""` for the archive root.
-  private(set) var scope = ""
+  var scope = ""
 
   /// The filter the list is computed from, shown in the filter field. Choosing keeps it, so the list stays as it was
   /// chosen from.
-  private var query = ""
+  var query = ""
 
   /// The sections the list shows, recomputed whenever an input or the state changes.
   private(set) var sections: [PickerSection] = []
 
   /// The id of the highlighted row; `nil` only when no row is selectable.
-  private(set) var highlightedRowID: PickerRow.ID?
+  var highlightedRowID: PickerRow.ID?
 
   /// Where the last reset placed the highlight, while the user has not changed the picker since; `nil` once they
   /// have. New inputs place the highlight there again, so a reset ends on the same row whether the inputs it goes
@@ -67,35 +71,40 @@ final class DestinationPickerModel {
   @ObservationIgnored private var textTypedBeforeFocus = ""
 
   /// The chosen destination, `nil` until the user chooses one.
-  private(set) var destination: PickerDestination?
+  var destination: PickerDestination?
 
   /// New folders the user named that do not exist on disk yet, in the order they were named.
   private(set) var pendingFolders: [String] = []
 
   /// The new folder being named in the inline row, `nil` when none is. While it is set, the picker is in its parent
   /// with an empty filter and nothing chosen.
-  private(set) var newFolderDraft: NewFolderDraft?
+  var newFolderDraft: NewFolderDraft?
 
   /// The state ``cancelNewFolder()`` returns to.
-  @ObservationIgnored private var stateBeforeDraft: StateBeforeDraft?
+  @ObservationIgnored var stateBeforeDraft: StateBeforeDraft?
+
+  /// How the latest new-folder row ended. The view refocuses the filter only after a cancel: after a choice, the
+  /// panel has already moved focus on (to the name field, or the move has started).
+  var lastDraftEnding: NewFolderDraftEnding?
 
   /// The files Folder contents shows; follows ``destination``, else the highlighted folder row.
-  private(set) var contents: FolderContents = .none
+  var contents: FolderContents = .none
 
   /// The file selected in Folder contents (Finder-style: a click selects, ↑ ↓ move it); `nil` when none is. Another
   /// folder clears it.
-  private(set) var selectedContentsFileURL: URL?
+  var selectedContentsFileURL: URL?
 
   /// The running listing of ``contents``, if any; tests await it.
-  @ObservationIgnored private(set) var contentsTask: Task<Void, Never>?
+  @ObservationIgnored var contentsTask: Task<Void, Never>?
 
   /// The folder ``contents`` was last loaded for; `nil` forces the next ``followContents()`` to reload.
-  @ObservationIgnored private var contentsTarget: ContentsTarget?
+  @ObservationIgnored var contentsTarget: ContentsTarget?
 
   /// Counts listings started, so a result that arrives after a newer listing started is dropped.
-  @ObservationIgnored private var contentsLoadNumber = 0
+  @ObservationIgnored var contentsLoadNumber = 0
 
-  private let folderFiles: any FolderFileListing
+  /// Lists the files Folder contents shows.
+  let folderFiles: any FolderFileListing
 
   /// A picker at the archive root with nothing chosen.
   init(
@@ -140,16 +149,6 @@ final class DestinationPickerModel {
     case .createFolder, .newFolderDraft, .indexing:
       return nil
     }
-  }
-
-  /// The folder the highlighted create row would create (not yet pending); `nil` when the create row is not
-  /// highlighted or its name is invalid.
-  private var highlightedCreateRowDestination: PickerDestination? {
-    guard case .createFolder(let name, let parent, let problem) = highlightedRow?.kind,
-      problem == nil
-    else { return nil }
-    return NewFolderPath(typed: name).resolved(
-      under: parent, index: index, pendingFolders: pendingFolders)
   }
 
   /// The scope's own name, for the placeholder; `nil` at the root.
@@ -205,12 +204,6 @@ final class DestinationPickerModel {
     return "Search, \(scopeTitle) first"
   }
 
-  /// The folder ``beginNewFolder()`` would create a folder in, for the button's tooltip "New Folder in Reisen":
-  /// ``ArchivePath/rootTitle`` for the root.
-  var newFolderParentTitle: String {
-    ArchivePath.title(of: newFolderParent)
-  }
-
   // MARK: Highlight
 
   /// Moves the highlight `offset` selectable rows down (negative: up), stopping at the first and last row. A chosen
@@ -252,12 +245,12 @@ final class DestinationPickerModel {
     onEvent(.chose(chosen))
   }
 
-  /// ⌘Return: moves the file now. Confirms a new folder being named (see ``confirmNewFolderAndMove()``), else uses
+  /// ⌘Return: moves the file now. Confirms a new folder being named (see ``confirmNewFolder(reporting:)``), else uses
   /// the chosen destination, else chooses the highlighted row first (without emitting ``PickerEvent/chose(_:)``);
   /// emits ``PickerEvent/moveRequested(_:)``. Does nothing when there is nothing to choose.
   func requestMove() {
     if newFolderDraft != nil {
-      confirmNewFolderAndMove()
+      confirmNewFolder(reporting: PickerEvent.moveRequested)
       return
     }
     if let destination {
@@ -418,232 +411,6 @@ final class DestinationPickerModel {
     }
   }
 
-  // MARK: New folder
-
-  /// ⇧⌘N or the New Folder button. With the create row highlighted, creates its folder at once (as choosing it).
-  /// Otherwise opens the new-folder row in ``newFolderParentTitle``'s folder: the chosen destination if it exists,
-  /// else the highlighted folder row if it is not new, else the scope. The view then focuses
-  /// ``PickerField/newFolderName``.
-  func beginNewFolder() {
-    guard newFolderDraft == nil else { return }
-    if destination == nil, case .createFolder = highlightedRow?.kind {
-      confirmCreateRow()
-      return
-    }
-    let parent = newFolderParent
-    stateBeforeDraft = StateBeforeDraft(
-      scope: scope, query: query, highlightedRowID: highlightedRowID, destination: destination)
-    destination = nil
-    scope = parent
-    query = ""
-    newFolderDraft = NewFolderDraft(parent: parent, name: "", notice: nil)
-    update(highlight: .currentFolder)
-  }
-
-  /// ⇧⌘N or a click on the highlighted create row: chooses the folder it offers (pending until the move) and emits
-  /// ``PickerEvent/chose(_:)``. Does nothing when the create row is not highlighted or its name is invalid.
-  func confirmCreateRow() {
-    guard let created = highlightedCreateRowDestination else { return }
-    choose(created)
-    onEvent(.chose(created))
-  }
-
-  /// The name typed into the new-folder row, bound to its field; setting it updates the row's notice. The row stays
-  /// where it is, directly under its parent.
-  var newFolderName: String {
-    get { newFolderDraft?.name ?? "" }
-    set {
-      guard var draft = newFolderDraft else { return }
-      draft.name = newValue
-      draft.notice = notice(for: draft)
-      newFolderDraft = draft
-      update(highlight: .keep)
-    }
-  }
-
-  /// Tab or Return in the new-folder row: chooses the folder the name gives and emits ``PickerEvent/chose(_:)``.
-  /// A new folder becomes pending; a name that exists (ignoring case) chooses the existing folder. An empty name
-  /// cancels the row.
-  ///
-  /// - Returns: `false` when the row stays because the name is invalid (or there is no row); `true` when it ended,
-  ///   chosen or cancelled.
-  @discardableResult
-  func confirmNewFolder() -> Bool {
-    switch confirmDraft() {
-    case .chose(let chosen):
-      onEvent(.chose(chosen))
-      return true
-    case .cancelled:
-      return true
-    case .unchanged:
-      return false
-    }
-  }
-
-  /// ⌘Return in the new-folder row: confirms it like ``confirmNewFolder()`` but emits
-  /// ``PickerEvent/moveRequested(_:)`` instead.
-  @discardableResult
-  func confirmNewFolderAndMove() -> Bool {
-    switch confirmDraft() {
-    case .chose(let chosen):
-      onEvent(.moveRequested(chosen))
-      return true
-    case .cancelled:
-      return true
-    case .unchanged:
-      return false
-    }
-  }
-
-  /// Esc or ⇧Tab in the new-folder row: removes it and restores the filter, scope, highlight and destination from
-  /// before it opened. Does nothing without a row.
-  func cancelNewFolder() {
-    guard newFolderDraft != nil, let saved = stateBeforeDraft else { return }
-    lastDraftEnding = .cancelled
-    newFolderDraft = nil
-    stateBeforeDraft = nil
-    scope = saved.scope
-    query = saved.query
-    destination = saved.destination
-    highlightedRowID = saved.highlightedRowID
-    update(highlight: .keep)
-  }
-
-  /// How the latest new-folder row ended. The view refocuses the filter only after a cancel: after a choice, the
-  /// panel has already moved focus on (to the name field, or the move has started).
-  private(set) var lastDraftEnding: NewFolderDraftEnding?
-
-  /// What ``cancelNewFolder()`` restores.
-  private struct StateBeforeDraft {
-    let scope: String
-    let query: String
-    let highlightedRowID: PickerRow.ID?
-    let destination: PickerDestination?
-  }
-
-  /// The parent ``beginNewFolder()`` uses; see there.
-  private var newFolderParent: String {
-    if case .folder(let path) = destination, index?.contains(path) == true { return path }
-    if case .folder(let folder) = highlightedRow?.kind, !folder.isNew { return folder.path }
-    return scope
-  }
-
-  /// How confirming the new-folder row ended.
-  private enum DraftConfirmation {
-    /// The row's folder was chosen.
-    case chose(PickerDestination)
-    /// The name was empty, so the row was cancelled.
-    case cancelled
-    /// The name is invalid (or there is no row); nothing changed.
-    case unchanged
-  }
-
-  /// Ends the new-folder row by choosing what its name gives, cancels it for an empty name, keeps it for an invalid
-  /// one.
-  private func confirmDraft() -> DraftConfirmation {
-    guard let draft = newFolderDraft else { return .unchanged }
-    let typed = NewFolderPath(typed: draft.name)
-    guard
-      let chosen = typed.resolved(under: draft.parent, index: index, pendingFolders: pendingFolders)
-    else {
-      cancelNewFolder()
-      return .cancelled
-    }
-    guard typed.problem == nil else { return .unchanged }
-    lastDraftEnding = .chosen
-    newFolderDraft = nil
-    stateBeforeDraft = nil
-    scope = draft.parent
-    query = ""
-    choose(chosen)
-    return .chose(chosen)
-  }
-
-  /// The notice the new-folder row shows for `draft`'s name.
-  private func notice(for draft: NewFolderDraft) -> NewFolderNotice? {
-    let typed = NewFolderPath(typed: draft.name)
-    if let problem = typed.problem { return .invalid(problem) }
-    guard
-      let resolved = typed.resolved(
-        under: draft.parent, index: index, pendingFolders: pendingFolders),
-      let relativePath = ArchivePath.relative(resolved.path, to: draft.parent)
-    else { return nil }
-    if case .folder = resolved {
-      return .existing(parentTitle: ArchivePath.title(of: draft.parent), existingName: relativePath)
-    }
-    let components = ArchivePath.segments(of: relativePath)
-    return components.count > 1 ? .nested(components) : nil
-  }
-
-  // MARK: Folder contents
-
-  /// The file selected in Folder contents, if it is listed.
-  var selectedContentsFile: FolderFile? {
-    guard let selectedContentsFileURL else { return nil }
-    return contents.files.first { $0.url == selectedContentsFileURL }
-  }
-
-  /// A click on a file in Folder contents: selects it, as in Finder; its name is used only by
-  /// ``useSelectedContentsFileName()`` or ``takeFileName(_:)``.
-  func selectContentsFile(_ file: FolderFile) {
-    selectedContentsFileURL = file.url
-  }
-
-  /// ↑ (`-1`) or ↓ (`1`) in Folder contents: moves the selection by `offset` files, stopping at the first and last.
-  /// With nothing selected, ↓ selects the first file and ↑ the last (the newest of date-named files).
-  func moveContentsSelection(by offset: Int) {
-    let files = contents.files
-    guard !files.isEmpty, offset != 0 else { return }
-    let target: Int
-    if let index = files.firstIndex(where: { $0.url == selectedContentsFileURL }) {
-      target = min(max(index + offset, 0), files.count - 1)
-    } else {
-      target = offset > 0 ? 0 : files.count - 1
-    }
-    selectedContentsFileURL = files[target].url
-  }
-
-  /// Return in Folder contents: uses the selected file's name (``PickerEvent/tookFileName(_:)``); nothing without a
-  /// selection.
-  func useSelectedContentsFileName() {
-    guard let file = selectedContentsFile else { return }
-    takeFileName(file)
-  }
-
-  /// A double-click on a file in Folder contents, or Use Name in its menu: selects it and emits
-  /// ``PickerEvent/tookFileName(_:)`` with its full name.
-  func takeFileName(_ file: FolderFile) {
-    selectedContentsFileURL = file.url
-    onEvent(.tookFileName(file.name))
-  }
-
-  /// Rename… in a file's menu, once the user entered `name` (without the extension the file keeps): emits
-  /// ``PickerEvent/renameFileRequested(_:to:)``.
-  func requestRename(of file: FolderFile, to name: String) {
-    onEvent(.renameFileRequested(file, to: name))
-  }
-
-  /// Move to Trash in a file's menu: emits ``PickerEvent/trashFileRequested(_:)``.
-  func requestTrash(of file: FolderFile) {
-    onEvent(.trashFileRequested(file))
-  }
-
-  /// Lists the shown folder again after its files changed (a rename or a move to the Trash), selecting the file at
-  /// `url`. The files stay listed meanwhile; a selection the new listing lacks is dropped.
-  func reloadContents(selecting url: URL?) {
-    selectedContentsFileURL = url
-    contentsTarget = nil
-    followContents()
-  }
-
-  /// The file that takes `file`'s place in the selection once it is gone: the next file, else the previous one.
-  func contentsFile(replacing file: FolderFile) -> FolderFile? {
-    let files = contents.files
-    guard let index = files.firstIndex(where: { $0.url == file.url }) else { return nil }
-    if index + 1 < files.count { return files[index + 1] }
-    return index > 0 ? files[index - 1] : nil
-  }
-
   // MARK: Refresh
 
   /// The footer's refresh button: emits ``PickerEvent/refreshRequested``. The picker's state stays as it is; the new
@@ -652,93 +419,10 @@ final class DestinationPickerModel {
     onEvent(.refreshRequested)
   }
 
-  /// What ``contents`` should show.
-  private enum ContentsTarget: Equatable {
-    case none
-    case notOnDisk
-    case folder(String)
-  }
-
-  /// The folder Folder contents follows: the destination if chosen, else the highlighted folder row.
-  private var currentContentsTarget: ContentsTarget {
-    if newFolderDraft != nil { return .notOnDisk }
-    let path: String
-    if let destination {
-      if case .newFolder = destination { return .notOnDisk }
-      path = destination.path
-    } else if let highlightedPath = highlightedRow?.folderPath {
-      if pendingFolders.contains(highlightedPath) { return .notOnDisk }
-      path = highlightedPath
-    } else {
-      return .none
-    }
-    return index == nil ? .none : .folder(path)
-  }
-
-  /// Updates ``contents`` when the folder it follows changed, cancelling a listing still running.
-  private func followContents() {
-    let target = currentContentsTarget
-    guard target != contentsTarget else { return }
-    // Listing the same folder again keeps the selection while its file is still listed.
-    if contents.folder.map(ContentsTarget.folder) != target {
-      selectedContentsFileURL = nil
-    }
-    contentsTarget = target
-    contentsTask?.cancel()
-    contentsTask = nil
-    switch target {
-    case .none:
-      contents = .none
-    case .notOnDisk:
-      contents = .notOnDisk
-    case .folder(let folder):
-      loadContents(of: folder)
-    }
-  }
-
-  /// Lists `folder` through ``folderFiles`` and shows the result unless a newer listing started meanwhile.
-  private func loadContents(of folder: String) {
-    guard let index else {
-      contents = .none
-      return
-    }
-    contentsLoadNumber += 1
-    let loadNumber = contentsLoadNumber
-    let listing = folderFiles
-    // Listing the folder shown again keeps its files until the new list is ready, so the list does not flash empty.
-    if contents.listedFolder != folder {
-      contents = .loading(folder: folder)
-    }
-    contentsTask = Task { [weak self] in
-      let result: Result<[FolderFile], FolderAccessError>
-      do throws(FolderAccessError) {
-        result = .success(try await listing.files(in: folder, of: index))
-      } catch {
-        Logger.picker.error(
-          "Could not list the files in archive folder \(folder) for Folder contents: \(String(describing: error))"
-        )
-        result = .failure(error)
-      }
-      guard let self, loadNumber == self.contentsLoadNumber else { return }
-      switch result {
-      case .success(let files):
-        self.contents = .files(folder: folder, files)
-        if let selected = self.selectedContentsFileURL,
-          !files.contains(where: { $0.url == selected })
-        {
-          self.selectedContentsFileURL = nil
-        }
-      case .failure(let error):
-        self.contents = .failed(folder: folder, message: FolderContents.message(for: error))
-        self.selectedContentsFileURL = nil
-      }
-    }
-  }
-
   // MARK: Internals
 
   /// Where the highlight goes when the rows are recomputed.
-  private indirect enum HighlightRequest {
+  indirect enum HighlightRequest {
     /// The same row id as before, else the first selectable row.
     case keep
     /// The first selectable row other than the create row, else the create row.
@@ -753,7 +437,7 @@ final class DestinationPickerModel {
 
   /// Recomputes the rows and places the highlight, for a change by the user (or by new inputs, through
   /// ``inputsDidChange()``): the highlight no longer returns to where the last reset placed it.
-  private func update(highlight request: HighlightRequest) {
+  func update(highlight request: HighlightRequest) {
     placementSinceReset = nil
     sections = PickerListing(
       index: index, recents: recents, ranking: ranking, scope: scope, query: query,
@@ -825,7 +509,7 @@ final class DestinationPickerModel {
 
   /// Chooses `chosen`, keeping the list and the filter it was chosen from for un-choosing. A new folder becomes
   /// pending, and the highlight moves to its row where it is listed.
-  private func choose(_ chosen: PickerDestination) {
+  func choose(_ chosen: PickerDestination) {
     if case .newFolder(let path) = chosen, !pendingFolders.contains(path) {
       pendingFolders.append(path)
     }
@@ -876,12 +560,4 @@ final class DestinationPickerModel {
     else { return nil }
     return ArchivePath.joining(ancestor, first)
   }
-}
-
-/// How a new-folder row ended.
-enum NewFolderDraftEnding: Hashable, Sendable {
-  /// Its folder was chosen (Tab, Return or ⌘Return).
-  case chosen
-  /// It was cancelled (Esc, ⇧Tab, an empty name, or another action that closes it).
-  case cancelled
 }

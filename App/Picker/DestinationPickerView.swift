@@ -165,11 +165,11 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
   private func handleInNewFolderName(_ key: PickerKey) -> KeyPress.Result {
     switch key {
     case .tab, .returnKey:
-      model.confirmNewFolder()
+      model.confirmNewFolder(reporting: PickerEvent.chose)
     case .escape, .shiftTab:
       model.cancelNewFolder()
     case .commandReturn:
-      model.confirmNewFolderAndMove()
+      model.confirmNewFolder(reporting: PickerEvent.moveRequested)
     case .upArrow, .downArrow, .rightArrow, .leftArrow, .delete, .commandUpArrow, .shiftCommandN:
       return .ignored
     }
