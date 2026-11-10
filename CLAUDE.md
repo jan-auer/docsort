@@ -82,6 +82,7 @@ accessibility identifiers only. Send keystrokes to a window element (`mainWindow
 
 What the app exposes, as UI tests see it on macOS 27:
 - A static text (`Text`) carries its text as its `value`; its `label` is empty. Buttons carry theirs as `label`.
+- The main window's title includes its subtitle (the inbox) after the file name.
 - A plain element with `.accessibilityElement(children: .ignore)` loses its `.accessibilityValue`; give it a trait
   (the sidebar row uses `.isStaticText`) to keep it.
 - Files that Foundation creates (the fixture's) get decomposed names, so "ä" arrives as "a" + U+0308; match names

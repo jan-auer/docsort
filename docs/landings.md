@@ -3,6 +3,17 @@
 Work landed on `master`, newest first. Written by `/coord-land`. Older entries are compressed to one line; the full
 entries, with their divergences and follow-ups, are in `git show 84de681:docs/landings.md`.
 
+## 2026-11-10 claude/first-keystroke-db11d7: first letter after launch no longer replaced
+- What landed (squashed, b392731): text typed in the sidebar waits until the destination filter has focus and goes
+  in as typed; the picker's key monitor hands it over before any key reaches the field, so fast typing keeps its
+  order; waiting text is dropped when focus goes elsewhere or the panel hides. The keyboard UI test passes again.
+- Divergence: the filter no longer puts its caret at the end on every focus (a click keeps its position; Tab, Esc
+  back or coming back from the name field selects all, so the first → collapses the selection). Sidebar-typed text
+  filters the list once the field has focus. No automated test fails without the fix (hosted tests can't drive
+  SwiftUI focus); checked by the user in a Release build. More diagnostic UI-test runs than first agreed.
+- Follow-ups: which 2026-11-09 commit exposed the race is unknown (bisect if it matters); add the UI steps lost in
+  code cleanup round 1 (⌥⌘Z from the sidebar, ⌘Return from the name field, Rename label, Move Back button).
+
 ## 2026-11-10 claude/friendly-jemison-55046b: code cleanup round 1 (filing plumbing and tests)
 - What landed: one status-mirroring helper (`FilingStatusModel`), one recorded-move path in `FilingService`,
   `MainWindowModel+Filing` split (835 → 486 lines), one shared `TestWindow` fixture; tests follow `test-intent`
