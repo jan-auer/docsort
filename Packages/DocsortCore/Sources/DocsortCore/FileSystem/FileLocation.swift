@@ -5,10 +5,16 @@ public enum FileLocation {
   /// The absolute, standardised path of `url`, without a trailing slash except for the root folder. Two URLs for the
   /// same location (a package as a directory URL or a file URL, `./` and `../` components) give the same path.
   public static func path(of url: URL) -> String {
-    var path = url.standardizedFileURL.path(percentEncoded: false)
-    while path.count > 1, path.hasSuffix("/") {
-      path.removeLast()
+    withoutTrailingSlashes(url.standardizedFileURL.path(percentEncoded: false))
+  }
+
+  /// `path` without trailing slashes, except for the root folder. For paths that are already absolute and
+  /// standardised, such as those FSEvents reports, where building a URL to standardise them again would gain nothing.
+  static func withoutTrailingSlashes(_ path: String) -> String {
+    var trimmed = Substring(path)
+    while trimmed.count > 1, trimmed.hasSuffix("/") {
+      trimmed = trimmed.dropLast()
     }
-    return path
+    return String(trimmed)
   }
 }

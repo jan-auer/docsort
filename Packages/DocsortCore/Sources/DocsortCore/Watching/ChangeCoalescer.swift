@@ -181,7 +181,7 @@ struct RootMatcher: Sendable {
 
   /// The roots that a change at `path` affects.
   func roots(affectedBy path: String) -> Set<URL> {
-    let changedPath = FileLocation.path(of: URL(filePath: path))
+    let changedPath = FileLocation.withoutTrailingSlashes(path)
     return Set(
       roots.filter { root in root.paths.contains { Self.isRelated(changedPath, $0) } }.map(\.url))
   }

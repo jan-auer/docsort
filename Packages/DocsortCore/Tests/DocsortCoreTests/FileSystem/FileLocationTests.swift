@@ -16,4 +16,11 @@ struct FileLocationTests {
     #expect(FileLocation.path(of: detour) == "/Archiv/Scan.bundle")
     #expect(FileLocation.path(of: URL(filePath: "/")) == "/")
   }
+
+  @Test("trims only trailing slashes from a path, keeping the root as /")
+  func trimsTrailingSlashes() {
+    #expect(FileLocation.withoutTrailingSlashes("/Eingang/Scan.bundle//") == "/Eingang/Scan.bundle")
+    #expect(FileLocation.withoutTrailingSlashes("/Eingang/./Scan.pdf") == "/Eingang/./Scan.pdf")
+    #expect(FileLocation.withoutTrailingSlashes("///") == "/")
+  }
 }
