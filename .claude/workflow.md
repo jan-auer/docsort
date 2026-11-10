@@ -18,9 +18,8 @@ Every session in this project loads these rules, so the role comes from how the 
 - **The hub** is the user's standing session. It talks with the user, plans, starts and steers the other sessions,
   and lands their work. It does not write project code itself.
 - **A coordinator** is a session in its own git worktree and branch, owning one feature, fix or experiment. It
-  plans the details, settles implementation choices itself, verifies and reports. When the spec is clear and the
-  change is contained, it implements directly, itself or with a single subagent, in one build-and-fix loop. It splits
-  work across subagents only when the pieces are large or independent enough to pay for the extra hand-offs.
+  plans the details, settles implementation choices itself, verifies and reports. It hands simple, well-specified
+  code changes to cheap subagents and does diagnosis, design and tricky changes itself.
 - **An agent session** is a session running one named agent definition (for example a researcher), for work that
   outlives a single subagent call or needs the user's attention on its own.
 - **Subagents** do bounded jobs inside a session: reconnaissance, one well-defined implementation step, tests for one
@@ -64,9 +63,9 @@ keep all three short.
 3. Settle implementation details yourself and unblock yourself (`coordinator-autonomy`). Bring only product
    behaviour, architecture and big trade-offs to the hub (or, without a hub, the user), as questions; do not make
    architectural assumptions. List every choice you made under Divergence in your report.
-4. Implement directly when the spec is clear and the change is contained (see Roles). When you do delegate, give
-   the subagent a brief naming the goal, the files, what is already ruled out and what done looks like. Prefer few,
-   larger steps over many small hand-offs.
+4. Delegate simple, well-specified code changes to cheap subagents (see Model and effort); do diagnosis, design and
+   tricky changes yourself. Give each subagent a brief naming the goal, the files, what is already ruled out and what
+   done looks like. Prefer few, larger steps over many small hand-offs.
 5. Run subagents one after another. Run them in parallel only for read-only work or when their files are disjoint.
 6. Verify each result yourself (read the diff, run the relevant tests) before starting the next step. A subagent's
    report is a claim, not proof.
@@ -81,9 +80,9 @@ keep all three short.
 
 Choose both for every subagent and every session you start, matched to the task: cheap and fast for mechanical or
 reconnaissance work, stronger for implementation, the strongest at high effort for architecture and verification.
-A coordinator whose brief fully specifies simple code changes (a cleanup list, a mechanical refactor) runs on a
-mid-tier model (Sonnet) at medium effort; coordinators that must diagnose, design or decide run on the strongest
-model with high effort. The reviewer always runs on the strongest model with high effort.
+Coordinator sessions and the reviewer always run on the strongest model with high effort. A coordinator hands
+simple, fully specified code changes (a cleanup item, a mechanical refactor, tests for a given behaviour) to cheap
+subagents (Sonnet, medium effort) with a precise brief, and keeps diagnosis, design and verification for itself.
 
 ## Reports
 
