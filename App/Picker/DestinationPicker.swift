@@ -40,8 +40,8 @@ import DocsortCore
 /// - ``DestinationPickerModel/highlightedDestination``: the folder under the highlight, for ⌘Return from the picker.
 /// - ``DestinationPickerModel/destinationFolderURL``: where the destination line's folder is on disk, `nil` for a
 ///   pending new folder, for File › Open Destination in Finder.
-/// - ``DestinationPickerModel/contents``: the files listed in Folder contents, alphabetical, so the name field's
-///   ⌥↑ / ⌥↓ can walk them.
+/// - ``DestinationPickerModel/contents``: the files listed in Folder contents, in Finder name order, which the name
+///   field's ⌥↑ / ⌥↓ (planned) are to walk.
 ///
 /// Events, through ``DestinationPickerModel/onEvent`` (set it once, when the panel creates the model):
 /// - ``PickerEvent/chose(_:)``: Tab or Return (or a double-click) chose a destination. Move focus to the name field.
@@ -71,8 +71,8 @@ import DocsortCore
 /// it sends ``PickerEvent/chose(_:)``, ``PickerEvent/moveRequested(_:)`` or ``PickerEvent/steppedBack`` instead.
 ///
 /// - Entry from the sidebar by typing: call ``DestinationPickerModel/enter(typing:)`` with the typed text, then focus
-///   `.filter`. The field receives the typed text once it has focus, as if typed there. Entry with Tab, Return or
-///   ⌘L: just focus `.filter`; it selects its text as text fields do.
+///   `.filter`. The field receives the typed text once it has focus, as if typed there. Entry with Tab or Return (or
+///   ⌘L, planned): just focus `.filter`; it selects its text as text fields do.
 /// - Entry back from the name field (⇧Tab, Esc): focus `.filter`. The chosen destination stays until the user types
 ///   or moves the highlight.
 ///

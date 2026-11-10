@@ -79,7 +79,7 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
       folderList
         .background(FilingPanelStyle.listBackground)
       Divider()
-      bottomBar
+      footer
     }
     .background(PickerKeyMonitorAnchor(monitor: keyMonitor))
     .accessibilityElement(children: .contain)
@@ -299,11 +299,11 @@ struct DestinationPickerView<FocusValue: Hashable>: View {
     focus.wrappedValue = field(.filter)
   }
 
-  // MARK: Bottom bar
+  // MARK: Footer
 
-  /// The New Folder button (its tooltip names the parent and the shortcut), the refresh button, and the keys that
+  /// The folder list's footer: the New Folder button (its tooltip names the parent and the shortcut), the refresh button, and the keys that
   /// step into and out of folders.
-  private var bottomBar: some View {
+  private var footer: some View {
     let title = "New Folder in \(model.newFolderParentTitle)"
     return HStack(spacing: 6) {
       Button(action: beginNewFolder) {
