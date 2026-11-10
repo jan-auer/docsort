@@ -84,8 +84,9 @@ Reason: parallel runs, and runs beside another Docsort.app, share one testmanage
 
 ## targeted-ui-tests
 
-UI tests run only as a single focused test that validates a fix a unit test has already confirmed (command: CLAUDE.md).
-Reason: the user found UI-test runs wasteful and slow (2026-11-08).
+UI tests run only as a single focused test that validates a fix a unit test has already confirmed (command: CLAUDE.md),
+once, as the last step after the other checks pass, not while iterating. Reason: the user found UI-test runs wasteful
+and slow (2026-11-08, 2026-11-10).
 
 ## filing-panel-redesign
 
