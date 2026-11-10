@@ -81,7 +81,9 @@ keep all three short.
 
 Choose both for every subagent and every session you start, matched to the task: cheap and fast for mechanical or
 reconnaissance work, stronger for implementation, the strongest at high effort for architecture and verification.
-Coordinator sessions and the reviewer always run on the strongest model with high effort.
+A coordinator whose brief fully specifies simple code changes (a cleanup list, a mechanical refactor) runs on a
+mid-tier model (Sonnet) at medium effort; coordinators that must diagnose, design or decide run on the strongest
+model with high effort. The reviewer always runs on the strongest model with high effort.
 
 ## Reports
 
