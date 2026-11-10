@@ -15,7 +15,7 @@ struct VisibleContentsWalkerTests {
   @Test("lists visible descendant folders as root-relative paths")
   func listsVisibleDescendantFolders() throws {
     let root = try TemporaryDirectory()
-    try root.createFolder("Finanzen/Steuer/2025")
+    try root.createFolder("Finanzen/Steuer/2036")
     try root.createFolder("Wohnung")
     try root.createFolder(".git/objects")
     try root.createFolder("Versteckt")
@@ -27,7 +27,7 @@ struct VisibleContentsWalkerTests {
     let contents = try walker.walk(root.url)
 
     #expect(
-      contents.folderPaths == ["Finanzen", "Finanzen/Steuer", "Finanzen/Steuer/2025", "Wohnung"])
+      contents.folderPaths == ["Finanzen", "Finanzen/Steuer", "Finanzen/Steuer/2036", "Wohnung"])
     #expect(contents.problems.isEmpty)
   }
 
