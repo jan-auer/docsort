@@ -160,7 +160,7 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
         .foregroundStyle(.secondary)
         .lineLimit(1)
         .truncationMode(.middle)
-        .help(contents.folder.map(Self.title(of:)) ?? "")
+        .help(contents.folder.map(ArchivePath.breadcrumb(of:)) ?? "")
         .accessibilityAddTraits(.isHeader)
         .accessibilityIdentifier("folder-contents-header")
       Spacer(minLength: 4)
@@ -231,12 +231,6 @@ struct FolderContentsListing<FocusValue: Hashable>: View {
   private var fileCount: Int? {
     if case .files(_, let files) = contents { return files.count }
     return nil
-  }
-
-  /// A folder's path as the header shows it: `Gesundheit › Konrad`, or ``ArchivePath/rootTitle``.
-  static func title(of folder: String) -> String {
-    folder.isEmpty
-      ? ArchivePath.rootTitle : ArchivePath.segments(of: folder).joined(separator: " › ")
   }
 
   // MARK: Content

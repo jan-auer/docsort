@@ -98,7 +98,7 @@ struct PickerCreateFolderRow: View {
 
   /// The row's text, also its accessibility label.
   var title: String {
-    "New Folder “\(name)” in \(Self.parentTitle(of: parent))"
+    "New Folder “\(name)” in \(ArchivePath.breadcrumb(of: parent))"
   }
 
   var body: some View {
@@ -127,12 +127,6 @@ struct PickerCreateFolderRow: View {
         .foregroundStyle(tone.secondary)
         .accessibilityHidden(true)
     }
-  }
-
-  /// The parent as the row names it: its path with ` › `, or ``ArchivePath/rootTitle``.
-  static func parentTitle(of parent: String) -> String {
-    parent.isEmpty
-      ? ArchivePath.rootTitle : ArchivePath.segments(of: parent).joined(separator: " › ")
   }
 }
 
